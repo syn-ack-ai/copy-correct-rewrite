@@ -210,27 +210,36 @@ def fig_agent():
     fig.tight_layout(); save(fig, "fig8_agent_turns.png")
 
 
-# Figure 9: the same recipes with Gemma 4 E2B as the student (186), next to Qwen3-1.7B
+# Figure 9: the same recipes with Gemma 4 E2B as the student (186), next to Qwen3-1.7B; gains and loss shares, since the two students start apart
 def fig_e2b():
     if "e2b" not in D:
         print("no E2B data yet: fig9 skipped"); return
     E, Q = D["e2b"], D["main"]; arms = [a for a in ("sft", "sft_s", "rb") if a in E["pooled"]]
-    fig, axs = plt.subplots(1, 3, figsize=(11.6, 3.6), gridspec_kw={"wspace": 0.45})
-    for ax, (k, t) in zip(axs[:2], (("held solved", "Held-out problems solved"), ("lost", "Problems lost that the student solved before"))):
+    def gain(fam, s, a):
+        c = fam["per seed"][s][a]; return c["held solved"] - c["qwen held"]
+    def lost(fam, s, a):
+        c = fam["per seed"][s][a]; return 100 * (c["lost held"] + c["lost train pool"]) / (c["qwen held"] + c["qwen train pool"])
+    fig, axs = plt.subplots(1, 3, figsize=(11.6, 3.5), gridspec_kw={"wspace": 0.12}, sharey=True)
+    panels = ((axs[0], gain, "Held-out gain over the student alone", "problems per seed"), (axs[1], lost, "Previously solved problems lost", "% per seed"))
+    for ax, f, t, xl in panels:
         style(ax, "x")
         for i, a in enumerate(arms):
-            for j, (fam, lab, c) in enumerate(((Q, "Qwen3-1.7B", GRAY), (E, "Gemma 4 E2B", GROUP[a]))):
-                v = [fam["per seed"][s][a]["held solved"] if k == "held solved" else fam["per seed"][s][a]["lost held"] + fam["per seed"][s][a]["lost train pool"] for s in fam["per seed"] if a in fam["per seed"][s]]
-                y = i + (0.18 if j else -0.18); ax.scatter(v, [y] * len(v), s=26, color=c, edgecolors=SURF, linewidths=1.0, zorder=3)
+            for j, (fam, c) in enumerate(((Q, GRAY), (E, GROUP[a]))):
+                v = [f(fam, s, a) for s in fam["per seed"] if a in fam["per seed"][s]]; y = i + (0.17 if j else -0.17)
+                ax.scatter(v, [y] * len(v), s=26, color=c, edgecolors=SURF, linewidths=1.0, zorder=3)
                 if v:
                     ax.plot([min(v), max(v)], [y, y], color=c, lw=1.1, zorder=2)
-        ax.set_yticks(range(len(arms)), [NAME[a] for a in arms]); ax.invert_yaxis(); ax.set_title(t, fontsize=10); ax.set_xlabel("per seed (gray: Qwen3-1.7B)", fontsize=8.5)
+        ax.set_title(t, fontsize=10); ax.set_xlabel(xl, fontsize=8.5)
     ax = axs[2]; style(ax, "x"); Dd = D.get("e2b drift", {})
     for i, a in enumerate(arms):
         v = [Dd[f"{a}|{s}|prose"]["dce"] for s in (1, 2, 3) if f"{a}|{s}|prose" in Dd]; vq = [D["drift"][f"{a}|{s}|prose"]["dce"] for s in (1, 2, 3) if f"{a}|{s}|prose" in D["drift"]]
-        ax.scatter(vq, [i - 0.18] * len(vq), s=26, color=GRAY, edgecolors=SURF, linewidths=1.0, zorder=3); ax.scatter(v, [i + 0.18] * len(v), s=26, color=GROUP[a], edgecolors=SURF, linewidths=1.0, zorder=3)
-    ax.axvline(0, color=INK2, lw=1); ax.set_yticks(range(len(arms)), ["" for _ in arms]); ax.invert_yaxis(); ax.set_title("Untaught prose, change in CE", fontsize=10); ax.set_xlabel("below 0 = lower loss than the original", fontsize=8.5)
-    fig.suptitle("The same recipes with a Gemma student: Gemma 4 E4B teaching Gemma 4 E2B (colour) vs Qwen3-1.7B (gray)", x=0.06, y=1.03, ha="left", fontsize=11, weight="bold")
+        ax.scatter(vq, [i - 0.17] * len(vq), s=26, color=GRAY, edgecolors=SURF, linewidths=1.0, zorder=3); ax.scatter(v, [i + 0.17] * len(v), s=26, color=GROUP[a], edgecolors=SURF, linewidths=1.0, zorder=3)
+    ax.axvline(0, color=INK2, lw=1); ax.set_title("Untaught prose, change in loss", fontsize=10); ax.set_xlabel("nats per token (above 0 = worse)", fontsize=8.5)
+    axs[0].set_yticks(range(len(arms)), [NAME[a] for a in arms]); axs[0].invert_yaxis()
+    from matplotlib.lines import Line2D
+    fig.legend(handles=[Line2D([], [], marker="o", ls="", ms=7, color=GRAY, label="Qwen3-1.7B student"), Line2D([], [], marker="o", ls="", ms=7, color=S1, label="Gemma 4 E2B student")],
+               loc="upper left", ncol=2, bbox_to_anchor=(0.12, 1.07), fontsize=8.8, labelcolor=INK2)
+    fig.suptitle("The same recipes with a Gemma student: smaller gains, fewer coding losses, far more damage to untaught text", x=0.06, y=1.15, ha="left", fontsize=11, weight="bold")
     save(fig, "fig9_e2b.png")
 
 

@@ -1,8 +1,9 @@
-# Pre-registration log: addenda 165-185
+# Pre-registration log: addenda 165-188
 
 This file is an excerpt of the project's running pre-registration log. It holds the addenda from "Addendum 165" through the end of
-"Addendum 185", copied verbatim and in their original order (addendum 180 sits between 177 and 178 in the source). Each addendum states its
-design and its predictions before the run; results and readings were appended after the run.
+"Addendum 188", copied verbatim and in their original order (addendum 180 sits between 177 and 178 in the source). Each addendum states its
+design and its predictions before the run; results and readings were appended after the run. Addenda without a result were still
+running when this excerpt was taken.
 
 Redactions: one phrase in addendum 165 is replaced by "[redacted]". Nothing else is changed.
 
@@ -316,6 +317,12 @@ resdec_g0 fixed 27 of 52 gate decisions. It is the state pull along the decision
   - The seed-1 rerun fixes 23-31 (60%).
   - resdec beats resctldec pooled with p < 0.1 (30%).
   - The 3-seed mean of resdec exceeds alldirect's 20 by ≥ 3 (40%).
+
+
+**Result (2026-11-08, 06:13 on the 4090; resdec.log, rep2_summary.json).**
+- **resdec replication:** 22, 25 and 19 of 52 gate decisions fixed in seeds 1-3 (mean 22), against the original run's 27. That is the level of res_g0 (22) and plain on-policy alldirect (20): the original 27 was a high draw.
+- **The control resctldec never ran.** All three seeds failed at online.py's `assert not DEC or RES_SRC == "bridge"`: the decision-direction basis (addendum 164) is defined only for the bridge source, so the queued control was invalid as designed, and the resdec-vs-control comparison was not made.
+- **Reading:** the decision-basis state pull does not beat the plain on-policy arms once replicated. Testing a control would need a decision basis computed from E2B's own control-translator states (not built).
 
 ## Addendum 178 (2026-11-07, 17:35; queued after 175): the same LoRAs on more problems (user: "self-bridge does seem slightly better though I think"; "yes, queue it after 175")
 
@@ -738,3 +745,171 @@ Predictions (pooled over seeds 1-3):
 - sft_self_s fixes fewer trained problems than sft_s (65%).
 - sft_self_s solves held problems within 10 of sft_s (60%), and fewer than sft_c_s (55%).
 - sft_self_s loses no more (held + train pool) than sft_s (50%).
+
+**Result (2026-11-08, 07:55; Colab, three seeds).** In every seed, sft and Qwen reproduced their stored per-problem results.
+
+| Arm | Fixed | New | Held solved | Lost held | Lost train pool |
+|---|---|---|---|---|---|
+| sft_self_s | 382 | 95 | 159 | 11 | 29 |
+| sft_s | 406 | 95 | 160 | 10 | 38 |
+| sft_c_s | 385 | 91 | 157 | 9 | 43 |
+| sft | 389 | 90 | 149 | 16 | 42 |
+
+Paired, sft_self_s only vs other only:
+- vs sft_s: held 34 vs 35 (p = 1), trained 89 vs 107 (p = 0.23).
+- vs sft_c_s: held 32 vs 30.
+- vs sft: held 41 vs 31 (p = 0.29).
+
+Drift from the original Qwen (drift.py), prose / code / story:
+- KL 0.010 / 0.030 / 0.016 (sft_s 0.061 / 0.086 / 0.095, sft_c_s 0.089 / 0.076 / 0.142).
+- ΔCE +0.01 / −0.10 / −0.02.
+- Entropy change −0.07 / +0.13 / −0.03.
+
+Off-task: fresh-question p(true) 0.514 / 0.520 / 0.530 (base 0.513, sft 0.557); untaught prose CE 3.69 (base 3.68).
+
+Predictions:
+- Moves less than sft_s and sft_c_s: yes (6-9× lower KL on prose).
+- Prose ΔCE above −0.15: yes (+0.01).
+- Fixes fewer than sft_s: yes (382 vs 406, n.s.).
+- Held within 10 of sft_s: yes (159 vs 160).
+- Fewer held than sft_c_s: no (159 vs 157).
+- Lost ≤ sft_s: yes (40 vs 48).
+
+5 of 6 held.
+
+Reading: the plain pull toward the original student is what keeps the student where it was. It leaves untaught text almost unchanged and loses the fewest of the copying recipes, with teaching equal to shortest rows. The corrector anchor instead moves the student as far as SFT, toward lower loss (its own fit); it is a way to add general-text improvement, not to stay put.
+
+## Addendum 186 (2026-11-08, 07:50; built, in review, not yet run): the coding recipes with Gemma 4 E2B as the student (user: "replicate with e2b"; the paper review's top request: the main evidence was Qwen3-1.7B, and the only Gemma-to-Gemma result was one online seed)
+
+Design:
+- **Arms:** sft, sft_s and rb with Gemma 4 E2B (QAT checkpoint, revision 971342c, dequantised to bf16) as the student. The same 299 E4B rows, the shortest rows and the measures as 179-182.
+- **rb rows:** E2B re-solves each problem with the same accepted E4B plans as the Qwen build (XL_RB_PLANS; no new plans). The rows are E2B's own passing solutions, trained without the plan.
+- **LoRA:** rank 64 on the MLP projections from 35% depth to the top. The same relative depths as Qwen's layers 9-27.
+- **No E4B weights:** XB_TEACHER_TOK_ONLY. The student's BOS is in every tokenisation and generation (XB_SBOS="<bos>"; Gemma's raw completions need it).
+- **Kept pool:** XL_NO_KEPT_POOL. E2B has no build run on the untrained train-pool problems, so "kept" counts trained and held problems only.
+- **Drift:** drift from the original E2B on the same held untaught prose / code / story rows, in-session (drift.py).
+- **Run:** seeds 1-3, one Colab session each (xq_learn.sh STAGE=e2b; dreamer/xq_side18_launch.sh), about 45 CU (the user added 100 CU). Amendment 186a (after code review, before any run): the stage requires XB_SEED; the small pass falls back to E4B rows if E2B solves none of its 3 problems; drift failures are not fatal; xl_rb.json's "alone" fields refer to the build's Qwen run, so E2B's own alone results come from the in-session evaluation (key "qwen" = the student alone); E2B's sampling uses its own generation config (top-k 64; Qwen's is 20).
+- **Code changes:** _lora_targets for the Gemma layer path, BOS handling in encode / align / generation, plan reuse in runbook. All are no-ops for the Qwen runs unless the new variables are set.
+
+Predictions (three seeds pooled; per seed read as direction only):
+- E2B alone solves at least 25 of the 188 held problems, as many as Qwen alone (60%).
+- With E4B's plans, E2B solves more row problems greedily than alone (90%), and there are ≥ 150 E2B runbook rows (55%).
+- The Qwen ordering repeats on E2B: sft_s solves at least as many held problems as sft − 3 (65%); rb fixes the most trained problems of the three (60%); rb raises untaught-prose CE above the original E2B (55%); sft lowers it (60%).
+
+**Result (2026-11-08, 09:21; Colab, three seeds).** E2B alone solves 148 of the 299 row problems and 57 of 188 held-out problems (Qwen: 99 and 25). The runbook build gave 280 rows; with the plans, E2B's greedy answer solved 236 row problems. E2B's own loss on E4B's rows is 0.27 nats, against 0.38 on its own plan-guided rows (Qwen: 1.05 and 0.32).
+
+| Arm | Fixed (of 453) | New (of 393) | Held solved (of 564) | Lost held (of 171) | Lost trained (of 444) |
+|---|---|---|---|---|---|
+| E2B alone | — | — | 171 | — | — |
+| sft | 359 | 62 | 204 | 29 | 18 |
+| sft_s | 369 | 60 | 204 | 27 | 20 |
+| rb | 318 | 61 | 201 | 31 | 27 |
+
+Paired:
+- sft vs E2B alone: held 62 vs 29 (p = 0.0007).
+- sft_s vs sft: held 43 vs 43.
+- rb vs sft: trained 61 vs 111 (p = 0.0002), held 44 vs 47.
+
+Drift from the original E2B, means over seeds, prose / code / story:
+
+| Arm | KL | ΔCE | Entropy change |
+|---|---|---|---|
+| sft | 0.29 / 0.20 / 0.24 | +0.69 / +0.38 / +0.84 | −0.76 / −0.36 / −0.62 |
+| sft_s | 0.29 / 0.20 / 0.23 | +0.57 / +0.32 / +0.71 | −0.70 / −0.33 / −0.55 |
+| rb | 0.29 / 0.23 / 0.24 | +0.85 / +0.60 / +0.99 | −0.82 / −0.41 / −0.66 |
+
+Off-task, per seed:
+- Untaught prose CE rises from 4.47 to 5.17-5.19 (sft), 5.02-5.09 (sft_s) and 5.23-5.46 (rb).
+- CE on E4B's held agent replies rises from 0.685 to 0.75 (sft) and 0.81-0.83 (rb): the student moves away from the teacher's agent text.
+- Fresh-question p(true) is about unchanged (0.57-0.60, base 0.582).
+
+Predictions:
+- E2B alone ≥ 25 held: yes (57).
+- More row problems with the plans: yes (236 vs 148).
+- ≥ 150 rb rows: yes (280).
+- sft_s ≥ sft − 3 held: yes (204 vs 204).
+- rb fixes the most: no (318 vs 359 / 369).
+- rb raises prose CE: yes.
+- sft lowers it: no (+0.69).
+
+5 of 7 held.
+
+Reading:
+- **Teaching.** With a Gemma student, the teacher's text is already close to the student's own (0.27 nats). Rewriting in the student's words adds nothing: rb fixes fewer, and shortest rows tie SFT. Every recipe gains about 11 held problems per seed.
+- **Forgetting.** Every recipe moves E2B 4× further on untaught text than it moved Qwen, sharpens it (entropy −0.3 to −0.8), and raises its loss by 0.3-1.0 nats. With the same LoRA recipe, forgetting is a much larger problem in the Gemma student. 187's anchors (KL to the original E2B, the self-corrector and the cross-model corrector) test what reverses it.
+
+## Addendum 187 (2026-11-08, 08:45; built, in review, not yet run): two-way E4B ↔ E2B with freshly fitted correctors (user: "for e2b and e4b"; chose "Two-way E4B ↔ E2B"; "I think we should replecate all of that, yeah, including the 600 trained correctors for both")
+
+Why: the corrector's only clear value so far is live. The user's research direction is two-way composition: a larger model and a smaller one each give the other knowledge it lacks. So far the corrector question has only been asked across tokenizers (E4B → Qwen) and online (E4B → E2B, one seed).
+
+Design: xq_learn.sh STAGE=two, xlearn.py build_from_gens and arm sft_b_s, launcher dreamer/xq_side19_launch.sh. Six Colab sessions, seeds 1-3 per direction. Each session fits its own 600-step self-corrector and cross-model corrector with xbridge.py train, using the Qwen correctors' recipe: size 0.03, harm 0.5, lr 3e-4, the same row mix. The correctors are kept.
+
+**Direction 1, E4B teaches E2B (XL_DIR=e2b).**
+- Correctors: E2B's self-corrector, and the cross-model corrector from E4B's states into E2B (same tokenizer, so the alignment is exact).
+- Arms on the shortest E4B rows: sft_self_s (KL to the original E2B), sft_c_s (self-corrector anchor), sft_b_s (cross-model anchor).
+- Pairing: with 186's sft, sft_s and rb through stored per-problem results. 186's sft adapter is the in-session anchor.
+
+**Direction 2, E2B teaches E4B (XL_DIR=e4b).**
+- Rows: E2B's own greedy passing answers on the 299 row problems (186 seed 1, the student alone; deterministic).
+- Correctors: E4B's self-corrector, and the cross-model corrector from E2B's states into E4B.
+- Arms: sft (on E2B's answers), sft_self (KL to the original E4B), sft_c (self-corrector anchor), sft_b (cross-model anchor).
+- Baseline: E4B alone, in-session.
+
+Both directions use the same measures: fixed, new, held solved, lost (trained + held), off-task, and drift from the original student. E4B's fixed counts are small by construction (row problems that E2B solves and E4B fails).
+
+Predictions (pooled over seeds 1-3):
+- Direction 1:
+  - sft_b_s solves held problems within ±10 of sft_c_s (70%).
+  - sft_self_s has lower prose KL from the original E2B than sft_s and sft_c_s (80%).
+  - sft_c_s and sft_b_s lower untaught-prose CE more than sft_s (65%).
+- Direction 2:
+  - There are fewer than 200 E2B rows (80%).
+  - E4B sft solves at most as many held problems as E4B alone (60%).
+  - sft_b solves no more held problems than sft_c (75%).
+  - Every arm fixes at most 5 problems per seed (70%).
+
+Success bar for the two-way idea: in direction 2, sft_b beats sft_c by ≥ 5 held solved pooled, with no more losses (15%).
+
+Budget: about 25 CU per E4B session and 15 per E2B session, about 120 CU. The balance guard starts a session only while the balance covers 20 CU for it and for each running session.
+
+**Amendment 187a (09:00, after code review, before any run).** The review found no crash bugs. It dry-ran every new step on CPU with tiny random-weight Gemma 4 models of the real structure (shared KV layers, per-layer embeddings, the real tokenizer and rows).
+
+Confirmed:
+- Gemma 4 decoder layers return a plain [B, L, D] tensor, so the corrector hooks are correct.
+- E2B is 35 layers of width 1536 (write layer 12, sites 13-34). E4B is 42 layers of width 2560 (write layer 14, sites 15-41).
+
+Changes:
+- `encode` uses the identity alignment when both tokenizations are equal.
+- E2B's rows take the re-scored pass flags from 186's evaluation (XL_ROWS_PASS).
+- The launcher falls back to any finished E2B seed. It skips direction e4b if E2B passes fewer than 30 row problems.
+- The guard is 25 CU per session.
+
+Caveats recorded before the run:
+- **Direction 2's correctors may barely move E4B.** Half the fitting mix is E4B's own agent replies, already low-loss for an E4B student, so sft_c and sft_b may sit close to sft_self. Each corrector's fitted-versus-alone CE (in its log) is reported with the result.
+- **Shared KV layers.** In both Gemma students most sites sit in layers that reuse earlier layers' keys and values. There, an added correction changes only its own position, not what later positions attend to (E2B layers 15-34, E4B 24-41), so the corrector is less expressive than on Qwen.
+
+## Addendum 188 (2026-11-08, 09:45; built, not yet run): the matched-loss test for E2B's damage to untaught text (user: "yes, add it and queue the matched-loss test")
+
+Why: in 186 every E2B recipe damaged untaught text far more than the same recipes did on Qwen. Prose ΔCE was +0.57 to +0.85, entropy fell 0.7 to 0.8, and KL from the original was about 0.29. The proposed explanation is over-fitting of familiar text: E4B's rows are already low-loss for E2B (0.31 at step 0), and two epochs drive them to about 0.07, which sharpens the model. Qwen ends at 0.24 on the same rows and softens. On top of that, E2B moves about 14 times more than Qwen at a similar final loss, which points to a student-specific sensitivity. (Qwen's rb ends at 0.03 with prose KL 0.02; E2B's sft ends at 0.07 with prose KL 0.27.) This test separates the two.
+
+The 186 training curves show where the loss falls. Seed 1 had 0.309 at step 0, 0.254 at step 150 and 0.090 at step 200. Seeds 2 and 3 have the same shape. The first epoch barely lowers the loss, and the second memorizes the rows.
+
+Design: xq_learn.sh STAGE=e2b with XL_ARMS="sft_es sft_lr", seeds 1-3, sessions xqlML1-3, launcher dreamer/xq_side20_launch.sh. The rows, adapter, layers and evaluation are those of 186's sft.
+- **sft_es:** sft on all 299 E4B rows that stops when the 50-step mean training CE reaches 0.24 (XL_STOP_CE). That is Qwen's last-50 level on the same rows. From the curves, this is near the end of the first epoch.
+- **sft_lr:** sft at a tenth of the learning rate (3e-5) for all 299 steps.
+- **Anchor:** each session copies in 186's sft adapter for its seed and re-scores it, both for pairing and as the in-session anchor. Drift from the original E2B is measured for all three adapters.
+
+Caveat recorded before the run: neither arm matches dose. sft_es trains for about half the steps, and sft_lr moves the weights less. If both cut the damage, that fits the over-fit explanation but does not separate the final loss from the size of the move. The comparison that does separate them is damage at the same final training loss as Qwen (sft_es against Qwen's sft).
+
+Predictions (pooled over seeds 1-3, against 186's sft for the same seed):
+1. sft_es stops between steps 130 and 200 in every seed (70%).
+2. sft_es's prose ΔCE is at most half of sft's (65%).
+3. sft_es's prose entropy falls by less than 0.3 (60%).
+4. sft_es keeps at least half of sft's held gain over E2B alone (55%).
+5. sft_lr's prose ΔCE is at most +0.15 (70%), and its held gain is under half of sft's (65%).
+6. The re-scored 186 sft adapter reproduces 186's per-problem results exactly (90%).
+7. At the same final loss as Qwen's sft (0.24), sft_es moves E2B more than Qwen's sft moved Qwen. Qwen's sft had prose KL 0.074 and prose ΔCE −0.06. Prediction: sft_es's prose KL is above 0.15 (55%), and its prose ΔCE is above zero (60%). Both would mean part of the move is the student.
+
+Success bar for the over-fit explanation: sft_es keeps at least 70% of sft's pooled held gain and cuts prose ΔCE by at least half. If so, "stop at the student's matched loss" goes into the recipe. If sft_es keeps at least 70% of sft's damage, the explanation is wrong and student sensitivity dominates.
+
+Budget: about 12 CU per session, about 40 CU. The sessions start after 187's six sessions have all started, under the same slot counter and the 25 CU guard.

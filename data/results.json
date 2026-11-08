@@ -1157,6 +1157,671 @@
    }
   }
  },
+ "e2b": {
+  "per seed": {
+   "1": {
+    "sft": {
+     "fixed": 119,
+     "fixed of": 151,
+     "new": 20,
+     "new of": 131,
+     "held solved": 67,
+     "held of": 188,
+     "lost held": 10,
+     "lost train pool": 7,
+     "qwen held": 57,
+     "qwen train pool": 148
+    },
+    "sft_s": {
+     "fixed": 118,
+     "fixed of": 151,
+     "new": 21,
+     "new of": 131,
+     "held solved": 71,
+     "held of": 188,
+     "lost held": 7,
+     "lost train pool": 11,
+     "qwen held": 57,
+     "qwen train pool": 148
+    },
+    "rb": {
+     "fixed": 103,
+     "fixed of": 151,
+     "new": 20,
+     "new of": 131,
+     "held solved": 66,
+     "held of": 188,
+     "lost held": 11,
+     "lost train pool": 6,
+     "qwen held": 57,
+     "qwen train pool": 148
+    }
+   },
+   "2": {
+    "sft": {
+     "fixed": 120,
+     "fixed of": 151,
+     "new": 22,
+     "new of": 131,
+     "held solved": 69,
+     "held of": 188,
+     "lost held": 10,
+     "lost train pool": 5,
+     "qwen held": 57,
+     "qwen train pool": 148
+    },
+    "sft_s": {
+     "fixed": 126,
+     "fixed of": 151,
+     "new": 18,
+     "new of": 131,
+     "held solved": 67,
+     "held of": 188,
+     "lost held": 8,
+     "lost train pool": 3,
+     "qwen held": 57,
+     "qwen train pool": 148
+    },
+    "rb": {
+     "fixed": 105,
+     "fixed of": 151,
+     "new": 21,
+     "new of": 131,
+     "held solved": 68,
+     "held of": 188,
+     "lost held": 10,
+     "lost train pool": 8,
+     "qwen held": 57,
+     "qwen train pool": 148
+    }
+   },
+   "3": {
+    "sft": {
+     "fixed": 120,
+     "fixed of": 151,
+     "new": 20,
+     "new of": 131,
+     "held solved": 68,
+     "held of": 188,
+     "lost held": 9,
+     "lost train pool": 6,
+     "qwen held": 57,
+     "qwen train pool": 148
+    },
+    "sft_s": {
+     "fixed": 125,
+     "fixed of": 151,
+     "new": 21,
+     "new of": 131,
+     "held solved": 66,
+     "held of": 188,
+     "lost held": 12,
+     "lost train pool": 6,
+     "qwen held": 57,
+     "qwen train pool": 148
+    },
+    "rb": {
+     "fixed": 110,
+     "fixed of": 151,
+     "new": 20,
+     "new of": 131,
+     "held solved": 67,
+     "held of": 188,
+     "lost held": 10,
+     "lost train pool": 13,
+     "qwen held": 57,
+     "qwen train pool": 148
+    }
+   }
+  },
+  "offtask": {
+   "1": {
+    "held agent | cross-entropy": {
+     "qwen": 0.6849,
+     "sft": 0.7499,
+     "sft_s": 0.7273,
+     "rb": 0.8063
+    },
+    "held question_fresh | cross-entropy": {
+     "qwen": 0.9386,
+     "sft": 1.0621,
+     "sft_s": 1.1211,
+     "rb": 1.1856
+    },
+    "held question_fresh | p(true)": {
+     "qwen": 0.5822,
+     "sft": 0.5952,
+     "sft_s": 0.594,
+     "rb": 0.5878
+    },
+    "held prose (untaught) | cross-entropy": {
+     "qwen": 4.4729,
+     "sft": 5.1732,
+     "sft_s": 5.023,
+     "rb": 5.2252
+    }
+   },
+   "2": {
+    "held agent | cross-entropy": {
+     "qwen": 0.6849,
+     "sft": 0.7458,
+     "sft_s": 0.7166,
+     "rb": 0.8097
+    },
+    "held question_fresh | cross-entropy": {
+     "qwen": 0.9386,
+     "sft": 1.1239,
+     "sft_s": 1.1473,
+     "rb": 1.3082
+    },
+    "held question_fresh | p(true)": {
+     "qwen": 0.5822,
+     "sft": 0.5749,
+     "sft_s": 0.5879,
+     "rb": 0.5775
+    },
+    "held prose (untaught) | cross-entropy": {
+     "qwen": 4.4729,
+     "sft": 5.1902,
+     "sft_s": 5.0907,
+     "rb": 5.3112
+    }
+   },
+   "3": {
+    "held agent | cross-entropy": {
+     "qwen": 0.6849,
+     "sft": 0.751,
+     "sft_s": 0.7285,
+     "rb": 0.8294
+    },
+    "held question_fresh | cross-entropy": {
+     "qwen": 0.9386,
+     "sft": 1.1327,
+     "sft_s": 1.2318,
+     "rb": 1.2707
+    },
+    "held question_fresh | p(true)": {
+     "qwen": 0.5822,
+     "sft": 0.5918,
+     "sft_s": 0.5872,
+     "rb": 0.5702
+    },
+    "held prose (untaught) | cross-entropy": {
+     "qwen": 4.4729,
+     "sft": 5.1813,
+     "sft_s": 5.0481,
+     "rb": 5.4619
+    }
+   }
+  },
+  "e4b held CE": {
+   "1": {
+    "qwen": 0.2428,
+    "sft": 0.2572,
+    "sft_s": 0.2662,
+    "rb": 0.4004
+   },
+   "2": {
+    "qwen": 0.2428,
+    "sft": 0.2523,
+    "sft_s": 0.2572,
+    "rb": 0.4046
+   },
+   "3": {
+    "qwen": 0.2428,
+    "sft": 0.2543,
+    "sft_s": 0.2625,
+    "rb": 0.4173
+   }
+  },
+  "pooled": {
+   "rb": {
+    "fixed": 318,
+    "fixed of": 453,
+    "new": 61,
+    "new of": 393,
+    "held solved": 201,
+    "held of": 564,
+    "lost held": 31,
+    "lost train pool": 27,
+    "qwen held": 171,
+    "qwen train pool": 444,
+    "seeds": 3
+   },
+   "sft": {
+    "fixed": 359,
+    "fixed of": 453,
+    "new": 62,
+    "new of": 393,
+    "held solved": 204,
+    "held of": 564,
+    "lost held": 29,
+    "lost train pool": 18,
+    "qwen held": 171,
+    "qwen train pool": 444,
+    "seeds": 3
+   },
+   "sft_s": {
+    "fixed": 369,
+    "fixed of": 453,
+    "new": 60,
+    "new of": 393,
+    "held solved": 204,
+    "held of": 564,
+    "lost held": 27,
+    "lost train pool": 20,
+    "qwen held": 171,
+    "qwen train pool": 444,
+    "seeds": 3
+   }
+  }
+ },
+ "e2b drift": {
+  "sft|1|prose": {
+   "kl": 0.26746,
+   "dce": 0.68172,
+   "ce": 5.07721,
+   "ce base": 4.39549,
+   "entropy": 1.37468,
+   "entropy base": 2.16261,
+   "rows": 43
+  },
+  "sft_s|1|prose": {
+   "kl": 0.27227,
+   "dce": 0.53737,
+   "ce": 4.93286,
+   "ce base": 4.39549,
+   "entropy": 1.47933,
+   "entropy base": 2.16261,
+   "rows": 43
+  },
+  "rb|1|prose": {
+   "kl": 0.26303,
+   "dce": 0.73982,
+   "ce": 5.13531,
+   "ce base": 4.39549,
+   "entropy": 1.39562,
+   "entropy base": 2.16261,
+   "rows": 43
+  },
+  "sft|1|story": {
+   "kl": 0.23586,
+   "dce": 0.83585,
+   "ce": 4.71322,
+   "ce base": 3.87737,
+   "entropy": 0.95045,
+   "entropy base": 1.58796,
+   "rows": 24
+  },
+  "sft_s|1|story": {
+   "kl": 0.21277,
+   "dce": 0.67265,
+   "ce": 4.55002,
+   "ce base": 3.87737,
+   "entropy": 1.04156,
+   "entropy base": 1.58796,
+   "rows": 24
+  },
+  "rb|1|story": {
+   "kl": 0.22719,
+   "dce": 0.90127,
+   "ce": 4.77864,
+   "ce base": 3.87737,
+   "entropy": 0.95454,
+   "entropy base": 1.58796,
+   "rows": 24
+  },
+  "sft|1|code": {
+   "kl": 0.19953,
+   "dce": 0.38799,
+   "ce": 2.40888,
+   "ce base": 2.02089,
+   "entropy": 0.53126,
+   "entropy base": 0.89321,
+   "rows": 57
+  },
+  "sft_s|1|code": {
+   "kl": 0.20076,
+   "dce": 0.32375,
+   "ce": 2.34464,
+   "ce base": 2.02089,
+   "entropy": 0.56524,
+   "entropy base": 0.89321,
+   "rows": 57
+  },
+  "rb|1|code": {
+   "kl": 0.20797,
+   "dce": 0.54108,
+   "ce": 2.56197,
+   "ce base": 2.02089,
+   "entropy": 0.50326,
+   "entropy base": 0.89321,
+   "rows": 57
+  },
+  "sft|2|prose": {
+   "kl": 0.30504,
+   "dce": 0.69254,
+   "ce": 5.08803,
+   "ce base": 4.39549,
+   "entropy": 1.41429,
+   "entropy base": 2.16261,
+   "rows": 43
+  },
+  "sft_s|2|prose": {
+   "kl": 0.31737,
+   "dce": 0.5999,
+   "ce": 4.99539,
+   "ce base": 4.39549,
+   "entropy": 1.45897,
+   "entropy base": 2.16261,
+   "rows": 43
+  },
+  "rb|2|prose": {
+   "kl": 0.29353,
+   "dce": 0.82215,
+   "ce": 5.21764,
+   "ce base": 4.39549,
+   "entropy": 1.34425,
+   "entropy base": 2.16261,
+   "rows": 43
+  },
+  "sft|2|story": {
+   "kl": 0.2376,
+   "dce": 0.83557,
+   "ce": 4.71294,
+   "ce base": 3.87737,
+   "entropy": 0.97875,
+   "entropy base": 1.58796,
+   "rows": 24
+  },
+  "sft_s|2|story": {
+   "kl": 0.23796,
+   "dce": 0.74181,
+   "ce": 4.61918,
+   "ce base": 3.87737,
+   "entropy": 1.03539,
+   "entropy base": 1.58796,
+   "rows": 24
+  },
+  "rb|2|story": {
+   "kl": 0.23533,
+   "dce": 0.96561,
+   "ce": 4.84298,
+   "ce base": 3.87737,
+   "entropy": 0.93423,
+   "entropy base": 1.58796,
+   "rows": 24
+  },
+  "sft|2|code": {
+   "kl": 0.19199,
+   "dce": 0.37231,
+   "ce": 2.3932,
+   "ce base": 2.02089,
+   "entropy": 0.54801,
+   "entropy base": 0.89321,
+   "rows": 57
+  },
+  "sft_s|2|code": {
+   "kl": 0.19854,
+   "dce": 0.3178,
+   "ce": 2.33869,
+   "ce base": 2.02089,
+   "entropy": 0.57044,
+   "entropy base": 0.89321,
+   "rows": 57
+  },
+  "rb|2|code": {
+   "kl": 0.22119,
+   "dce": 0.56613,
+   "ce": 2.58702,
+   "ce base": 2.02089,
+   "entropy": 0.48787,
+   "entropy base": 0.89321,
+   "rows": 57
+  },
+  "sft|3|prose": {
+   "kl": 0.29622,
+   "dce": 0.6916,
+   "ce": 5.08709,
+   "ce base": 4.39549,
+   "entropy": 1.40515,
+   "entropy base": 2.16261,
+   "rows": 43
+  },
+  "sft_s|3|prose": {
+   "kl": 0.2848,
+   "dce": 0.55836,
+   "ce": 4.95385,
+   "ce base": 4.39549,
+   "entropy": 1.46078,
+   "entropy base": 2.16261,
+   "rows": 43
+  },
+  "rb|3|prose": {
+   "kl": 0.31727,
+   "dce": 0.97539,
+   "ce": 5.37088,
+   "ce base": 4.39549,
+   "entropy": 1.2979,
+   "entropy base": 2.16261,
+   "rows": 43
+  },
+  "sft|3|story": {
+   "kl": 0.23839,
+   "dce": 0.85049,
+   "ce": 4.72786,
+   "ce base": 3.87737,
+   "entropy": 0.97621,
+   "entropy base": 1.58796,
+   "rows": 24
+  },
+  "sft_s|3|story": {
+   "kl": 0.23053,
+   "dce": 0.71322,
+   "ce": 4.5906,
+   "ce base": 3.87737,
+   "entropy": 1.02521,
+   "entropy base": 1.58796,
+   "rows": 24
+  },
+  "rb|3|story": {
+   "kl": 0.269,
+   "dce": 1.10014,
+   "ce": 4.97752,
+   "ce base": 3.87737,
+   "entropy": 0.89756,
+   "entropy base": 1.58796,
+   "rows": 24
+  },
+  "sft|3|code": {
+   "kl": 0.2127,
+   "dce": 0.39096,
+   "ce": 2.41185,
+   "ce base": 2.02089,
+   "entropy": 0.53088,
+   "entropy base": 0.89321,
+   "rows": 57
+  },
+  "sft_s|3|code": {
+   "kl": 0.20541,
+   "dce": 0.3303,
+   "ce": 2.35119,
+   "ce base": 2.02089,
+   "entropy": 0.55765,
+   "entropy base": 0.89321,
+   "rows": 57
+  },
+  "rb|3|code": {
+   "kl": 0.25458,
+   "dce": 0.70599,
+   "ce": 2.72688,
+   "ce base": 2.02089,
+   "entropy": 0.45485,
+   "entropy base": 0.89321,
+   "rows": 57
+  }
+ },
+ "e2b runbook build": {
+  "1": {
+   "sha": "f48687339f87b369ea7b9ca25c731d229f59f1503acbddee58235ae2a6deeed8",
+   "rows": 280,
+   "row problems": 299,
+   "rows by kind": {
+    "greedy": 236,
+    "sample": 44
+   },
+   "plans passing the screen": 298,
+   "plans by attempt": {
+    "0": 289,
+    "1": 7,
+    "2": 2
+   },
+   "no plan: last screen result": {
+    "no plan in the reused build": 1
+   },
+   "plan characters, median": 849.5,
+   "plan steps, median": 8.0,
+   "plan code-token 4-gram overlap, median (accepted)": 0.0,
+   "covered where Qwen alone fails": [
+    186,
+    204
+   ],
+   "Qwen greedy on row problems (with the plan, alone)": [
+    236,
+    95
+   ],
+   "Qwen greedy on the planned problems (with the plan, alone)": [
+    236,
+    95
+   ],
+   "Qwen greedy with the plan where Qwen alone fails": [
+    152,
+    204
+   ],
+   "Qwen alone cross-entropy, median (runbook rows, E4B rows)": [
+    0.3819,
+    0.2655
+   ],
+   "similarity to E4B's row, median (difflib)": 0.2966,
+   "identical to E4B's row": 0,
+   "similarity to Qwen alone's greedy, median (problems Qwen alone passes, fails)": [
+    null,
+    null
+   ],
+   "identical to Qwen alone's greedy": 0,
+   "median Qwen tokens (runbook rows, E4B rows, shortest E4B rows)": [
+    420.0,
+    403.0,
+    334.0
+   ]
+  },
+  "2": {
+   "sha": "f48687339f87b369ea7b9ca25c731d229f59f1503acbddee58235ae2a6deeed8",
+   "rows": 280,
+   "row problems": 299,
+   "rows by kind": {
+    "greedy": 236,
+    "sample": 44
+   },
+   "plans passing the screen": 298,
+   "plans by attempt": {
+    "0": 289,
+    "1": 7,
+    "2": 2
+   },
+   "no plan: last screen result": {
+    "no plan in the reused build": 1
+   },
+   "plan characters, median": 849.5,
+   "plan steps, median": 8.0,
+   "plan code-token 4-gram overlap, median (accepted)": 0.0,
+   "covered where Qwen alone fails": [
+    186,
+    204
+   ],
+   "Qwen greedy on row problems (with the plan, alone)": [
+    236,
+    95
+   ],
+   "Qwen greedy on the planned problems (with the plan, alone)": [
+    236,
+    95
+   ],
+   "Qwen greedy with the plan where Qwen alone fails": [
+    152,
+    204
+   ],
+   "Qwen alone cross-entropy, median (runbook rows, E4B rows)": [
+    0.3819,
+    0.2655
+   ],
+   "similarity to E4B's row, median (difflib)": 0.2966,
+   "identical to E4B's row": 0,
+   "similarity to Qwen alone's greedy, median (problems Qwen alone passes, fails)": [
+    null,
+    null
+   ],
+   "identical to Qwen alone's greedy": 0,
+   "median Qwen tokens (runbook rows, E4B rows, shortest E4B rows)": [
+    420.0,
+    403.0,
+    334.0
+   ]
+  },
+  "3": {
+   "sha": "f48687339f87b369ea7b9ca25c731d229f59f1503acbddee58235ae2a6deeed8",
+   "rows": 280,
+   "row problems": 299,
+   "rows by kind": {
+    "greedy": 236,
+    "sample": 44
+   },
+   "plans passing the screen": 298,
+   "plans by attempt": {
+    "0": 289,
+    "1": 7,
+    "2": 2
+   },
+   "no plan: last screen result": {
+    "no plan in the reused build": 1
+   },
+   "plan characters, median": 849.5,
+   "plan steps, median": 8.0,
+   "plan code-token 4-gram overlap, median (accepted)": 0.0,
+   "covered where Qwen alone fails": [
+    186,
+    204
+   ],
+   "Qwen greedy on row problems (with the plan, alone)": [
+    236,
+    95
+   ],
+   "Qwen greedy on the planned problems (with the plan, alone)": [
+    236,
+    95
+   ],
+   "Qwen greedy with the plan where Qwen alone fails": [
+    152,
+    204
+   ],
+   "Qwen alone cross-entropy, median (runbook rows, E4B rows)": [
+    0.3819,
+    0.2655
+   ],
+   "similarity to E4B's row, median (difflib)": 0.2966,
+   "identical to E4B's row": 0,
+   "similarity to Qwen alone's greedy, median (problems Qwen alone passes, fails)": [
+    null,
+    null
+   ],
+   "identical to Qwen alone's greedy": 0,
+   "median Qwen tokens (runbook rows, E4B rows, shortest E4B rows)": [
+    420.0,
+    403.0,
+    334.0
+   ]
+  }
+ },
  "wide": {
   "1": {
    "problems": 705,
@@ -4198,6 +4863,8 @@
    "dce": -0.24976,
    "ce": 3.38315,
    "ce base": 3.63291,
+   "entropy": 2.73185,
+   "entropy base": 2.07119,
    "rows": 43
   },
   "rb_c|2|prose": {
@@ -4205,6 +4872,8 @@
    "dce": -0.24514,
    "ce": 3.38777,
    "ce base": 3.63291,
+   "entropy": 2.7344,
+   "entropy base": 2.07119,
    "rows": 43
   },
   "rb_c|3|prose": {
@@ -4212,6 +4881,8 @@
    "dce": -0.23016,
    "ce": 3.40276,
    "ce base": 3.63291,
+   "entropy": 2.66444,
+   "entropy base": 2.07119,
    "rows": 43
   },
   "sft|1|story": {
@@ -4462,6 +5133,8 @@
    "dce": -0.52963,
    "ce": 3.22152,
    "ce base": 3.75116,
+   "entropy": 2.55586,
+   "entropy base": 1.83039,
    "rows": 24
   },
   "rb_c|2|story": {
@@ -4469,6 +5142,8 @@
    "dce": -0.5697,
    "ce": 3.18146,
    "ce base": 3.75116,
+   "entropy": 2.55162,
+   "entropy base": 1.83039,
    "rows": 24
   },
   "rb_c|3|story": {
@@ -4476,6 +5151,8 @@
    "dce": -0.52467,
    "ce": 3.22649,
    "ce base": 3.75116,
+   "entropy": 2.54322,
+   "entropy base": 1.83039,
    "rows": 24
   },
   "sft|1|code": {
@@ -4726,6 +5403,8 @@
    "dce": -0.20239,
    "ce": 1.65493,
    "ce base": 1.85731,
+   "entropy": 1.13472,
+   "entropy base": 0.82554,
    "rows": 57
   },
   "rb_c|2|code": {
@@ -4733,6 +5412,8 @@
    "dce": -0.19455,
    "ce": 1.66277,
    "ce base": 1.85731,
+   "entropy": 1.12786,
+   "entropy base": 0.82554,
    "rows": 57
   },
   "rb_c|3|code": {
@@ -4740,6 +5421,8 @@
    "dce": -0.18335,
    "ce": 1.67396,
    "ce base": 1.85731,
+   "entropy": 1.09053,
+   "entropy base": 0.82554,
    "rows": 57
   },
   "sft_self_s|1|prose": {

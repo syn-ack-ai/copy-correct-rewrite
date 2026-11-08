@@ -41,6 +41,11 @@ untaught prose). Rank-64 LoRA on the MLPs of layers 9-27, the same rows, order a
   xk     sft_c on the keep rows with the cross-fitted selective translator (fit_xk): two translators, each fitted on one half of the row
          problems (E4B's shortest solutions where Qwen fails: learn; Qwen's own passing solutions where it succeeds: keep, KL to Qwen alone over
          the whole reply + a gate penalty; the fragile set oversampled), and each row's KL target comes from the one that never saw it
+  sft_es / sft_lr  188 (user 11-08: "queue the matched-loss test"): sft that stops once the running training CE (50 steps) reaches XL_STOP_CE
+         (default 0.24, Qwen's final level on E4B's text), and sft at a tenth of the learning rate for the full run: is the Gemma student's damage
+         to untaught text the over-fitting of familiar text?
+  sft_b_s  187 (user 11-08: two-way E4B <-> E2B, "including the 600 trained correctors for both"): sft_b on the shortest rows (the cross-model
+         corrector's KL over the span), the same rows and dose as sft_s / sft_c_s / sft_self_s
   sft_self_s  185 (user 11-08: "yes, run the SFT + KL-to-original baseline on colab"): sft_self on the shortest rows: the same rows and dose as
          sft_s / sft_c_s, with 1.0 x KL(original Qwen || student) over the written span instead of the corrector's target (no translator)
   rb_c   184b (user 11-08: "yes, add rb_c to 184"): sft_c on the runbook rows (rb + the old control translator's KL over the span): does the
@@ -62,7 +67,7 @@ TRAIN_FILES = ("test.jsonl", "test2.jsonl", "test3.jsonl", "test4.jsonl"); HELD_
 NTRAIN, NHELD = (6, 4) if SMALL else (10 ** 6, 10 ** 6); NSAMP = 2 if SMALL else int(os.environ.get("XL_NSAMP", "4")); TEMP = 0.8
 EPOCHS = float(os.environ.get("XL_EPOCHS", "2")); LAM = float(os.environ.get("XL_LAMBDA", "1.0")); RANK = 64; LR = 3e-4
 SD_EMA, SD_MASK, SD_MAXNEW = 0.02, 3, 32 if SMALL else int(os.environ.get("XL_SD_MAXNEW", "512"))
-ARMS = ("sft", "sft_b", "sft_c", "kl_b", "sft_self", "sdft", "opd_b", "opd_c", "sft_s", "sft_c_s", "mix_c", "opd_cf", "rw_cf", "mix_cf", "rb", "sft_k", "sft_ck", "xk", "rb_c", "sft_self_s"); ROWS = OD.parent / "xl_rows.jsonl"; BASE = OD.parent / "xl_base.json"
+ARMS = ("sft", "sft_b", "sft_c", "kl_b", "sft_self", "sdft", "opd_b", "opd_c", "sft_s", "sft_c_s", "mix_c", "opd_cf", "rw_cf", "mix_cf", "rb", "sft_k", "sft_ck", "xk", "rb_c", "sft_self_s", "sft_b_s", "sft_es", "sft_lr"); ROWS = OD.parent / "xl_rows.jsonl"; BASE = OD.parent / "xl_base.json"
 ROWS_SHORT = OD.parent / "xl_rows_short.jsonl"; SHORT = OD.parent / "xl_short.json"   # 179a: shortest-correct rows (sft_s, sft_c_s = sft, sft_c on them)
 NSHORT = 2 if SMALL else int(os.environ.get("XL_NSHORT", "4"))   # shared by every seed's folder
 CFN = "xb_control_cf"; CF_GATE = OD.parent / "xl_cf_gate.json"; ROWS_RW = OD.parent / "xl_rows_rw.jsonl"; RW = OD.parent / "xl_rw.json"   # 181: per seed folder
@@ -76,8 +81,8 @@ RB_ASK = ("Here is a programming problem and a correct Python 3 solution.\n\n{pr
           "idea, the algorithm, the edge cases and the input and output format. Do not write code.\n\nPlan:\n1.")
 RB_USE = "\n\nA plan for the solution:\n{plan}\n\nWrite the complete solution in one Python code block, following the plan.\n\n```python\n"
 RB_OVER = 0.10   # leakage screen: the most of the solution's code-token 4-grams (comments and strings removed) a plan may contain
-RB_PROBE = int(os.environ.get("XL_RB_PROBE", "0"))
-RB_PLANS = os.environ.get("XL_RB_PLANS", "")   # 186: reuse the accepted plans of an earlier build (xl_rb_gens.jsonl) instead of asking E4B again   # review 11-08: > 0 = plans only, on the first RB_PROBE rows (the yield check before the full build)
+RB_PROBE = int(os.environ.get("XL_RB_PROBE", "0"))   # review 11-08: > 0 = plans only, on the first RB_PROBE rows (the yield check before the full build)
+RB_PLANS = os.environ.get("XL_RB_PLANS", "")   # 186: reuse the accepted plans of an earlier build (xl_rb_gens.jsonl) instead of asking E4B again
 ROWS_K = OD.parent / "xl_rows_k.jsonl"; KJ = OD.parent / "xl_k.json"; FRAG = OD.parent / "xl_fragile.json"   # 184: keep rows; the fragile set (from 179/181)
 XKN = "xb_control_xk"; XKJ = OD.parent / "xl_xk.json"; XK_KW, XK_GW, XK_FRW = 1.0, 0.1, 3   # 184: keep-row KL weight, gate penalty, fragile oversampling
 XK_MIN = float(os.environ.get("XL_XK_MIN", "0.05"))   # 184: the cross-fit translator's least lead over the old control on unseen learn rows (nats)
@@ -572,7 +577,9 @@ def runbook():
             if o and cut(t) and r["id"] not in best:
                 best[r["id"]] = (cut(t), kind)
         log(f"runbook round {rnd}: problems {len(todo)} | passing solutions so far {len(best)} of {len(rows)}", round(time.time() - t0), "s")
-    q = base["qwen"]; ids = [r["id"] for r in rows]; e4 = {r["id"]: r["reply"] for r in rows}; ctx = {r["id"]: r["ctx"] for r in rows}
+    if SMALL and not best:                                               # review 11-08 (186): the small pass checks the plumbing only; E4B's rows stand in
+        best = {r["id"]: (r["reply"], "small fallback, E4B row") for r in rows}
+    q = base["qwen"]; ids = [r["id"] for r in rows]; e4 = {r["id"]: r["reply"] for r in rows}; ctx = {r["id"]: r["ctx"] for r in rows}   # q: the build's Qwen run (for another student, its own alone run is in xl_eval)
     ql = lambda t: len(B.tq(t, add_special_tokens=False)["input_ids"])  # noqa: E731
     qg, sh, BG = {}, {}, ROWS.parent / "xl_build_gens.jsonl"            # Qwen alone's own greedy (the build's generations) and the shortest E4B rows, when present
     if BG.exists():
@@ -610,6 +617,28 @@ def runbook():
             "identical to Qwen alone's greedy": sum(1 for d in D_ if d[8]),
             "median Qwen tokens (runbook rows, E4B rows, shortest E4B rows)": [med([d[5] for d in D_]), med([d[6] for d in D_]), med([d[9] for d in D_ if d[9] is not None])]}
     json.dump(info, open(RB, "w"), indent=1); log("runbook rows:", json.dumps(info), round(time.time() - t0), "s"); print("RB_DONE", flush=True)
+
+
+def build_from_gens():
+    """187, direction E2B -> E4B: the rows are another model's own greedy passing answers (XL_ROWS_FROM: an E2B session's xl_gens_qwen.jsonl, the
+    student alone, deterministic) on the build's row problems, fenced and cut at their own first ```, with the original prompts. Writes
+    xl_rows.jsonl and xl_base.json over the session's copies (rows, row source and rows sha replaced; everything else kept). Model-written only"""
+    base = json.load(open(BASE)); want = set(base["rows"]); trp = {p["id"]: p for p in load(TRAIN_FILES, ("easy", "medium", "hard"), 10 ** 6)}
+    cut = lambda t: t[:t.index("```") + 3] if "```" in t else None  # noqa: E731
+    got = {}; ok = None
+    if os.environ.get("XL_ROWS_PASS"):                                   # 187a: the re-scored pass flags (the evaluation's per-problem results), not the first-pass ones
+        ok = json.load(open(os.environ["XL_ROWS_PASS"]))["per problem"]["qwen"]
+    for l in open(os.environ["XL_ROWS_FROM"]):
+        g = json.loads(l)
+        if g["id"] in want and (ok.get(g["id"]) if ok is not None else g["pass"]) and cut(g["text"]):
+            got[g["id"]] = cut(g["text"])
+    order = [i for i in base["rows"] if i in got]; assert order, "no passing answers to build rows from"
+    with open(ROWS, "w") as fh:
+        for i in order:
+            fh.write(json.dumps({"id": i, "ctx": trp[i]["prompt"], "reply": got[i], "source": "greedy", "difficulty": trp[i]["difficulty"]}) + "\n")
+    nb = {**base, "rows": order, "row source": {i: "greedy" for i in order}, "rows sha": hashlib.sha256(ROWS.read_bytes()).hexdigest(), "rows from": os.environ["XL_ROWS_FROM"],
+          "rows of the build (E4B)": len(want)}
+    json.dump(nb, open(BASE, "w")); log("rows from", os.environ["XL_ROWS_FROM"], ":", len(order), "of", len(want), "row problems"); print("ROWS_FROM_DONE", flush=True)
 
 
 def build_keep():
@@ -749,8 +778,8 @@ def fit_xk():
 
 def train_arm(arm):
     from peft import LoraConfig, get_peft_model
-    assert arm in ARMS; kind = {"sft_s": "sft", "sft_c_s": "sft_c", "opd_cf": "opd_c", "rw_cf": "sft", "mix_cf": "mix_c", "rb": "sft", "sft_k": "sft", "sft_ck": "sft_c", "xk": "sft_c", "rb_c": "sft_c", "sft_self_s": "sft_self"}.get(arm, arm)   # 179a short rows; 181 refit translator, rewrite rows; 182 runbook rows; 184 keep rows
-    RP = ROWS_SHORT if arm in ("sft_s", "sft_c_s", "sft_self_s") else ROWS_RW if arm == "rw_cf" else ROWS_RB if arm in ("rb", "rb_c") else ROWS_K if arm in ("sft_k", "sft_ck", "xk") else ROWS; sub = RP in (ROWS_RW, ROWS_RB)
+    assert arm in ARMS; kind = {"sft_s": "sft", "sft_c_s": "sft_c", "opd_cf": "opd_c", "rw_cf": "sft", "mix_cf": "mix_c", "rb": "sft", "sft_k": "sft", "sft_ck": "sft_c", "xk": "sft_c", "rb_c": "sft_c", "sft_self_s": "sft_self", "sft_b_s": "sft_b", "sft_es": "sft", "sft_lr": "sft"}.get(arm, arm)   # 179a short rows; 181 refit translator, rewrite rows; 182 runbook rows; 184 keep rows
+    RP = ROWS_SHORT if arm in ("sft_s", "sft_c_s", "sft_self_s", "sft_b_s") else ROWS_RW if arm == "rw_cf" else ROWS_RB if arm in ("rb", "rb_c") else ROWS_K if arm in ("sft_k", "sft_ck", "xk") else ROWS; sub = RP in (ROWS_RW, ROWS_RB)
     B = XB.Bridge("bridge"); t0 = time.time(); rows = [json.loads(l) for l in open(RP)]; base = json.load(open(BASE))
     want = base["rows sha"] if RP == ROWS else json.load(open({ROWS_SHORT: SHORT, ROWS_RW: RW, ROWS_RB: RB, ROWS_K: KJ}[RP]))["sha"]
     same = ({r["id"] for r in rows} <= set(base["rows"]) and len(rows) > 0) if sub else {r["id"] for r in rows} == set(base["rows"])   # 181, 182: rewrite and runbook rows cover a subset
@@ -788,9 +817,10 @@ def train_arm(arm):
         eos_ = set(XC.stop_ids(B.mS, B.tq)); pad_ = B.tq.pad_token_id if B.tq.pad_token_id is not None else B.tq.eos_token_id; n_skip = 0
     opt = torch.optim.AdamW(params, lr=LR, weight_decay=0.0); sched = lambda s_: min(1.0, (s_ + 1) / 15) * (0.1 + 0.9 * 0.5 * (1 + math.cos(math.pi * s_ / steps)))  # noqa: E731
     log("arm", arm, "| rows", len(enc), "of", len(rows), "| steps", steps, "(epochs", EPOCHS, ") | lambda", LAM, "| layers", lay, "rank", RANK); hist = []
+    STOP = float(os.environ.get("XL_STOP_CE", "0.24")) if arm == "sft_es" else None; LRX = 0.1 if arm == "sft_lr" else 1.0; ran = steps   # 188
     for step in range(steps):
         for g_ in opt.param_groups:
-            g_["lr"] = LR * sched(step)
+            g_["lr"] = LR * LRX * sched(step)
         opt.zero_grad(set_to_none=True); vals = []
         if onp:                                                          # 174c / 179: on-policy samples; the teacher: sdft's EMA in context, or the bridged / control-bridged base
             rs_ = [rows[int(order[step * XB.ACC + a_])] for a_ in range(XB.ACC)]; B.tq.padding_side = "left"; pm.eval()
@@ -853,13 +883,15 @@ def train_arm(arm):
             with torch.no_grad():
                 for p_, e_ in ema.values():
                     e_.mul_(1 - SD_EMA).add_(p_.detach(), alpha=SD_EMA)
+        if STOP is not None and step >= 49 and float(np.mean([h[0] for h in hist[-50:]])) <= STOP:   # 188: matched final loss (50-step mean, as Qwen's last50 0.24; a 10-step mean dips by chance)
+            ran = step + 1; log(arm, "stops at step", step, "of", steps, "| running cross-entropy (50 steps)", round(float(np.mean([h[0] for h in hist[-50:]])), 4), "<=", STOP); break
         if step % 50 == 0 or step == steps - 1:
             h_ = np.mean(hist[-50:], 0); log(arm, "step", step, "of", steps, "| cross-entropy on E4B's solution", round(float(h_[0]), 4), "| KL to the target", round(float(h_[1]), 4), "(prompt", round(float(h_[2]), 4), "reply", round(float(h_[3]), 4), ") | target's own cross-entropy", round(float(h_[4]), 4), round(time.time() - t0), "s")
     assert np.isfinite(np.array(hist[-10:])).all(), "loss is not finite"
     d = OD / f"xl_{arm}"; pm.save_pretrained(str(d), selected_adapters=["default"])
     if onp:
         log(arm, ": samples too short to train on", n_skip)
-    json.dump({"arm": arm, "seed": SEED, "rows": len(enc), "steps": steps, "epochs": EPOCHS, "lambda": LAM, "rank": RANK, "layers": lay, "first50": [float(v) for v in np.mean(hist[:50], 0)],
+    json.dump({"arm": arm, "seed": SEED, "rows": len(enc), "steps": steps, "steps run": ran, "lr scale": LRX, "stop ce": STOP, "last50 ce at stop": float(np.mean([h[0] for h in hist[-50:]])), "epochs": EPOCHS, "lambda": LAM, "rank": RANK, "layers": lay, "first50": [float(v) for v in np.mean(hist[:50], 0)],
                "last50": [float(v) for v in np.mean(hist[-50:], 0)]}, open(d / "train.json", "w"))
     if torch.cuda.is_available():
         log(arm, "peak GPU memory", round(torch.cuda.max_memory_allocated() / 2 ** 30, 2), "GB")   # review 11-08 (the 24 GB 4090)
@@ -961,7 +993,7 @@ def evaluate():
              ("opd_b", "opd_c"), ("opd_b", "sft"), ("opd_c", "sft"), ("opd_b", "sdft"), ("opd_c", "sdft"), ("opd_b", "sft_b"), ("opd_c", "sft_c"), ("mix_c", "sft"), ("mix_c", "opd_c"), ("mix_c", "sft_c"), ("sft_s", "sft"), ("sft_c_s", "sft_c"),
              ("opd_cf", "opd_c"), ("opd_cf", "sft"), ("opd_cf", "mix_c"), ("rw_cf", "sft"), ("rw_cf", "opd_cf"), ("rw_cf", "opd_c"), ("mix_cf", "mix_c"), ("mix_cf", "sft"), ("mix_cf", "opd_cf"),
              ("rb", "sft"), ("rb", "sft_s"), ("rb", "rw_cf"), ("rb", "mix_cf"), ("rb", "opd_cf"),
-             ("sft_c_s", "sft_s"), ("sft_k", "sft_s"), ("sft_ck", "sft_c_s"), ("sft_ck", "sft_k"), ("xk", "sft_ck"), ("xk", "sft_k"), ("xk", "sft_s"), ("rb_c", "rb"), ("rb_c", "sft_c_s"), ("rb_c", "sft_s"), ("rb_c", "sft_ck"), ("sft_self_s", "sft_s"), ("sft_self_s", "sft_c_s")]
+             ("sft_c_s", "sft_s"), ("sft_k", "sft_s"), ("sft_ck", "sft_c_s"), ("sft_ck", "sft_k"), ("xk", "sft_ck"), ("xk", "sft_k"), ("xk", "sft_s"), ("rb_c", "rb"), ("rb_c", "sft_c_s"), ("rb_c", "sft_s"), ("rb_c", "sft_ck"), ("sft_self_s", "sft_s"), ("sft_self_s", "sft_c_s"), ("sft_b_s", "sft_c_s"), ("sft_b_s", "sft_s"), ("sft_b_s", "sft_self_s"), ("sft_c", "sft_self"), ("sft_b", "sft_self")]
     out["paired between arms (a only, b only, exact p)"] = {f"{a} vs {b}": {"trained": XC.mcnemar(res[a], res[b], trained), "held": XC.mcnemar(res[a], res[b], held)} for a, b in pairs if a in res and b in res}
     hs = [(i, t) for i, t in base["e4b held solutions"].items() if i in byid]; C = {a: [] for a in ["qwen"] + names}   # review: a continuous held measure
     with torch.no_grad():
@@ -984,4 +1016,4 @@ def evaluate():
 
 
 if __name__ == "__main__":
-    {"build": build, "build_short": build_short, "precheck": precheck, "train": lambda: train_arm(sys.argv[2]), "evaluate": evaluate, "fit_cf": fit_cf, "rewrite": rewrite, "runbook": runbook, "build_keep": build_keep, "fit_xk": fit_xk}[sys.argv[1]]()
+    {"build": build, "build_short": build_short, "precheck": precheck, "train": lambda: train_arm(sys.argv[2]), "evaluate": evaluate, "fit_cf": fit_cf, "rewrite": rewrite, "runbook": runbook, "build_keep": build_keep, "fit_xk": fit_xk, "build_from_gens": build_from_gens}[sys.argv[1]]()

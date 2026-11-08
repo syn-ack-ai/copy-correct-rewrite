@@ -146,6 +146,8 @@ def encode(tg, tq, r):
     eq = tq(SBOS + text, return_offsets_mapping=True, add_special_tokens=False); qids = eq["input_ids"]   # 186: the student's BOS (none for Qwen)
     qs = np.array([s_ for s_, _ in eq["offset_mapping"]]) - len(SBOS); qe = np.array([e for _, e in eq["offset_mapping"]]) - len(SBOS)
     j = np.clip(np.searchsorted(gend, qe, side="right") - 1, 0, len(gids) - 1)
+    if gids == qids:                                                     # 187a: one tokenizer for both (Gemma to Gemma): the alignment is the identity
+        j = np.arange(len(qids))
     rs = np.nonzero(qs >= cb)[0]
     if len(rs) == 0 or rs[0] < 1:
         return None

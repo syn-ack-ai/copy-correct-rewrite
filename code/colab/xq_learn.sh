@@ -14,7 +14,8 @@ INC=(--include "s3/*" --include "xq/*.py" --include "xq/*.npy" --include "xq/*.j
 [ "$STAGE" = cf ] && INC+=(--include "xq/x1/s${XB_SEED:?}/xb_*" --include "xq/learn/*" --include "xq/prior/s${XB_SEED}/*")   # 181: the 179 adapters of this seed, when uploaded
 [ "$STAGE" = short ] && INC+=(--include "xq/learn/*")   # 179a: the short-rows build reads the rows, baselines and the build's generations
 [ "$STAGE" = build ] && INC+=(--include "xq/x1/s1/xb_*")   # the gate check uses seed 1's translators
-[ "$STAGE" = e2b ] && INC+=(--include "xq/learn/*")   # 186: rows, baselines, short rows, and the runbook build's plans (xl_rb_gens.jsonl)
+[ "$STAGE" = e2b ] && INC+=(--include "xq/learn/*" --include "xq/prior_e2b/s${XB_SEED:?}/xl_sft/*")   # 186: rows, baselines, short rows, and the runbook build's plans (xl_rb_gens.jsonl)
+[ "$STAGE" = two ] && INC+=(--include "xq/learn/*" --include "xq/prior_e2b/s${XB_SEED:?}/xl_sft/*")   # 187: rows, baselines, short rows, E2B's own answers; the E2B sft anchor from 186
 [ "$STAGE" = rbuild ] && INC+=(--include "xq/learn/*")   # 182: the runbook rows read the rows, baselines, the build's generations and the short rows
 [ "$STAGE" = rb ] && INC+=(--include "xq/learn/*" --include "xq/prior/s${XB_SEED:?}/xl_sft/*")   # 182: the runbook rows and this seed's 179 sft (the anchor); no translators (review 11-08)
 [ "$STAGE" = rb ] && [[ "${XL_ARMS:-rb}" == *_c* ]] && INC+=(--include "xq/x1/s${XB_SEED}/xb_control.pt")   # 184c: rb_c needs the seed's control translator
@@ -29,15 +30,24 @@ if [ "$STAGE" = e2b ]; then   # 186: E2B is the student; E4B only lends its toke
     uv pip install -q --python /opt/e4b/bin/python compressed-tensors || exit 1
     python $B/dequant.py /content/me2b_qat_ct /content/me2b_qat > $O/dequant_e2b.log 2>&1 && grep DEQUANT_OK $O/dequant_e2b.log || { echo "E2B dequantize FAILED"; tail -n 20 $O/dequant_e2b.log; exit 1; }
   fi
-elif [ ! -f /content/me4b_qat/config.json ]; then
+elif [ ! -f /content/me4b_qat/config.json ]; then   # (187: STAGE=two also loads E2B, below)
   hf download google/gemma-4-E4B-it-qat-w4a16-ct --revision 6cd26aaa2357fb2bad8c51699a7558a4d1a965bb --local-dir /content/me4b_qat_ct > /dev/null || { echo "QAT download failed"; exit 1; }
   uv pip install -q --python /opt/e4b/bin/python compressed-tensors || exit 1
   python $B/dequant.py /content/me4b_qat_ct /content/me4b_qat > $O/dequant_e4b.log 2>&1 && grep DEQUANT_OK $O/dequant_e4b.log || { echo "dequantize FAILED"; exit 1; }
 fi
-[ "$STAGE" = e2b ] || [ -f /content/mqwen/config.json ] || hf download Qwen/Qwen3-1.7B --local-dir /content/mqwen > /dev/null || { echo "Qwen download failed"; exit 1; }
+if [ "$STAGE" = two ] && [ ! -f /content/me2b_qat/config.json ]; then   # 187: both Gemma models, full weights (each is the other's teacher)
+  hf download google/gemma-4-E2B-it-qat-w4a16-ct --revision 971342c08f607aa7779983f6b5289778b5d271a7 --local-dir /content/me2b_qat_ct > /dev/null || { echo "E2B QAT download failed"; exit 1; }
+  uv pip install -q --python /opt/e4b/bin/python compressed-tensors || exit 1
+  python $B/dequant.py /content/me2b_qat_ct /content/me2b_qat > $O/dequant_e2b.log 2>&1 && grep DEQUANT_OK $O/dequant_e2b.log || { echo "E2B dequantize FAILED"; tail -n 20 $O/dequant_e2b.log; exit 1; }
+fi
+[ "$STAGE" = e2b ] || [ "$STAGE" = two ] || [ -f /content/mqwen/config.json ] || hf download Qwen/Qwen3-1.7B --local-dir /content/mqwen > /dev/null || { echo "Qwen download failed"; exit 1; }
 [ -f /content/xb/s3_ids.npy ] || python $B/mix_merge.py /content/inx/s3 /content/inx/xq /content/xb || { echo "merge failed"; exit 1; }
 cp /content/inx/xq/xq_questions.jsonl /content/xb/
 export XB_TEACHER=/content/me4b_qat XB_STUDENT=/content/mqwen XC_DATA=/content/lcb XB_SIZE=0.03 XB_HARM=0.5 PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True; cd $B
+if [ "$STAGE" = two ]; then   # 187: XL_DIR=e2b: E4B teaches E2B; XL_DIR=e4b: E2B teaches E4B (rows = E2B's own passing answers)
+  case "${XL_DIR:?}" in e2b) export XB_TEACHER=/content/me4b_qat XB_STUDENT=/content/me2b_qat ;; e4b) export XB_TEACHER=/content/me2b_qat XB_STUDENT=/content/me4b_qat XL_ROWS_FROM=/content/inx/xq/learn/xl_gens_e2b_alone.jsonl XL_ROWS_PASS=/content/inx/xq/learn/xl_eval_e2b_alone.json ;; *) echo "XL_DIR must be e2b or e4b"; exit 1 ;; esac
+  export XB_SBOS="<bos>" XL_NO_KEPT_POOL=1
+fi
 [ "$STAGE" = e2b ] && export XB_TEACHER=/content/me4b_tok XB_TEACHER_TOK_ONLY=1 XB_STUDENT=/content/me2b_qat XB_SBOS="<bos>" XL_NO_KEPT_POOL=1 XL_RB_PLANS=/content/inx/xq/learn/xl_rb_gens.jsonl   # 186
 run() { local lg=$1; shift; echo "$(date +%H:%M) $lg"; "$@" > $O/xl_$lg.log 2>&1 || { echo "$lg FAILED"; tail -n 25 $O/xl_$lg.log; exit 1; }
         grep -E "pools|solved|Qwen alone|E4B greedy|arm |step [0-9]+ of|passed|self-check|short rows|refit|rewrite|plans|runbook|first plan" $O/xl_$lg.log | tail -n 6 | cut -c1-300; }
@@ -47,6 +57,7 @@ setup() {   # $1 = folder; a clean out/ with the data links (and the seed's tran
     cp /content/inx/xq/learn/xl_rows_short.jsonl /content/inx/xq/learn/xl_short.json $1/ 2>/dev/null; fi   # 179a, when built
   if [ "$STAGE" = rb ]; then cp /content/inx/xq/learn/xl_rows.jsonl /content/inx/xq/learn/xl_base.json /content/inx/xq/learn/xl_rows_rb.jsonl /content/inx/xq/learn/xl_rb.json $1/ || return 1
     cp /content/inx/xq/learn/xl_rows_short.jsonl /content/inx/xq/learn/xl_short.json $1/ 2>/dev/null; cp /content/inx/xq/x1/s$XB_SEED/xb_control.pt $1/out/ 2>/dev/null; true; fi   # 182: sft and rb need no translators; 184c: rb_c the control
+  if [ "$STAGE" = two ]; then cp /content/inx/xq/learn/xl_rows.jsonl /content/inx/xq/learn/xl_base.json /content/inx/xq/learn/xl_rows_short.jsonl /content/inx/xq/learn/xl_short.json $1/ || return 1; fi   # 187
   if [ "$STAGE" = e2b ]; then cp /content/inx/xq/learn/xl_rows.jsonl /content/inx/xq/learn/xl_base.json /content/inx/xq/learn/xl_rows_short.jsonl /content/inx/xq/learn/xl_short.json $1/ || return 1; fi   # 186: not the Qwen runbook rows
   if [ "$STAGE" = rbuild ]; then cp /content/inx/xq/learn/xl_rows.jsonl /content/inx/xq/learn/xl_base.json $1/ || return 1
     cp /content/inx/xq/learn/xl_build_gens.jsonl /content/inx/xq/learn/xl_rows_short.jsonl /content/inx/xq/learn/xl_short.json $1/ 2>/dev/null; true; fi
@@ -126,14 +137,17 @@ elif [ "$STAGE" = rb ]; then   # 182: arm rb on the runbook rows (184c: XL_ARMS=
   cp $XB_DIR/out/xl_eval_s$XB_SEED.json $O/xl_eval_${TAG}_s$XB_SEED.json; cp $XB_DIR/out/xl_gens_*.jsonl $O/; tail -n 2 $O/xl_eval.log | head -n 1 | cut -c1-3000
   echo "$(date +%H:%M) XQL_RB_DONE"
 elif [ "$STAGE" = e2b ]; then   # 186 (user 11-08: "replicate with e2b"): Gemma 4 E2B as the coding student, arms sft, sft_s, rb (E2B re-solves with the Qwen build's plans), then the drift from the original E2B
-  ARMS="${XL_ARMS:-sft sft_s rb}"; ARMS="${ARMS//,/ }"; echo "E2B arms: $ARMS"
+  : "${XB_SEED:?}"; ARMS="${XL_ARMS:-sft sft_s rb}"; ARMS="${ARMS//,/ }"; echo "E2B arms: $ARMS (seed $XB_SEED)"   # review 11-08: the seed is required
   setup /content/xl_e2b_small || exit 1; export XB_SMALL=1
-  run runbook_small python xlearn.py runbook || exit 1
+  case " $ARMS " in *" rb "*) run runbook_small python xlearn.py runbook || exit 1 ;; esac   # 188: the runbook only when arm rb runs
   for a in $ARMS; do run train_${a}_small python xlearn.py train $a || exit 1; done
   run eval_small python xlearn.py evaluate || exit 1
   unset XB_SMALL; setup /content/xl_e2b || exit 1
-  run runbook python xlearn.py runbook || exit 1; cp $XB_DIR/xl_rows_rb.jsonl $XB_DIR/xl_rb.json $XB_DIR/xl_rb_gens.jsonl $O/; cat $XB_DIR/xl_rb.json; echo
-  NRBR=$(python -c "import json; print(json.load(open('$XB_DIR/xl_rb.json'))['rows'])"); [ "$NRBR" -gt 0 ] || { ARMS="${ARMS//rb/}"; echo "no E2B runbook rows: rb skipped"; }
+  case " $ARMS " in *" rb "*)
+    run runbook python xlearn.py runbook || exit 1; cp $XB_DIR/xl_rows_rb.jsonl $XB_DIR/xl_rb.json $XB_DIR/xl_rb_gens.jsonl $O/; cat $XB_DIR/xl_rb.json; echo
+    NRBR=$(python -c "import json; print(json.load(open('$XB_DIR/xl_rb.json'))['rows'])"); [ "$NRBR" -gt 0 ] || { ARMS="${ARMS//rb/}"; echo "no E2B runbook rows: rb skipped"; } ;;
+  esac
+  P=/content/inx/xq/prior_e2b/s$XB_SEED; case " $ARMS " in *" sft "*) ;; *) [ -f $P/xl_sft/adapter_model.safetensors ] && cp -r $P/xl_sft $XB_DIR/out/xl_sft && echo "prior adapter: sft (186 E2B seed $XB_SEED, the in-session anchor)" ;; esac   # 188
   for a in $ARMS; do run train_$a python xlearn.py train $a || exit 1; cp -r $XB_DIR/out/xl_$a $O/xl_${a}_e2b_s$XB_SEED; done
   run eval python xlearn.py evaluate || exit 1
   cp $XB_DIR/out/xl_eval_s$XB_SEED.json $O/xl_eval_e2b_s$XB_SEED.json; cp $XB_DIR/out/xl_gens_*.jsonl $O/; tail -n 2 $O/xl_eval.log | head -n 1 | cut -c1-3000
@@ -145,8 +159,37 @@ rows = XB.rows_all(AutoTokenizer.from_pretrained(os.environ["XB_TEACHER"]))
 out = [{"kind": r["kind"], "ctx": r["ctx"], "reply": r["reply"]} for r in rows if r["split"] == "held" and r["kind"] in ("prose", "code", "story")]
 json.dump(out, open(sys.argv[1], "w")); print({k: sum(1 for r in out if r["kind"] == k) for k in ("prose", "code", "story")})
 PY
-  export DRIFT_DIR=$XB_DIR/out; run drift python drift.py $XB_STUDENT $XB_DIR/rows_untaught.json /content $O/drift_e2b_s$XB_SEED.json $ARMS || echo "drift FAILED (the results above stand)"; unset DRIFT_DIR
+  DRIFT_DIR=$XB_DIR/out python drift.py $XB_STUDENT $XB_DIR/rows_untaught.json /content $O/drift_e2b_s$XB_SEED.json $(ls -d $XB_DIR/out/xl_*/ | xargs -n1 basename | sed 's/^xl_//') > $O/xl_drift.log 2>&1 && echo "drift done" || { echo "drift FAILED (the results above stand)"; tail -n 5 $O/xl_drift.log; }   # review 11-08: not fatal
   echo "$(date +%H:%M) XQL_E2B_DONE"
+elif [ "$STAGE" = two ]; then   # 187 (user 11-08: two-way E4B <-> E2B, "including the 600 trained correctors for both"): fit both correctors for this student, then the anchor arms, the evaluation and the drift
+  : "${XB_SEED:?}"
+  if [ "$XL_DIR" = e2b ]; then ARMS="${XL_ARMS:-sft_self_s sft_c_s sft_b_s}"; else ARMS="${XL_ARMS:-sft sft_self sft_c sft_b}"; fi; ARMS="${ARMS//,/ }"
+  echo "two-way, student ${XL_DIR}: teacher $XB_TEACHER, student $XB_STUDENT; arms $ARMS (seed $XB_SEED)"
+  fit() { run translator_$1$2 python xbridge.py train $1 || exit 1; grep -E "^.*(calibration|step [0-9]+ of|TRAIN_DONE)" $O/xl_translator_$1$2.log | tail -n 2 | cut -c1-300; }
+  setup /content/xl_two_small || exit 1; export XB_SMALL=1
+  [ "$XL_DIR" = e4b ] && { run rows_small python xlearn.py build_from_gens || exit 1; }
+  fit control _small; fit bridge _small
+  for a in $ARMS; do run train_${a}_small python xlearn.py train $a || exit 1; done
+  run eval_small python xlearn.py evaluate || exit 1
+  unset XB_SMALL; setup /content/xl_two || exit 1
+  [ "$XL_DIR" = e4b ] && { run rows python xlearn.py build_from_gens || exit 1; cp $XB_DIR/xl_rows.jsonl $O/xl_rows_from_e2b.jsonl; cp $XB_DIR/xl_base.json $O/xl_base_from_e2b.json; }
+  fit control ""; fit bridge ""
+  P=/content/inx/xq/prior_e2b/s$XB_SEED
+  if [ "$XL_DIR" = e2b ] && [ -f $P/xl_sft/adapter_model.safetensors ]; then cp -r $P/xl_sft $XB_DIR/out/xl_sft && echo "prior adapter: sft (186 E2B seed $XB_SEED, the in-session anchor)"
+  elif [ "$XL_DIR" = e2b ]; then ARMS="sft $ARMS"; fi
+  for a in $ARMS; do run train_$a python xlearn.py train $a || exit 1; cp -r $XB_DIR/out/xl_$a $O/xl_${a}_${XL_DIR}_s$XB_SEED; done
+  run eval python xlearn.py evaluate || exit 1
+  cp $XB_DIR/out/xl_eval_s$XB_SEED.json $O/xl_eval_two_${XL_DIR}_s$XB_SEED.json; cp $XB_DIR/out/xl_gens_*.jsonl $O/; tail -n 2 $O/xl_eval.log | head -n 1 | cut -c1-3000
+  python - $XB_DIR/rows_untaught.json <<'PY' > $O/xl_untaught_rows.log 2>&1 || echo "untaught rows FAILED"
+import json, sys, os, xbridge as XB
+from transformers import AutoTokenizer
+rows = XB.rows_all(AutoTokenizer.from_pretrained(os.environ["XB_TEACHER"]))
+out = [{"kind": r["kind"], "ctx": r["ctx"], "reply": r["reply"]} for r in rows if r["split"] == "held" and r["kind"] in ("prose", "code", "story")]
+json.dump(out, open(sys.argv[1], "w")); print({k: sum(1 for r in out if r["kind"] == k) for k in ("prose", "code", "story")})
+PY
+  DRIFT_DIR=$XB_DIR/out python drift.py $XB_STUDENT $XB_DIR/rows_untaught.json /content $O/drift_two_${XL_DIR}_s$XB_SEED.json $(ls -d $XB_DIR/out/xl_*/ | xargs -n1 basename | sed 's/^xl_//') > $O/xl_drift.log 2>&1 && echo "drift done" || { echo "drift FAILED (the results above stand)"; tail -n 5 $O/xl_drift.log; }
+  cp $XB_DIR/out/xb_control.pt $O/xb_control_${XL_DIR}_s$XB_SEED.pt; cp $XB_DIR/out/xb_bridge.pt $O/xb_bridge_${XL_DIR}_s$XB_SEED.pt   # the fitted correctors (for later use)
+  echo "$(date +%H:%M) XQL_TWO_DONE"
 else
-  echo "STAGE must be build, arms, short, cf, rbuild, rb or e2b"; exit 1
+  echo "STAGE must be build, arms, short, cf, rbuild, rb, e2b or two"; exit 1
 fi

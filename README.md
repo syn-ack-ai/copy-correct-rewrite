@@ -11,42 +11,41 @@ The study compares ways for a small model to learn from a stronger one under one
 - on-policy distillation;
 - retraining on solutions the student writes itself from the teacher's plan ("runbook rows").
 
-Teacher: Gemma 4 E4B. Students: Qwen3-1.7B on LiveCodeBench contest coding (three seeds) and Gemma 4 E2B on online agent decisions (one
-seed).
+Teacher: Gemma 4 E4B. Students: Qwen3-1.7B and Gemma 4 E2B on LiveCodeBench contest coding (three seeds each), and Gemma 4 E2B on
+online agent decisions (one seed).
 
 ## Key findings
 
-As stated in the paper's abstract:
+From the paper's abstract and results:
 
-- **Copying the teacher's verified answers taught as much as anything tested,** and more than any route through the corrector.
-- **The corrector did not teach more than SFT.** The corrector is a learned network that rewrites the student's hidden states. Used as an
-  anchor, it moved the student about as far as SFT, but toward lower loss on untaught text, and it reversed real damage. It did not protect
-  solved coding problems better than simply training on the shortest correct answers.
+- **Copying the teacher's verified answers taught as much as anything tested.** The shortest correct version did best.
+- **The corrector did not teach more than SFT in any stored form,** even when it read the teacher's states.
+- **To keep what the student knew, a plain KL pull toward the original student worked best.** It matched the best coding results and left
+  untaught text almost unchanged. The corrector anchor did something else: it lowered the student's loss on untaught text, carrying over
+  the corrector's own fit.
 - **On-policy distillation reached its teacher's level and stopped there.**
-- **Student-written solutions fixed the most trained problems, and degraded untaught text in every seed.**
-
-And in the results sections:
-
-- Section 3.2: "The anchor does **not** keep the student closer to its original: on prose its KL is as large as SFT's (0.089 vs 0.074). It
-  moves the student toward much **lower** loss on untaught text".
-- Section 3.6 (online learning, E4B to E2B): "Keep + replay cut drift on untaught text 6.6×." The same section notes: "One seed per setup,
-  and two of the five predictions failed."
+- **Student-written solutions fixed the most trained problems, but sharpened the student and raised its loss on untaught text** in every
+  seed. The corrector anchor reversed that.
+- **With Gemma 4 E2B as the student, every recipe gained less and damaged untaught text far more.** The likely cause is over-fitting text
+  that was already familiar to the student; a matched-loss test (addendum 188) was running at the time of this snapshot.
 
 The paper's limitations (Section 6) and the pre-registration scorecard apply to all of these.
 
-**Status (2026-11-08).** The SFT + KL-to-the-original-student baseline (addendum 185) is in the paper and in `data/runs/xqlSS*`.
-The coding recipes repeated with Gemma 4 E2B as the student (addendum 186, three seeds) were still running; their results will be added.
+**Status (2026-11-08).** In the paper and in this repository: the SFT + KL-to-the-original-student baseline (addendum 185, `data/runs/xqlSS*`)
+and the coding recipes with Gemma 4 E2B as the student (addendum 186, `data/runs/xqlE2B*`). Running at the time of this snapshot, with
+their designs and predictions in `PREREGISTRATION.md`: two-way E4B and E2B with freshly fitted Gemma correctors (187), the matched-loss
+E2B test (188), and online-test arm D (183).
 
 ## Repository layout
 
 ```
 paper.md                 the paper
-figures/                 the eight figures (PNG), made by scripts/figures.py
+figures/                 the nine figures (PNG), made by scripts/figures.py
 scripts/                 collect.py, figures.py, drift.py, to_html.py (paper data and rendering)
 data/
   results.json           every number the paper uses (scripts/collect.py)
   drift.json             drift from the original student on untaught text, per arm and seed (scripts/drift.py)
-  drift_rbc.json         the same for arm rb_c
+  drift_ss.json          the same for arm sft_self_s (185)
   online/                online test (E4B to E2B): run curves and the 240-point gate, per setup
   runs/<run>/            evaluation and build summaries, laid out as the original run folders (see "Run folders")
   rows/<run>/            training rows: id, reply, source, difficulty (problem statements removed)
@@ -55,7 +54,7 @@ code/
   transfer/              experiment code (Python)
   colab/                 session scripts for Colab G4 runs
   dreamer/               launchers and runners for the local RTX 4090
-PREREGISTRATION.md       the pre-registration log, addenda 165-185 (designs and predictions written before each run)
+PREREGISTRATION.md       the pre-registration log, addenda 165-188 (designs and predictions written before each run)
 MANIFEST.md              every file, its size and its purpose
 LICENSE                  Apache License 2.0
 ```
@@ -69,7 +68,7 @@ LICENSE                  Apache License 2.0
 | File | Purpose |
 |---|---|
 | `code/transfer/xbridge.py` | The state corrector across tokenizers (E4B to Qwen3-1.7B): alignment, fitting, the suite, graft and LoRA forms (addenda 166-176) |
-| `code/transfer/xlearn.py` | The coding recipes and their evaluation: build, shortest rows, refit corrector, rewrites, runbook rows, keep rows, all arms (174-185) |
+| `code/transfer/xlearn.py` | The coding recipes and their evaluation: build, shortest rows, refit corrector, rewrites, runbook rows, keep rows, the E2B student, all arms (174-188) |
 | `code/transfer/xcode.py` | LiveCodeBench loading, generation and the sandboxed hidden-test scorer; the wide coding test (172, 178) |
 | `code/transfer/online.py` | The online test, E4B to E2B (170, 183), and earlier same-tokenizer experiments in the same file |
 | `code/transfer/rsi.py` | The attempt-verify-update loop pilot (177) |
@@ -81,9 +80,9 @@ LICENSE                  Apache License 2.0
 `online.py` is the version that ran the online test on the 4090. The copy in the original repository later gained a replication-seed
 offset and a per-point gate output (a diff of 4 added and 7 removed lines).
 
-The code is a snapshot of 2026-11-08. It also holds paths that the paper does not report: arms `sft_k`, `sft_ck`, `xk` (addendum 184) and
-`sft_self_s` (185) in `xlearn.py`, and `STAGE=e2b` in `xq_learn.sh` (addendum 186, Gemma 4 E2B as the coding student, not run at the time
-of the snapshot).
+The code is a snapshot of 2026-11-08. It also holds paths that the paper does not report: arms `sft_k`, `sft_ck`, `xk` (addendum 184),
+`sft_b_s` (187) and `sft_es`, `sft_lr` (188) in `xlearn.py`, and `STAGE=two` in `xq_learn.sh` (187); 187 and 188 were running at the time
+of the snapshot.
 
 ## How the experiments ran
 
@@ -96,7 +95,8 @@ of the snapshot).
   copies of the code, the agent and text rows, the training rows, and trained correctors and adapters, so the scripts cannot be rerun as
   they are. Public inputs were pinned:
   LiveCodeBench `code_generation_lite` at revision `0fe84c3912ea0c4d4a78037083943e8f0c4dd505`, `google/gemma-4-E4B-it-qat-w4a16-ct` at
-  revision `6cd26aaa2357fb2bad8c51699a7558a4d1a965bb` (dequantised with `dequant.py`), and `Qwen/Qwen3-1.7B`.
+  revision `6cd26aaa2357fb2bad8c51699a7558a4d1a965bb` and `google/gemma-4-E2B-it-qat-w4a16-ct` at revision
+  `971342c08f607aa7779983f6b5289778b5d271a7` (both dequantised with `dequant.py`), and `Qwen/Qwen3-1.7B`.
 - **Scoring.** Every generated program ran against all hidden tests in a fresh interpreter with CPU, memory and time limits (`xcode.py`;
   on the 4090 inside a bubblewrap sandbox).
 
@@ -114,6 +114,8 @@ of the snapshot).
 | `xqlRB0` | The runbook-row build: E4B's plans and the student's solutions (182) |
 | `xqlRB1`-`xqlRB3` | Runbook rows (182) |
 | `xqlRBC1`-`xqlRBC3` | Runbook rows + self-anchor (184c) |
+| `xqlSS1`-`xqlSS3` | Shortest rows + KL to the original student (185) |
+| `xqlE2B1`-`xqlE2B3` | Gemma 4 E2B as the student: SFT, shortest rows, runbook rows (E2B re-solves with the plans from `xqlRB0`), drift (186) |
 | `xqw1`-`xqw3` | LoRAs trained on agent turns, tested on all easy and medium LiveCodeBench problems (178) |
 | `xqd1`-`xqd3` | Corrector forms against dose-matched SFT on agent replies (169d) |
 
@@ -121,10 +123,11 @@ Arm keys in the data and their names in the figures (`scripts/figures.py`):
 
 | Key | Name |
 |---|---|
-| `qwen` | the untrained student (Qwen3-1.7B alone) |
+| `qwen` | the untrained student alone (Qwen3-1.7B; Gemma 4 E2B in the `xqlE2B*` folders) |
 | `sft` | SFT on teacher text |
 | `sft_s` | SFT, shortest correct |
 | `sft_c_s` | SFT, shortest + self-anchor |
+| `sft_self_s` | SFT, shortest + KL to the original student (185) |
 | `opd_c` / `opd_cf` | On-policy (weak teacher) / (refit teacher) |
 | `mix_c` / `mix_cf` | SFT + on-policy (weak teacher) / (refit teacher) |
 | `rw_cf` | Rewrites via corrector |
