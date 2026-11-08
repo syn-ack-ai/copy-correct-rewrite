@@ -6,7 +6,7 @@ Benjamin Babeshkin
 
 ## Abstract
 
-A small agent model trained by a stronger one must gain the teacher's skill without losing its own. Under one pre-registered protocol, with Gemma 4 E4B teaching Qwen3-1.7B and Gemma 4 E2B on contest coding and E2B on online agent decisions, we compare copying verified answers (SFT), anchoring, on-policy distillation and retraining on self-written solutions. Copying taught as much as anything, best with the shortest answers. Within the Gemma family it also forgot: E4B's text is familiar to E2B, and training on it sharpened the student and raised its loss on untaught text. A KL pull toward the original student removed that damage without costing held-out solves. Self-written solutions also sharpened, and on-policy distillation stopped at its teacher's level. A learned state corrector did not store the teacher's knowledge in an adapter; as an anchor it matched training on its own fitting text, and as an online teacher it gave the best net result, reproduced in a second seed.
+A small agent model trained by a stronger one must gain the teacher's skill without losing its own. Under one pre-registered protocol, Gemma 4 E4B teaches Qwen3-1.7B and Gemma 4 E2B on contest coding, and E2B on a stream of agent decisions. We compare copying the teacher's verified answers (SFT), SFT with a pull toward a reference model (anchoring), on-policy distillation and retraining on the student's own solutions. Copying taught as much as any route, best with the shortest answers. With E2B as the student, copying also caused forgetting: E4B's text is familiar to E2B, and training on it made E2B more confident but worse at predicting text it never trained on. A KL pull toward the original student removed that damage without costing held-out solves. The student's own solutions did the same harm, and on-policy distillation stopped at its teacher's level. A state corrector, a small network that corrects the student's hidden states, did not store the teacher's knowledge in an adapter: fed E4B's states, it taught no better than fed the student's own. As an anchor, its gain came from the text it was fitted on; as an online teacher with keep and replay, it fixed the most decisions net of those it broke, in two seeds.
 
 ## 1 Introduction
 
@@ -15,10 +15,8 @@ Submissions to the Gemma 4 Developer Agent competition (Kaggle, 2026) are Gemma 
 To test whether a teacher's internal states can be stored, we built a *state corrector*, inspired by Swarm Telepathy (Alabdulkareem et al., 2026), which moves one model's KV cache into a frozen receiver of another family. Ours reads hidden states and writes a correction into the student's residual stream; it also served as an anchor and online teacher. Our contributions:
 
 - Copying verified answers teaches as much as any route, best with the shortest.
-- Same-family copying forgets: E2B lost far more on untaught text than Qwen.
-- A KL pull toward the original student removes that damage at no cost.
-- Self-written solutions move the student least yet sharpen it.
-- On-policy distillation reaches its teacher's level and stops there.
+- Same-family copying causes forgetting; a KL pull toward the original student removes it at no cost.
+- Self-written solutions move the student least yet make it overconfident; on-policy distillation stops at its teacher.
 - Teacher states do not store: the corrector fed E4B's states taught no better than fed the student's own.
 - Code, results, 40,000+ graded answers and pre-registrations (Appendix A).
 
@@ -115,7 +113,7 @@ Table 2. Drift from the original Qwen on untaught text, three-seed means.
 
 Figure 4. Drift on untaught human prose, one point per seed.
 
-Neither anchor costs teaching (Table 3); the corrector anchor's value shows where training does real damage (Sections 4.3 and 4.6).
+Neither anchor costs teaching (Table 3); the corrector anchor's value shows where training does damage (Sections 4.3 and 4.6).
 
 Table 3. Coding with the two anchors, three seeds pooled (held of 564).
 
@@ -174,7 +172,7 @@ Table 6. Online learning, one seed per setup (D: two). Gate (220 held decisions)
 | D Corrector + keep + replay | **0.751** | 0.017 | 0.041 | 23 / **4** |
 | D, seed 2 | 0.749 | 0.017 | 0.021 | 23 / 6 |
 
-Keep + replay hurt the plain teacher (A to C: 11 fewer fixed) but helped the corrector teacher (B to D: 7 more). D had the best net gate result (+19, against +14 for A) and beat C on paired decisions (17 vs 6, p = 0.035); its untaught drift peaked at 0.05 near item 450, then fell. D's second seed reproduced it: the two differ on 6 of 220 decisions. Seed 3 of D and seeds 2-3 of C were still running, with a self-corrector teacher and a blend matched to the corrector's pull, akin to a teacher assistant (Mirzadeh et al., 2019).
+Keep + replay hurt the plain teacher (A to C: 11 fewer fixed) but helped the corrector teacher (B to D: 7 more). D had the best net gate result (+19, against +14 for A) and beat C on paired decisions (17 vs 6, p = 0.035); its untaught drift peaked at 0.05 near item 450, then fell. D's second seed reproduced it, differing on 6 of 220 decisions. Seed 3 of D and seeds 2-3 of C were still running, with a self-corrector teacher and a blend matched to the corrector's pull, akin to a teacher assistant (Mirzadeh et al., 2019).
 
 ![Online curves](figures/fig7_online.png)
 
@@ -184,11 +182,11 @@ Figure 7. Held cross-entropy to the teacher and drift on untaught text over the 
 
 **For training small agents.** Train on the teacher's shortest verified answers with a KL pull toward the original student, which within the family removed copying's damage at no cost; check the teacher's fit before on-policy distillation; and measure forgetting on held-out human text, with entropy, since loss on teacher text rewards imitation.
 
-**Where the corrector helps.** As an anchor it delivers its fitting text with less change; as an online teacher with keep + replay it gave the best net result in both its seeds; live, it brought the student closest to the teacher. Eight held problems neither E4B nor the untrained student solved were solved in all three seeds (six where E4B's answer hit the cap), hinting at two-way composition, extending CALM (Bansal et al., 2024).
+**Where the corrector helps.** As an anchor it delivers its fitting text with less change; as an online teacher with keep + replay it gave the best net result in both its seeds; live, it brought the student closest to the teacher.
 
 **Limitations.** Two coding students and one teacher; the online test has one seed per setup (D two). Pooled p-values are descriptive; differences under about 10 held solves are within noise. The KL pull ran at λ = 1 and the multi-task control only for E2B; a strength sweep was still running. A 768-token cap cannot separate forgetting from verbosity (lost answers ran long, 27% cut at the cap); a longer-cap re-grade is planned. Correctors had 600 fitting steps; longer ones gave mostly worse LoRAs (one seed).
 
-**Ethical considerations.** Fitting and drift prose and stories come from locally held books, not released. Model-written code ran only in resource-limited, sandboxed interpreters.
+**Ethical considerations.** Fitting and drift prose and stories come from locally held books, not released. Model-written code ran only in sandboxed interpreters.
 
 ## 6 Related Work
 
@@ -211,8 +209,6 @@ R. Agarwal, N. Vieillard, Y. Zhou, P. Stanczyk, S. Ramos, et al. (2023). On-Poli
 A. Alabdulkareem, I. Tenison, Y. Zhang, Y. Zhu, B. Katz, and D. Gutfreund (2026). Swarm Telepathy: Prefill-Free KV-Cache Transfer Across Families. arXiv:2610.15095. https://arxiv.org/abs/2610.15095
 
 Y. Bansal, P. Nakkiran, and B. Barak (2021). Revisiting Model Stitching to Compare Neural Representations. arXiv:2106.07682. https://arxiv.org/abs/2106.07682
-
-R. Bansal, B. Samanta, S. Dalmia, N. Gupta, S. Vashishth, et al. (2024). LLM Augmented LLMs: Expanding Capabilities through Composition. arXiv:2401.02412. https://arxiv.org/abs/2401.02412
 
 N. Boizard, K. El Haddad, C. Hudelot, and P. Colombo (2024). Towards Cross-Tokenizer Distillation: the Universal Logit Distillation Loss for LLMs. arXiv:2402.12030. https://arxiv.org/abs/2402.12030
 
