@@ -3,6 +3,9 @@
 Code, results and pre-registrations for a paper-track writeup in the Kaggle "Gemma 4 Developer Agent" competition. The paper is
 [`paper.md`](paper.md).
 
+Author: Benjamin Babeshkin. The study was carried out with Claude Opus 5.5 (Anthropic) as an AI research assistant; the paper's Appendix B
+says who did what.
+
 The study compares ways for a small model to learn from a stronger one under one pre-registered protocol:
 
 - supervised fine-tuning (SFT) on the teacher's verified answers;
@@ -11,8 +14,8 @@ The study compares ways for a small model to learn from a stronger one under one
 - on-policy distillation;
 - retraining on solutions the student writes itself from the teacher's plan ("runbook rows").
 
-Teacher: Gemma 4 E4B. Students: Qwen3-1.7B and Gemma 4 E2B on LiveCodeBench contest coding (three seeds each), and Gemma 4 E2B on
-online agent decisions (one seed).
+Teacher: Gemma 4 E4B. Students: Qwen3-1.7B and Gemma 4 E2B on LiveCodeBench contest coding (three seeds each), E4B and E2B teaching
+each other with freshly fitted Gemma correctors (three seeds each way), and Gemma 4 E2B on online agent decisions.
 
 ## Key findings
 
@@ -26,21 +29,25 @@ From the paper's abstract and results:
 - **On-policy distillation reached its teacher's level and stopped there.**
 - **Student-written solutions fixed the most trained problems, but sharpened the student and raised its loss on untaught text** in every
   seed. The corrector anchor reversed that.
-- **With Gemma 4 E2B as the student, every recipe gained less and damaged untaught text far more.** The likely cause is over-fitting text
-  that was already familiar to the student; a matched-loss test (addendum 188) was running at the time of this snapshot.
+- **Within the Gemma family, plain copying damaged untaught text far more, and every anchor removed that damage** (three seeds, both
+  directions). When E4B learned from E2B's answers, the anchors also raised held-out coding (+20 to +26 problems over SFT, p ≤ 0.03).
+  The teacher's states added nothing over the student's own: cross-model and self-corrector anchors tied.
+- **As an online teacher with keep + replay, the corrector gave the best net result on agent decisions** (one seed; replication and
+  controls running at the time of this snapshot).
 
 The paper's limitations (Section 6) and the pre-registration scorecard apply to all of these.
 
-**Status (2026-11-08).** In the paper and in this repository: the SFT + KL-to-the-original-student baseline (addendum 185, `data/runs/xqlSS*`)
-and the coding recipes with Gemma 4 E2B as the student (addendum 186, `data/runs/xqlE2B*`). Running at the time of this snapshot, with
-their designs and predictions in `PREREGISTRATION.md`: two-way E4B and E2B with freshly fitted Gemma correctors (187), the matched-loss
-E2B test (188), and online-test arm D (183).
+**Status (2026-11-08, evening).** In the paper and in this repository: 185 (`data/runs/xqlSS*`), 186 (`xqlE2B*`), 187 (`xqlTW2b*`: E4B
+teaches E2B; `xqlTW4b*`: E2B teaches E4B) and the online test's setup D, seed 1 (183, `data/online/`). Running at the time of this snapshot,
+with designs and predictions in `PREREGISTRATION.md`: online D seeds 2-3 with self-corrector and blend controls and setup C seeds 2-3 (189),
+a multi-task control for the corrector anchor (190) and a matched-loss test (188). Addendum 191 (per-user grafts) is planned for a separate
+paper.
 
 ## Repository layout
 
 ```
 paper.md                 the paper
-figures/                 the nine figures (PNG), made by scripts/figures.py
+figures/                 the figures (PNG), made by scripts/figures.py: seven in the paper, two extra (see MANIFEST.md)
 scripts/                 collect.py, figures.py, drift.py, to_html.py (paper data and rendering)
 data/
   results.json           every number the paper uses (scripts/collect.py)
@@ -54,7 +61,7 @@ code/
   transfer/              experiment code (Python)
   colab/                 session scripts for Colab G4 runs
   dreamer/               launchers and runners for the local RTX 4090
-PREREGISTRATION.md       the pre-registration log, addenda 165-188 (designs and predictions written before each run)
+PREREGISTRATION.md       the pre-registration log, addenda 165-191 (designs and predictions written before each run)
 MANIFEST.md              every file, its size and its purpose
 LICENSE                  Apache License 2.0
 ```
@@ -77,12 +84,12 @@ LICENSE                  Apache License 2.0
 | `code/transfer/dequant.py` | Dequantises the 4-bit QAT checkpoint to bf16 |
 | `code/transfer/build_mix.py`, `mix_merge.py` | Build and merge the mixed rows (prose, code, stories, questions) the corrector was fitted on (165) |
 
-`online.py` is the version that ran the online test on the 4090. The copy in the original repository later gained a replication-seed
-offset and a per-point gate output (a diff of 4 added and 7 removed lines).
+`online.py` is the current version. It adds addendum 189's seed offset (ON_SEED), the self-corrector and blend teachers, and a per-point
+gate output; with ON_SEED unset and the original teachers it trains exactly as the version that ran 170 and 183.
 
 The code is a snapshot of 2026-11-08. It also holds paths that the paper does not report: arms `sft_k`, `sft_ck`, `xk` (addendum 184),
-`sft_b_s` (187) and `sft_es`, `sft_lr` (188) in `xlearn.py`, and `STAGE=two` in `xq_learn.sh` (187); 187 and 188 were running at the time
-of the snapshot.
+`sft_es`, `sft_lr` (188) and `sft_mt_s`, `sft_self_mt_s` (190) in `xlearn.py`, and the online test's control teachers (189) in `online.py`;
+188, 189 and 190 were running at the time of the snapshot.
 
 ## How the experiments ran
 
@@ -115,6 +122,9 @@ of the snapshot.
 | `xqlRB1`-`xqlRB3` | Runbook rows (182) |
 | `xqlRBC1`-`xqlRBC3` | Runbook rows + self-anchor (184c) |
 | `xqlSS1`-`xqlSS3` | Shortest rows + KL to the original student (185) |
+| `xqlTW2b1`-`xqlTW2b3` | E4B teaches E2B with freshly fitted Gemma correctors: shortest rows + KL to the original, + self-anchor, + cross-model anchor (187) |
+| `xqlTW4b1`-`xqlTW4b3` | E2B teaches E4B on E2B's 148 passing answers: SFT, KL to the original, self-anchor, cross-model anchor (187) |
+| `xqr2`, `xqr3` | Fit logs of Qwen's per-seed correctors (the paper's recipe), read by `collect.py` |
 | `xqlE2B1`-`xqlE2B3` | Gemma 4 E2B as the student: SFT, shortest rows, runbook rows (E2B re-solves with the plans from `xqlRB0`), drift (186) |
 | `xqw1`-`xqw3` | LoRAs trained on agent turns, tested on all easy and medium LiveCodeBench problems (178) |
 | `xqd1`-`xqd3` | Corrector forms against dose-matched SFT on agent replies (169d) |
@@ -123,7 +133,7 @@ Arm keys in the data and their names in the figures (`scripts/figures.py`):
 
 | Key | Name |
 |---|---|
-| `qwen` | the untrained student alone (Qwen3-1.7B; Gemma 4 E2B in the `xqlE2B*` folders) |
+| `qwen` | the untrained student alone (Qwen3-1.7B; Gemma 4 E2B in `xqlE2B*` and `xqlTW2b*`; Gemma 4 E4B in `xqlTW4b*`) |
 | `sft` | SFT on teacher text |
 | `sft_s` | SFT, shortest correct |
 | `sft_c_s` | SFT, shortest + self-anchor |

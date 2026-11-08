@@ -20,7 +20,7 @@ def slug(t):
     return re.sub(r"[^a-z0-9]+", "-", t.lower()).strip("-")[:48]
 
 
-lines = SRC.read_text().split("\n"); out, toc, i, title, sub = [], [], 0, "", ""
+lines = SRC.read_text().split("\n"); out, toc, i, title, sub, byline = [], [], 0, "", "", ""
 while i < len(lines):
     ln = lines[i]
     if not ln.strip():
@@ -29,6 +29,8 @@ while i < len(lines):
         title = ln[2:].strip(); i += 1; continue
     if ln.startswith("*") and not title == "" and not sub and not out:
         sub = ln.strip("*"); i += 1; continue
+    if title and not byline and not sub and not out and not ln.startswith(("#", "*", "!", "|")):
+        byline = ln.strip(); i += 1; continue                           # the author line between the title and the subtitle
     m = re.match(r"^(#{2,3}) (.*)", ln)
     if m:
         lvl, txt = len(m.group(1)), m.group(2); sid = slug(txt)
@@ -42,7 +44,7 @@ while i < len(lines):
         while j < len(lines) and not lines[j].strip():
             j += 1
         cap = ""
-        if j < len(lines) and lines[j].startswith("*Figure"):
+        if j < len(lines) and lines[j].startswith(("*Figure", "Figure ")):   # plain "Figure N." captions (style of arXiv 2610.15095) or the older italic form
             k = j; buf = []
             while k < len(lines) and lines[k].strip():
                 buf.append(lines[k]); k += 1
@@ -84,6 +86,12 @@ while i < len(lines):
         buf.append(lines[i]); i += 1
     if buf:
         p = " ".join(buf); cls = ' class="note"' if p.startswith("*[") else ""
+        if re.match(r"^Table \d+\. ", p):
+            cls = ' class="tcap"'                                       # a table caption, above its table
+        elif re.search(r"\s\(\d+\)$", p) and len(p) < 140:
+            cls = ' class="eq"'                                         # a numbered equation
+        elif re.match(r"^[A-Z][^()]{0,200}\(\d{4}\)\. ", p):
+            cls = ' class="ref"'                                        # a reference entry
         out.append(f"<p{cls}>{inline(p)}</p>")
     else:
         i += 1
@@ -112,6 +120,10 @@ figure{margin:24px calc(-1 * min(9rem, max(0px, (100vw - 46rem) / 2 - 24px))) 26
 .plate{background:var(--plate);border:1px solid var(--rule);border-radius:10px;padding:10px;overflow:hidden}
 .plate img{display:block;width:100%;height:auto}
 figcaption{font-family:var(--sans);font-size:14px;line-height:1.5;color:var(--fg2);margin:10px 4px 0;max-width:46rem}
+.tcap{font-family:var(--sans);font-size:14px;line-height:1.5;color:var(--fg2);margin:22px 0 6px}
+.byline{font-family:var(--sans);font-size:15px;color:var(--fg2);margin:-6px 0 4px}
+.eq{font-family:var(--serif);font-style:italic;text-align:center;margin:14px 0}
+.ref{font-size:14.5px;line-height:1.5;padding-left:1.6em;text-indent:-1.6em;margin:0 0 8px;overflow-wrap:anywhere}
 .tablewrap{overflow-x:auto;margin:6px 0 18px}
 table{border-collapse:collapse;font-family:var(--sans);font-size:14.5px;min-width:60%}
 th{text-align:left;font-weight:600;color:var(--fg2);border-bottom:1.5px solid var(--rule);padding:7px 14px 7px 0;vertical-align:bottom}
@@ -129,6 +141,7 @@ page = f"""<title>Copy, Correct, or Rewrite?</title>
 <main>
 <div class="status"><span>Kaggle Gemma 4 paper track</span><span>Draft, not submitted</span><span>2026-11-08</span></div>
 <h1>{inline(title)}</h1>
+{f'<p class="byline">{inline(byline)}</p>' if byline else ""}
 <p class="sub">{inline(sub)}</p>
 {toc_html}
 {chr(10).join(out)}

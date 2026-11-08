@@ -41,6 +41,7 @@ def log(*a):
 
 
 TRMIX = os.environ.get("ON_TRMIX") == "1"   # addendum 165: translator training on every kind of row (agent, prose, code, story, question)
+SEEDOFF = 1000 * int(os.environ.get("ON_SEED", "0"))   # 11-07 replication seeds (0 = every earlier run; addendum 173)
 TR_W = os.environ.get("ON_TR_W", "agent:0.4,onpolicy:0.2,prose:0.15,code:0.1,question:0.1,story:0.05")   # draw weights per kind (onpolicy: E2B's own sample at an agent point)
 TR_SIZE = float(os.environ.get("ON_TR_SIZE", "0.1")); TR_HARM = float(os.environ.get("ON_TR_HARM", "0.5")); TR_NOISE = float(os.environ.get("ON_TR_NOISE", "0.1")); TR_DROP = float(os.environ.get("ON_TR_DROP", "0.15"))
 
@@ -339,6 +340,8 @@ def gate_lora():
                "probability of the 31B's choice": {k: round(float(np.mean([v[1] for v in vs])), 4) for k, vs in dec.items()},
                "where E4B alone differs: share now on the 31B's choice": {k: round(float(np.mean([v[0] for v in vs if v[2]])), 4) if any(v[2] for v in vs) else None for k, vs in dec.items()}},
            "lora": json.load(open(OD / LNAME / "train.json")), "adapter": LNAME}
+    json.dump({"adapter": LNAME, "decision points (matches the teacher, probability of its choice, student alone differs)": {k: dec[k] for k in arms},
+               "cross-entropy per row": {k: acc[k] for k in arms}}, open(OD / f"gate_{LNAME}_points.json", "w"))   # 11-07: per point, for paired tests
     json.dump(res, open(OD / ("gate_lora.json" if LNAME == "lora_31b" else f"gate_{LNAME}.json"), "w"), indent=1); log(json.dumps(res)); print("GATE_DONE lora", flush=True)
 
 
@@ -958,12 +961,12 @@ def train_behave():
     randdirect = rand's token count (the gap rule's) at random positions, E4B's own distribution as the target (the sham for gapdirect and flip)."""
     from peft import LoraConfig, get_peft_model
     assert BEH in ("all", "alldirect", "gap", "gapdirect", "rand", "randdirect", "flip"), BEH
-    ids, tr, _ = data(); mT, mS, gT, gS = load_models(); tok = X.tok_(); rng = np.random.default_rng(161); torch.manual_seed(161); t0 = time.time(); call, sub = call_ids(tok)
+    ids, tr, _ = data(); mT, mS, gT, gS = load_models(); tok = X.tok_(); rng = np.random.default_rng(161 + SEEDOFF); torch.manual_seed(161 + SEEDOFF); t0 = time.time(); call, sub = call_ids(tok)
     keep = [r for r in tr if not after_submit(ids, r, call, sub)]; log("training points", len(tr), "post-submit left out", len(tr) - len(keep))
     tm, lay = lora_targets(mS); rk = int(os.environ.get("ON_RANK", "16")); llr = float(os.environ.get("ON_LORA_LR", "3e-4"))
     br = bridge_setup(mS) if BRIDGE_TR else None; assert br is not None, "the behaviour loop needs ON_BRIDGE_TR (gap selection and the range log use it)"
     alpha = int(os.environ.get("ON_ALPHA", str(2 * rk)))   # addendum 164 rank sweep: alpha fixed at 32 for rank 64 (alpha / r scaling)
-    torch.manual_seed(161); pm = get_peft_model(mS, LoraConfig(r=rk, lora_alpha=alpha, lora_dropout=0.0, target_modules=tm, bias="none")); params = [p_ for n_, p_ in mS.named_parameters() if "lora_" in n_]   # 11-07: same initialisation in every arm
+    torch.manual_seed(161 + SEEDOFF); pm = get_peft_model(mS, LoraConfig(r=rk, lora_alpha=alpha, lora_dropout=0.0, target_modules=tm, bias="none")); params = [p_ for n_, p_ in mS.named_parameters() if "lora_" in n_]   # 11-07: same initialisation in every arm
     log("behaviour loop, arm", BEH, "| LoRA layers", lay, "rank", rk, "lr", llr, "samples", OPD_K, "x up to", OPD_GEN, "tokens, steps", OPD_STEPS, "| teacher sure >=", BEH_TSURE, "student unsure <", BEH_SUNSURE, "elicitable: top", BEH_RANK)
     mS.gradient_checkpointing_enable(gradient_checkpointing_kwargs={"use_reentrant": False}); eos = eos_of(mS)
     opt = torch.optim.AdamW(params, lr=llr, weight_decay=0.0); sched = lambda s_: min(1.0, (s_ + 1) / 15) * (0.1 + 0.9 * 0.5 * (1 + math.cos(math.pi * s_ / OPD_STEPS)))  # noqa: E731
@@ -1199,7 +1202,7 @@ def train_res():
     the positions and layers; weight RES_W for RES_HOLD steps, then linearly to 0 at RES_END (warm start, then outputs only)."""
     from peft import LoraConfig, get_peft_model
     assert RES_SRC in ("bridge", "control"), RES_SRC
-    ids, tr, _ = data(); mT, mS, gT, gS = load_models(); tok = X.tok_(); rng = np.random.default_rng(161); torch.manual_seed(161); t0 = time.time(); call, sub = call_ids(tok)
+    ids, tr, _ = data(); mT, mS, gT, gS = load_models(); tok = X.tok_(); rng = np.random.default_rng(161 + SEEDOFF); torch.manual_seed(161 + SEEDOFF); t0 = time.time(); call, sub = call_ids(tok)
     keep = [r for r in tr if not after_submit(ids, r, call, sub)]; log("training points", len(tr), "post-submit left out", len(tr) - len(keep))
     br = bridge_setup(mS); Tc = control_setup() if RES_SRC == "control" else None; assert Tc is None or list(Tc.sites) == list(br[0].sites); cap = Cap(mS, RES_LAYERS)
     capS = Cap(mS, X.SRC[ST]) if Tc is not None else None
@@ -1208,7 +1211,7 @@ def train_res():
     assert bas["info"]["k"] == RES_K and bas["info"]["layers"] == RES_LAYERS and (SMALL or bas["info"]["points"] >= 100), f"basis {bas['info']['k']}, {bas['info']['layers']}, {bas['info']['points']} points"
     log("basis:", bas["info"]["points"], "points,", bas["info"]["flip positions"], "flip positions")
     tm, lay = lora_targets(mS); rk = int(os.environ.get("ON_RANK", "16")); llr = float(os.environ.get("ON_LORA_LR", "3e-4"))
-    torch.manual_seed(161); pm = get_peft_model(mS, LoraConfig(r=rk, lora_alpha=2 * rk, lora_dropout=0.0, target_modules=tm, bias="none")); params = [p_ for n_, p_ in mS.named_parameters() if "lora_" in n_]
+    torch.manual_seed(161 + SEEDOFF); pm = get_peft_model(mS, LoraConfig(r=rk, lora_alpha=2 * rk, lora_dropout=0.0, target_modules=tm, bias="none")); params = [p_ for n_, p_ in mS.named_parameters() if "lora_" in n_]
     log("resonance arm, basis", "decision" if DEC else "pca", "source", RES_SRC, "| state layers", RES_LAYERS, "k", RES_K, "weight", RES_W, "held", RES_HOLD, "steps, 0 at step", RES_END, "| LoRA layers", lay, "rank", rk, "lr", llr, "samples", OPD_K, "x up to", OPD_GEN, "tokens, steps", OPD_STEPS)
     mS.gradient_checkpointing_enable(gradient_checkpointing_kwargs={"use_reentrant": False}); eos = eos_of(mS)
     opt = torch.optim.AdamW(params, lr=llr, weight_decay=0.0); sched = lambda s_: min(1.0, (s_ + 1) / 15) * (0.1 + 0.9 * 0.5 * (1 + math.cos(math.pi * s_ / OPD_STEPS)))  # noqa: E731
@@ -1338,6 +1341,12 @@ def gate_mix(name):
 # held points and KL(base || student) on ONL_MIX held untaught rows. Saved as lora_onl_TAG; then gate_lora on the 240 points as every arm.
 ONL_N = 4 if SMALL else int(os.environ.get("ON_ONL_N", "600")); ONL_TEACH = os.environ.get("ON_ONL_TEACH", "direct"); ONL_KEEP = float(os.environ.get("ON_ONL_KEEP", "0"))
 ONL_REPLAY = int(os.environ.get("ON_ONL_REPLAY", "0")); ONL_EVAL = 2 if SMALL else int(os.environ.get("ON_ONL_EVAL", "50")); ONL_HELD = 3 if SMALL else 60; ONL_MIX = 2 if SMALL else 15   # review 11-07: held curve every 50 items (the main learning curve)
+# addendum 189 (user 11-08: "yes, queue D seeds 2-3 and the controls after the gate"): ON_SEED = s > 0 offsets the online run's seeds by 1000 s
+# (stream subset and order, replay and keep picks, LoRA init, samples); two control teachers: control = base E2B corrected by the self-corrector
+# TR_CONTROL (E2B's own source states, as res_passes' control); blend = log_softmax(w * E4B + (1 - w) * base E2B), w set before training so that
+# the blend's pull at the start, KL(base || blend), equals the corrector teacher's, KL(base || bridged E2B), on base E2B's samples at ONL_NCALB
+# decision points outside the stream (blend_alpha).
+ONL_NCALB = 2 if SMALL else int(os.environ.get("ON_ONL_NCALB", "24"))
 
 
 @torch.no_grad()
@@ -1369,11 +1378,55 @@ def mix_kl(mS, pm, ids, rows):
     return float(np.mean(v)) if v else None
 
 
+@torch.no_grad()
+def control_lp(mS, ctl, s_i, c, L):
+    """addendum 189: base E2B corrected by the self-corrector over the L sampled tokens of s_i: E2B's own source states over [s0, end) in a first
+    pass, the correction written in a second (as res_passes' control). The caller turns the student's own change off."""
+    Tc, P, g = ctl; n_ = s_i.shape[1]; s0 = max(1, c - SPAN); end = n_ if REPLY else c
+    g.sl = slice(s0, end); g.out = {}; mS(input_ids=s_i, logits_to_keep=1, use_cache=False); g.sl = None
+    src = torch.cat([g.out[l] for l in X.SRC[ST]], -1); g.out = {}; write(P, Tc, src, s0, end, n_)
+    lp = Fn.log_softmax(mS(input_ids=s_i, logits_to_keep=L + 1, use_cache=False).logits[0, :-1].float(), -1); P.slot.clear(); return lp
+
+
+@torch.no_grad()
+def blend_alpha(mT, mS, gT, br, ids, items, tok, eos):
+    """addendum 189: the blend teacher's weight w. On base E2B's own samples (OPD_K per point, as learn) at the calibration points: per token
+    KL(base || bridged E2B) (the corrector teacher's pull at the start), KL(base || E4B), and KL(base || blend_w) on a 21-point grid of w; w is
+    where the blend's mean pull equals the corrector's (linear interpolation; 1.0 if the corrector pulls at least as far as E4B). Runs before the
+    LoRA exists (torch's seed is reset at the LoRA's creation, so the stream's samples do not depend on it)."""
+    grid = np.linspace(0.0, 1.0, 21); kg = np.zeros(len(grid)); kb = kt = 0.0; nt = 0; torch.manual_seed(189 + SEEDOFF); mS.eval()
+    for r in items:
+        x, c, n, s0 = seq(ids, r); ctx = x[:, :c]
+        if c > CAP - OPD_GEN:
+            ctx = torch.cat([ctx[:, :HEAD], ctx[:, -(CAP - OPD_GEN - HEAD):]], 1)
+        c = ctx.shape[1]; out = opd_sample(mS, ctx, tok, eos); y = out[:, c:]; m, _ = ends_of(y, eos)
+        for k in range(OPD_K):
+            L = int(m[k].sum())
+            if L < 1:
+                continue
+            s_i = torch.cat([ctx, y[k:k + 1, :L]], 1); ld, lb = teacher_both(mT, mS, gT, s_i, c, L, br)
+            l0 = Fn.log_softmax(mS(input_ids=s_i, logits_to_keep=L + 1, use_cache=False).logits[0, :-1].float(), -1); p0 = l0.exp()
+            kb += float((p0 * (l0 - lb)).sum()); kt += float((p0 * (l0 - ld)).sum()); nt += L
+            for j, w in enumerate(grid):
+                kg[j] += float((p0 * (l0 - Fn.log_softmax(w * ld + (1 - w) * l0, -1))).sum())
+            del ld, lb, l0, p0
+    assert nt > 0, "no calibration tokens"
+    kg, kb, kt = kg / nt, kb / nt, kt / nt; up = np.nonzero(kg >= kb)[0]; sg, sb = np.sqrt(np.maximum(kg, 0)), math.sqrt(max(kb, 0.0))   # 189a: sqrt(KL) is near-linear in w
+    if kb >= kg[-1] or len(up) == 0:
+        w = 1.0
+    else:
+        j = int(up[0]); w = float(grid[0]) if j == 0 else float(grid[j - 1] + (sb - sg[j - 1]) / (sg[j] - sg[j - 1]) * (grid[j] - grid[j - 1]))
+    info = {"points": len(items), "tokens": nt, "KL(base || E4B)": round(kt, 5), "KL(base || corrector teacher)": round(kb, 5), "weight": round(w, 4),
+            "KL(base || blend) on the grid": [round(float(v), 5) for v in kg]}
+    log("blend calibration", json.dumps(info)); return w, info
+
+
 def train_online():
     from peft import LoraConfig, get_peft_model
-    assert ONL_TEACH in ("direct", "bridge"); ids, tr, held = data(); mT, mS, gT, gS = load_models(); tok = X.tok_(); call, sub = call_ids(tok); eos = eos_of(mS)
-    rng = np.random.default_rng(170); torch.manual_seed(170); t0 = time.time()
-    keep = [r for r in tr if not after_submit(ids, r, call, sub)]; stream = [keep[i] for i in rng.permutation(len(keep))[:ONL_N]]
+    assert ONL_TEACH in ("direct", "bridge", "control", "blend"); ids, tr, held = data(); mT, mS, gT, gS = load_models(); tok = X.tok_(); call, sub = call_ids(tok); eos = eos_of(mS)
+    rng = np.random.default_rng(170 + SEEDOFF); torch.manual_seed(170 + SEEDOFF); t0 = time.time()   # 189: ON_SEED (0 = every earlier online run)
+    keep = [r for r in tr if not after_submit(ids, r, call, sub)]; perm = rng.permutation(len(keep)); stream = [keep[i] for i in perm[:ONL_N]]
+    calib = [keep[i] for i in perm[ONL_N:ONL_N + ONL_NCALB]] if ONL_TEACH == "blend" else []   # 189: outside the stream
     if SMALL:                                                           # review 11-07: the small pass reaches peak memory (the longest row first)
         stream[0] = max(keep, key=lambda q: min(q["ctx_len"] + min(q["reply_len"], RMAX), CAP))
     hpick = [held[i] for i in np.random.default_rng(11).permutation(len(held))[:ONL_HELD]]   # the first ONL_HELD of the gate's own points
@@ -1381,12 +1434,22 @@ def train_online():
     _, _, qheld = data(kinds=("question", "question_fresh")); qpick = [qheld[i] for i in np.random.default_rng(13).permutation(len(qheld))[:ONL_MIX]]   # review 11-07: untouched by the keep term
     if SMALL:
         mtr = sorted(mtr, key=lambda q: -q["reply_len"])
-    br = bridge_setup(mS) if ONL_TEACH == "bridge" else None
-    tm, lay = lora_targets(mS); torch.manual_seed(161); pm = get_peft_model(mS, LoraConfig(r=16, lora_alpha=32, lora_dropout=0.0, target_modules=tm, bias="none"))
+    br = bridge_setup(mS) if ONL_TEACH in ("bridge", "blend") else None   # 189: blend loads the corrector only to set its weight
+    ctl, alpha, binfo = None, None, None
+    if ONL_TEACH == "control":                                          # 189: the self-corrector as the teacher (hooks on the base layers, before the LoRA)
+        Tc = control_setup(); ctl = (Tc, X.Patch(mS, Tc.sites), Grab(mS, X.SRC[ST])); log("control teacher:", os.environ["TR_CONTROL"])
+    if ONL_TEACH == "blend":
+        assert len(calib) == ONL_NCALB, f"only {len(calib)} of {ONL_NCALB} calibration points outside the stream"   # 189a
+        alpha, binfo = blend_alpha(mT, mS, gT, br, ids, calib, tok, eos)
+        if alpha >= 1.0 and SMALL:
+            log("small pass: blend weight 1.0 on", len(calib), "points; going on (only the full run's calibration decides)")   # 189a: review
+        elif alpha >= 1.0:
+            log("BLEND_IS_TEACHER: the corrector teacher pulls at least as far as E4B; the blend would be the plain teacher (setup C)"); sys.exit(3)
+    tm, lay = lora_targets(mS); torch.manual_seed(161 + SEEDOFF); pm = get_peft_model(mS, LoraConfig(r=16, lora_alpha=32, lora_dropout=0.0, target_modules=tm, bias="none"))
     params = [p_ for n_, p_ in mS.named_parameters() if "lora_" in n_]; mS.gradient_checkpointing_enable(gradient_checkpointing_kwargs={"use_reentrant": False})
     opt = torch.optim.AdamW(params, lr=3e-4, weight_decay=0.0); sched = lambda s_: min(1.0, (s_ + 1) / 15)  # noqa: E731   # review 11-07: flat after warm-up (online: no late damping)
     tag = f"{ONL_TEACH}{'_keep' if ONL_KEEP > 0 else ''}{'_replay' if ONL_REPLAY > 0 else ''}{os.environ.get('ON_BEH_TAG', '')}"
-    log("online: teacher", ONL_TEACH, "| stream", len(stream), "items | keep", ONL_KEEP, "replay every", ONL_REPLAY, "| LoRA layers", lay, "| eval every", ONL_EVAL, "on", len(hpick), "held points and", len(mpick), "untaught rows")
+    log("online: teacher", ONL_TEACH, "| weight", alpha, "| seed offset", SEEDOFF, "| stream", len(stream), "items | keep", ONL_KEEP, "replay every", ONL_REPLAY, "| LoRA layers", lay, "| eval every", ONL_EVAL, "on", len(hpick), "held points and", len(mpick), "untaught rows")
     preq, curve, seen, runs_seen, repos_seen = [], [], [], set(), set()
 
     def evaluate(i):
@@ -1409,6 +1472,12 @@ def train_online():
             with pm.disable_adapter(), torch.no_grad():
                 if ONL_TEACH == "bridge":
                     _, tgt = teacher_both(mT, mS, gT, s_i, c, L, br)
+                elif ONL_TEACH == "control":                            # 189
+                    tgt = control_lp(mS, ctl, s_i, c, L)
+                elif ONL_TEACH == "blend":                              # 189: E4B and base E2B (the adapter is off here)
+                    ld = Fn.log_softmax(mT(input_ids=s_i, logits_to_keep=L + 1, use_cache=False).logits[0, :-1].float(), -1)
+                    l0 = Fn.log_softmax(mS(input_ids=s_i, logits_to_keep=L + 1, use_cache=False).logits[0, :-1].float(), -1)
+                    tgt = Fn.log_softmax(alpha * ld + (1 - alpha) * l0, -1); del ld, l0
                 else:
                     tgt = Fn.log_softmax(mT(input_ids=s_i, logits_to_keep=L + 1, use_cache=False).logits[0, :-1].float(), -1)
             ls = Fn.log_softmax(mS(input_ids=s_i, logits_to_keep=L + 1, use_cache=False).logits[0, :-1].float(), -1); kl = (ls.exp() * (ls - tgt)).sum(-1)
@@ -1441,10 +1510,10 @@ def train_online():
         wins.append({"items": [a, a + len(seg)], "ce student": round(float(seg[:, 0].mean()), 4), "ce base": round(float(seg[:, 1].mean()), 4), "gain over base": round(float((seg[:, 1] - seg[:, 0]).mean()), 4),
                      "first-visit-run items": int(len(fseg)), "gain over base, first-visit-run items": round(float((fseg[:, 1] - fseg[:, 0]).mean()), 4) if len(fseg) else None})
     dd = np.array(dlist) if dlist else np.zeros((0, 2))
-    out = {"teacher": ONL_TEACH, "keep": ONL_KEEP, "replay every": ONL_REPLAY, "items": len(preq), "LoRA layers": lay, "prequential windows (before learning each item)": wins,
+    out = {"teacher": ONL_TEACH, "blend weight": alpha, "blend calibration": binfo, "seed offset": SEEDOFF, "keep": ONL_KEEP, "replay every": ONL_REPLAY, "items": len(preq), "LoRA layers": lay, "prequential windows (before learning each item)": wins,
            "prequential decisions match, first / last half (student, base)": [[round(float(h[:, 0].mean()), 4), round(float(h[:, 1].mean()), 4)] for h in (dd[:len(dd) // 2], dd[len(dd) // 2:]) if len(h)],
            "held curve (bridge down)": curve}
-    name = f"lora_onl_{tag}"; pm.save_pretrained(str(OD / name)); json.dump({"arm": f"online {tag}", "layers": lay, "rank": 16, "lr": 3e-4, "steps": len(preq), "samples": OPD_K, "max_new": OPD_GEN}, open(OD / name / "train.json", "w"))
+    name = f"lora_onl_{tag}"; pm.save_pretrained(str(OD / name)); json.dump({"arm": f"online {tag}", "teacher": ONL_TEACH, "blend weight": alpha, "seed offset": SEEDOFF, "layers": lay, "rank": 16, "lr": 3e-4, "steps": len(preq), "samples": OPD_K, "max_new": OPD_GEN}, open(OD / name / "train.json", "w"))
     json.dump(out, open(OD / f"online_{tag}.json", "w"), indent=1); log(json.dumps(out)); print("ONLINE_DONE", tag, flush=True)
 
 

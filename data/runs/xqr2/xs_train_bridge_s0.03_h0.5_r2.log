@@ -1,0 +1,31 @@
+Loading weights:   0%|          | 0/2076 [00:00<?, ?it/s]Loading weights:  36%|███▋      | 754/2076 [00:00<00:00, 4894.44it/s]Loading weights:  60%|█████▉    | 1244/2076 [00:00<00:00, 1142.70it/s]Loading weights:  71%|███████▏  | 1483/2076 [00:01<00:00, 1202.42it/s]Loading weights: 100%|██████████| 2076/2076 [00:01<00:00, 1808.54it/s]
+Loading weights:   0%|          | 0/311 [00:00<?, ?it/s]Loading weights:  14%|█▍        | 43/311 [00:00<00:00, 427.95it/s]Loading weights:  62%|██████▏   | 193/311 [00:00<00:00, 1056.49it/s]Loading weights: 100%|██████████| 311/311 [00:00<00:00, 1128.78it/s]
+17:54 teacher layers 42 sources [20, 27] | student layers 28 width 2048 write 9 sources (control) [14, 18] | device cuda
+17:54 rows (train): {'agent': 1839, 'prose': 257, 'code': 338, 'question': 672, 'story': 189} | source bridge
+17:54 calibration: 24 rows; spread ratios max/median: source 9.8 write layer 6.4 sites 18.2
+17:54 bridge step 0 cross-entropy (bridged) 3.672 (alone 3.672 ) change size 0.0 harm 0.6938 gate 0.5 | seen {'agent': 0, 'prose': 1, 'code': 0, 'question': 1, 'story': 0} 5 s
+17:54 bridge step 25 cross-entropy (bridged) 1.869 (alone 2.1437 ) change size 0.0067 harm 0.5275 gate 0.4963 | seen {'agent': 23, 'prose': 8, 'code': 7, 'question': 10, 'story': 4} 14 s
+17:54 bridge step 50 cross-entropy (bridged) 1.8741 (alone 2.2442 ) change size 0.0726 harm 0.6636 gate 0.4525 | seen {'agent': 50, 'prose': 20, 'code': 11, 'question': 13, 'story': 8} 24 s
+17:55 bridge step 75 cross-entropy (bridged) 1.3113 (alone 1.9238 ) change size 0.0554 harm 0.5057 gate 0.4063 | seen {'agent': 77, 'prose': 26, 'code': 17, 'question': 23, 'story': 9} 34 s
+17:55 bridge step 100 cross-entropy (bridged) 1.8388 (alone 2.4182 ) change size 0.0754 harm 0.6512 gate 0.3933 | seen {'agent': 101, 'prose': 36, 'code': 24, 'question': 27, 'story': 14} 44 s
+17:55 bridge step 125 cross-entropy (bridged) 1.5715 (alone 2.1411 ) change size 0.0928 harm 0.6032 gate 0.3857 | seen {'agent': 126, 'prose': 42, 'code': 34, 'question': 33, 'story': 17} 53 s
+17:55 bridge step 150 cross-entropy (bridged) 1.3457 (alone 1.7824 ) change size 0.1123 harm 0.5297 gate 0.395 | seen {'agent': 154, 'prose': 47, 'code': 44, 'question': 37, 'story': 20} 64 s
+17:55 bridge step 175 cross-entropy (bridged) 1.4136 (alone 2.0161 ) change size 0.107 harm 0.5809 gate 0.3195 | seen {'agent': 175, 'prose': 56, 'code': 53, 'question': 43, 'story': 25} 72 s
+17:55 bridge step 200 cross-entropy (bridged) 1.6855 (alone 2.4056 ) change size 0.1011 harm 0.6679 gate 0.3116 | seen {'agent': 199, 'prose': 65, 'code': 58, 'question': 46, 'story': 34} 82 s
+17:56 bridge step 225 cross-entropy (bridged) 1.5357 (alone 2.1088 ) change size 0.082 harm 0.6361 gate 0.3179 | seen {'agent': 223, 'prose': 75, 'code': 66, 'question': 50, 'story': 38} 91 s
+17:56 bridge step 250 cross-entropy (bridged) 1.1369 (alone 1.8309 ) change size 0.0869 harm 0.5356 gate 0.3638 | seen {'agent': 255, 'prose': 81, 'code': 72, 'question': 54, 'story': 40} 102 s
+17:56 bridge step 275 cross-entropy (bridged) 1.5993 (alone 2.2226 ) change size 0.0908 harm 0.6379 gate 0.32 | seen {'agent': 277, 'prose': 91, 'code': 80, 'question': 58, 'story': 46} 111 s
+17:56 bridge step 300 cross-entropy (bridged) 1.3535 (alone 2.1666 ) change size 0.0953 harm 0.6002 gate 0.3259 | seen {'agent': 301, 'prose': 96, 'code': 83, 'question': 67, 'story': 55} 120 s
+17:56 bridge step 325 cross-entropy (bridged) 1.4906 (alone 2.1694 ) change size 0.0843 harm 0.592 gate 0.2986 | seen {'agent': 324, 'prose': 104, 'code': 88, 'question': 73, 'story': 63} 129 s
+17:56 bridge step 350 cross-entropy (bridged) 1.8253 (alone 2.1767 ) change size 0.0826 harm 0.8876 gate 0.3121 | seen {'agent': 346, 'prose': 113, 'code': 96, 'question': 80, 'story': 67} 138 s
+17:56 bridge step 375 cross-entropy (bridged) 1.9965 (alone 2.6047 ) change size 0.0788 harm 0.7551 gate 0.281 | seen {'agent': 363, 'prose': 128, 'code': 105, 'question': 84, 'story': 72} 146 s
+17:57 bridge step 400 cross-entropy (bridged) 1.4692 (alone 2.0575 ) change size 0.0955 harm 0.6142 gate 0.3364 | seen {'agent': 387, 'prose': 135, 'code': 110, 'question': 90, 'story': 80} 155 s
+17:57 bridge step 425 cross-entropy (bridged) 1.4572 (alone 2.1413 ) change size 0.099 harm 0.5505 gate 0.3208 | seen {'agent': 407, 'prose': 145, 'code': 118, 'question': 99, 'story': 83} 163 s
+17:57 bridge step 450 cross-entropy (bridged) 1.4675 (alone 2.1634 ) change size 0.0966 harm 0.6971 gate 0.362 | seen {'agent': 433, 'prose': 154, 'code': 123, 'question': 103, 'story': 89} 173 s
+17:57 bridge step 475 cross-entropy (bridged) 1.5334 (alone 2.1412 ) change size 0.0758 harm 0.6371 gate 0.3543 | seen {'agent': 457, 'prose': 165, 'code': 132, 'question': 106, 'story': 92} 183 s
+17:57 bridge step 500 cross-entropy (bridged) 1.1745 (alone 1.8683 ) change size 0.0841 harm 0.5947 gate 0.3579 | seen {'agent': 486, 'prose': 170, 'code': 137, 'question': 111, 'story': 98} 193 s
+17:57 bridge step 525 cross-entropy (bridged) 1.3482 (alone 1.9552 ) change size 0.0663 harm 0.5827 gate 0.351 | seen {'agent': 510, 'prose': 180, 'code': 148, 'question': 115, 'story': 99} 202 s
+17:58 bridge step 550 cross-entropy (bridged) 1.3605 (alone 2.2073 ) change size 0.0794 harm 0.6471 gate 0.3575 | seen {'agent': 531, 'prose': 186, 'code': 157, 'question': 119, 'story': 109} 211 s
+17:58 bridge step 575 cross-entropy (bridged) 1.2258 (alone 2.0975 ) change size 0.0823 harm 0.5457 gate 0.4005 | seen {'agent': 558, 'prose': 195, 'code': 162, 'question': 126, 'story': 111} 221 s
+17:58 bridge step 599 cross-entropy (bridged) 1.2664 (alone 1.8436 ) change size 0.0675 harm 0.5437 gate 0.3793 | seen {'agent': 582, 'prose': 203, 'code': 171, 'question': 130, 'story': 114} 230 s
+TRAIN_DONE bridge

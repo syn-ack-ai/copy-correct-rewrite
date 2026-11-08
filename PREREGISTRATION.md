@@ -1,7 +1,7 @@
-# Pre-registration log: addenda 165-188
+# Pre-registration log: addenda 165-191
 
 This file is an excerpt of the project's running pre-registration log. It holds the addenda from "Addendum 165" through the end of
-"Addendum 188", copied verbatim and in their original order (addendum 180 sits between 177 and 178 in the source). Each addendum states its
+"Addendum 191", copied verbatim and in their original order (addendum 180 sits between 177 and 178 in the source). Each addendum states its
 design and its predictions before the run; results and readings were appended after the run. Addenda without a result were still
 running when this excerpt was taken.
 
@@ -913,3 +913,202 @@ Predictions (pooled over seeds 1-3, against 186's sft for the same seed):
 Success bar for the over-fit explanation: sft_es keeps at least 70% of sft's pooled held gain and cuts prose ΔCE by at least half. If so, "stop at the student's matched loss" goes into the recipe. If sft_es keeps at least 70% of sft's damage, the explanation is wrong and student sensitivity dominates.
 
 Budget: about 12 CU per session, about 40 CU. The sessions start after 187's six sessions have all started, under the same slot counter and the 25 CU guard.
+
+## Addendum 189 (2026-11-08, 10:15; built, in review, not yet run): online setup D replicated, and two controls for it (user: "so the corrector does seem useful in this model"; "yes, queue D seeds 2-3 and the controls after the gate")
+
+Why: setup D (183: the corrector teacher + keep + replay, E4B → E2B) is the first place where the corrector beat the plain teacher on several measures at once. Seed 1:
+
+| Setup | Gate fixed (of 52) | Top choice matches teacher (of 220) | Gate CE | Untaught drift |
+|---|---|---|---|---|
+| A, teacher | 25 | 0.827 | 0.791 | 0.089 |
+| B, corrector | 16 | 0.818 | 0.761 | 0.055 |
+| C, teacher + keep + replay | 14 | 0.800 | 0.783 | 0.014 |
+| D, corrector + keep + replay | 23 | 0.850 | 0.758 | 0.023 (item 550) |
+
+D was also the only setup that changed held-decision agreement during the stream (47-49 of 55 from item 50 on; A, B and C ended at 45). Keep + replay lowered the plain teacher's gate count (25 → 14) but raised the corrector's (16 → 23). All four ran on the same code and libraries (transformers 5.22.2 from 11-07 17:36, before A started). D's result is one seed, and it does not say why D works. Two possibilities: E4B's information reaching the student through the corrector, or just a softer target, closer to the student, which is easier to learn.
+
+Design: dreamer/online_rep_4090.sh, code7 (code5 plus this addendum's online.py). It runs before the RSI pilot, which was paused at 10:10 after 15 minutes of its first arm; 184 waits behind the pilot. Same settings as 170 and 183: rank-16 LoRA, 600 stream items, OPD_K 2, 256 tokens, keep 1.0, replay every 4th item.
+0. **Re-gate** the four seed-1 adapters (A, B, C, D) with per-point output, for exact paired tests on the 52 decisions. The earlier gate files are backed up.
+1. **D, seeds 2 and 3** (ON_SEED=2, 3). The seed offsets the stream's subset and order, the replay and keep picks, the LoRA init and the samples.
+2. **Control teacher, seed 1:** base E2B corrected by the self-corrector gall_e2b. It reads E2B's own states, fitted like gall_e4b on the same data. Does E4B's information matter?
+3. **Blend teacher, seed 1:** log_softmax(w × E4B + (1 − w) × base E2B), with w set before training. On base E2B's samples at 24 points outside the stream, the blend's starting pull KL(base ‖ blend) is matched to the corrector teacher's KL(base ‖ bridged E2B). Is the corrector anything more than a softer target? If the corrector pulls at least as far as E4B, the blend would be setup C, so it is not run; the calibration is still reported.
+
+Order: re-gates, D seed 2, control, blend, D seed 3, each with a small pass first. About 15 hours.
+
+Predictions:
+1. The re-gates reproduce the stored gate counts exactly (25, 16, 14, 23) (85%).
+2. D seeds 2 and 3 each fix at least 19 of 52 gate decisions (60%). The three-seed mean is at least 20 (60%).
+3. D's untaught drift stays at or below 0.035 in seeds 2 and 3 (75%).
+4. The control teacher fixes fewer gate decisions than D seed 1 (60%), and its gate CE is higher than D's 0.758 (60%).
+5. The blend weight w lies between 0.2 and 0.8 (65%).
+6. The blend teacher fixes fewer gate decisions than D seed 1 (55%), with drift within 0.01 of D's (55%).
+
+Success bar for "the corrector is a useful online teacher": D's three-seed mean is at least 20 fixed, D seed 1 beats both control and blend by at least 4 fixed decisions, and D's drift is at most twice C's. If the blend matches D, the paper says that a softer target, not the corrector, drives the gain.
+
+**Amendment 189a (10:40, after code review, before any new training run).** The independent review found no crash bugs and no wrong targets. It confirmed:
+- With ON_SEED unset, the stream and the samples are identical to before.
+- Seeds 2 and 3 vary the stream, the picks, the LoRA init and the samples.
+- The control teacher matches res_passes' control path.
+- The blend's calibration cannot change the stream's samples.
+- Memory stays below the bridge arm's.
+
+Applied, and swapped into code7 before D seed 2 started:
+- The blend's small pass no longer stops the arm when its 2-point calibration gives w = 1. Only the full 24-point calibration decides.
+- The blend weight is interpolated on √KL, which is close to linear in w. Plain interpolation on KL ran slightly low.
+- The full run requires all 24 calibration points.
+
+**Amendment 189b (10:25, before any new training run; user: "yes, queue C seeds 2-3 after D seed 3").** Setup C (E4B's own distribution + keep + replay), seeds 2 and 3, so that D and C both have three seeds. Runner dreamer/online_rep2_4090.sh starts after ONLINE_REP_DONE, with the same code7, settings, small pass and gate. The RSI pilot now waits for ONLINE_REP2_DONE. The waiting pilot and 184 runners were stopped by exact PID and relaunched; the running queue was not touched. The first re-gate (A) reproduced its stored gate exactly: 25 fixed, CE 0.7914.
+
+Predictions:
+1. C fixes at most 19 of 52 in each of seeds 2 and 3 (60%).
+2. C's three-seed mean is at least 4 below D's (55%).
+3. C's untaught drift is at most 0.02 in each seed (75%).
+
+Success bar for "the corrector is a useful online teacher", revised: D's three-seed mean beats C's by at least 4 fixed decisions. On the paired decisions, pooled over seeds, D's wins over C must outnumber its losses with an exact sign test p < 0.1. D seed 1 must also beat both control teachers by at least 4, and D's mean drift must be at most twice C's.
+
+**189, interim (11:05): the re-gates and paired tests at seed 1.** All four re-gates reproduced their stored counts exactly: 25, 16, 14 and 23 (prediction 1 held). Per decision, on the 220 gate decisions:
+
+| Setup | Fixed (of 52 where E2B alone differs) | Broken (of 168 where it agreed) | Net | Matches (of 220) |
+|---|---|---|---|---|
+| A, teacher | 25 | 11 | +14 | 182 |
+| B, corrector | 16 | 4 | +12 | 180 |
+| C, teacher + keep + replay | 14 | 6 | +8 | 176 |
+| D, corrector + keep + replay | 23 | 4 | **+19** | **187** |
+
+Exact sign tests, D against each setup, D-only against the other's only:
+- **vs C:** 13 vs 4 on the 52 (p = 0.049); 17 vs 6 on all 220 (p = 0.035).
+- **vs A:** 7 vs 9 on the 52 (p = 0.80); 14 vs 9 on all 220 (p = 0.41).
+- **vs B:** 10 vs 3 on the 52 (p = 0.09).
+
+Reading: A fixes about as many decisions as D but breaks almost three times as many. Within this seed, D beats C. These p-values only cover the decisions of each trained adapter, not the spread between training runs; the replicated online arms (resdec) ranged 19-25 across seeds. Seeds 2-3 decide.
+
+## Addendum 190 (2026-11-08, 12:05; built, in review, not yet run): the multi-task control for the corrector anchor (user: "run the k on prose also and see what happens... in that case both prose and agentic work/solved should be similar to the correctors")
+
+Why: in 187 (E2B student, seeds 1-2) the self-corrector anchor (sft_c_s) solved the most held problems and turned SFT's damage to untaught prose (ΔCE +0.69) into a gain (−0.61), with softer predictions (entropy +0.85). The corrector was fitted on a text mix: agent replies 0.5, prose 0.15, code 0.15, questions 0.1, stories 0.1, split "train", with the untaught drift rows held out from the same sources. So the anchor's benefit may only be that text arriving by another route. The paper lists the missing multi-task baseline as a limitation, and the Fable review named the confound.
+
+Design: arms sft_mt_s and sft_self_mt_s in xlearn.py.
+- They are sft_s and sft_self_s: the same shortest rows, order and dose.
+- Each step adds MT_N = 2 rows of the corrector's own fitting text, drawn from split "train" by the corrector's kind weights (XB.W), encoded as in the corrector's fit. The loss is cross-entropy on the reply, weight 1.0, the same per-row weight as the coding rows.
+- Mix rows come from their own random stream (seed 190 + s), so the coding order is unchanged.
+- Gemma 4 E2B student, seeds 1-3, three Colab sessions: xq_learn.sh STAGE=e2b with XL_ARMS=sft_mt_s,sft_self_mt_s, launcher dreamer/xq_side21_launch.sh.
+- Each session re-scores 186's sft adapter, which pairs it with 186 and 187 (the 186-to-187 re-score reproduced 0 differences of 487). Drift runs for every adapter in the session.
+- Comparisons: against 187's sft_c_s, sft_b_s, sft_self_s and 186's sft_s, by stored per-problem results.
+
+Queue order (Colab balance 112 CU at 12:00): these sessions start before 188's, which was queued first but had not started. 188 runs if the balance allows.
+
+Predictions (pooled over seeds 1-3; the anchors' 187 values once all seeds are in):
+1. sft_mt_s lowers untaught prose loss: prose ΔCE at most −0.3 (65%).
+2. sft_mt_s softens prose less than the corrector anchors: its entropy change is below +0.4 (70%).
+3. sft_mt_s solves held problems within ±10 of sft_c_s (55%).
+4. sft_self_mt_s moves the student less than sft_mt_s: lower prose KL from the original (80%).
+5. sft_mt_s reaches lower held agent-reply CE than sft_c_s, because it trains on agent replies directly (60%).
+
+Success bar for "the anchor only carries the corrector's fitting text": sft_mt_s solves held problems within ±10 of sft_c_s, with prose ΔCE within 0.15 of sft_c_s's. If both hold, the paper says the corrector anchor's benefit is reproduced by multi-task SFT on the same text. If sft_c_s beats sft_mt_s by more than 10 held problems, or keeps a clearly larger prose gain, the anchor adds something beyond its text.
+
+**Amendment 190a (12:25, after code review, before any run).** The review found no crash bugs and confirmed that held rows cannot leak in: the mix uses only split "train", and evaluation and drift use only split "held". It ran the mix code on the local data with the real tokenizer: the mix counts match the corrector logs, the reply-span cross-entropy scores exactly the reply tokens, and there is one BOS per row.
+
+Applied:
+- **Dose:** MT_N 4 mix rows per step, so 4 × 299 ≈ 1,200 rows. That matches the corrector's own exposure (600 steps × 2). The first design gave half that.
+- **Loss:** the mix rows' mean is divided by MT_N, with weight 1.0.
+- **Clipping:** the share of steps clipped at norm 1.0 is saved for every arm, because the mix rows share the clip with the coding rows.
+- **Pairs:** in-session paired tests for sft_mt_s and sft_self_mt_s against sft and against each other.
+
+xlearn.py was uploaded to HF before the sessions were released.
+
+Caveat recorded: 48 of the 57 held code chunks come from standard-library modules that also have training chunks (different lines), so code drift for the mix arms is a near-domain measure. The corrector saw the same modules. Untaught prose shares no 32-token span with the training text.
+
+**Result 187 (2026-11-08, 12:55; Colab, six sessions, seeds 1-3 each way).** Held solved pooled over three seeds, with exact sign tests on discordant held problems.
+
+Direction 1, E4B teaches E2B (E2B alone 171):
+
+| Arm | Held solved | Fixed per seed (of 151) | Lost per seed (of 205) | Prose KL / ΔCE / Δentropy |
+|---|---|---|---|---|
+| sft | 204 | 119.7 | 15.7 | 0.290 / +0.69 / −0.77 |
+| sft_s (186) | 204 | 123.0 | 15.7 | 0.291 / +0.57 / −0.7 |
+| sft_self_s | 207 | 90.7 | 13.3 | 0.016 / −0.04 / −0.01 |
+| sft_c_s | 216 | 95.3 | 16.0 | 0.326 / −0.60 / +0.83 |
+| sft_b_s | 209 | 99.3 | 15.3 | 0.323 / −0.58 / +0.80 |
+
+Paired held tests: sft_c_s vs sft 46 vs 34 (p = 0.22), vs sft_s 38 vs 26 (p = 0.17), vs sft_b_s 33 vs 26 (p = 0.44); sft_self_s vs sft 41 vs 38.
+
+Direction 2, E2B teaches E4B, on 148 rows (E2B's passing answers; E4B alone 207):
+
+| Arm | Held solved | Lost per seed (of 205) | Prose KL / ΔCE / Δentropy |
+|---|---|---|---|
+| sft | 224 | 20.0 | 0.292 / +0.81 / −0.93 |
+| sft_self | 244 | 11.3 | 0.012 / −0.01 / −0.04 |
+| sft_c | 250 | 13.3 | 0.185 / −0.42 / +0.67 |
+| sft_b | 249 | 12.3 | 0.184 / −0.44 / +0.67 |
+
+Paired held tests: sft_c vs sft 52 vs 26 (p = 0.004); sft_b vs sft 53 vs 28 (p = 0.007); sft_self vs sft 47 vs 27 (p = 0.03); sft_c vs sft_b 30 vs 29.
+
+Corrector fits: the self and cross-model correctors cut loss on their own fitting mix by 27-29% for E2B and E4B (Qwen's: 34-37%), with self and cross within 0.04 in every seed. On E4B's shortest coding rows, every anchor target, including E2B corrected with E4B's states, scored 0.27-0.30 nats, the same as E2B alone. The anchors held the final training loss at 0.11-0.12 (E2B; sft_s 0.08) and 0.09-0.11 (E4B; sft 0.07). Calibration spread at the sites was 45-46 (E2B) and 31-32 (E4B), against 18-19 for Qwen.
+
+Predictions:
+- Direction 1:
+  - sft_b_s within ±10 held of sft_c_s: yes (209 vs 216).
+  - sft_self_s has the lowest prose KL: yes (0.016).
+  - The corrector anchors lower untaught-prose CE more than sft_s: yes (−0.60, −0.58 vs +0.57).
+- Direction 2:
+  - Fewer than 200 rows: yes (148).
+  - E4B sft at most as many held as alone: no (224 vs 207).
+  - sft_b no more held than sft_c: yes (249 vs 250).
+  - Every arm fixes at most 5 per seed: no (9-10).
+
+5 of 7 held. Success bar (direction 2: sft_b beats sft_c by at least 5 held): not met. The cross-model and self anchors tie in both directions.
+
+Reading:
+- In the same family, any anchor removes the damage that plain copying does to untaught text, in both directions and every seed. KL to the original keeps the student in place; the corrector anchors move it toward lower loss.
+- When E4B learns from E2B's familiar answers, the anchors also raise held-out coding significantly (+20 to +26 over SFT). For E2B learning from E4B, the held gain is within noise (at most +12).
+- E4B's states add nothing over the student's own. The anchor's prose gain must come through the corrector's fitting mix (it does not move E2B on the coding rows): addendum 190 tests this.
+
+## Addendum 191 (2026-11-08, 13:40; design, not yet built; for a separate paper): per-user grafts, a small specialist attached to a large frozen model (user: "each user of a larger model could have their own 'graft' a smaller model attached to the larger one"; "yes, write the graft addendum and queue it after... if we publish it, it will be in a different paper")
+
+Question: can a small model that learned a user's private material act as a graft on a large frozen model? The graft would be the small model's states written into the large model through a corrector. The large model should then answer questions about that material, compared with retrieval and with a per-user LoRA, without harming its general skills.
+
+Why: in 187 the E2B→E4B corrector equalled E4B's self-corrector (within 0.02 nats), because E2B knew nothing E4B did not. The graft idea only matters when the small side knows something the large side lacks. Swarm Telepathy (Alabdulkareem et al., 2026) reports zero-shot transfer of specialized knowledge from a fine-tuned sender through a generic mapper; this is the same question for a residual-stream corrector.
+
+**Material: a private library that neither model's weights contain.**
+- E4B writes a fictional Python package, so the text is model-written: about 30 modules of 3-6 pure, stdlib-only, deterministic functions with docstrings and type hints. Each module is seeded by a short domain prompt.
+- Code from the 4090 runs only in the bubblewrap sandbox (XC_SANDBOX=bwrap). A function is kept only if it imports and its E4B-written example calls run deterministically. Names that collide with standard-library or common package names are dropped.
+- Training text: the module sources with docstrings, plus the "seen" example calls with their executed outputs.
+
+**Questions.** Templated; answers come from the code's syntax tree or from execution:
+- (a) which module defines a function;
+- (b) a function's parameters in order;
+- (c) a parameter's default;
+- (d) the return value of a seen call;
+- (e) the return value of an unseen call, written by E4B separately, never in the training text and executed for the answer.
+
+**Scoring.** Exact match of the greedy short answer after normalisation, and the cross-entropy of the correct answer given the question (continuous and more sensitive). Reported per question type.
+
+**Arms.** The large model is E4B, answering closed-book unless stated; seeds 1-3:
+- **A.** E4B alone.
+- **B.** E4B with the defining module's source in the prompt (oracle retrieval; the reference ceiling).
+- **C.** E4B with a per-user LoRA (rank 16) trained on the training text.
+- **D.** The E2B specialist alone: E2B with a LoRA (rank 16) trained on the same text, the same steps.
+- **E.** Zero-shot graft: E4B with 187's generic E2B→E4B corrector for the same seed. That corrector was fitted only on the general mix and never saw the library. It reads the specialist's states, so the specialist feeds the corrector.
+- **F.** Graft control: the same corrector reading base E2B's states.
+
+E against F isolates what the specialist's states carry. Phase 2, run only after phase 1 is read: a corrector fitted on the library text reading the specialist (G), against the same fit reading E4B's own states (G0). This separates knowledge carried by the specialist from the corrector memorising the text.
+
+**General skills.** E4B's CE and KL from E4B alone on the held untaught prose, code and stories, and on held agent replies, for C, E and F (grafts measured with the graft on).
+
+**Cost.** Added memory and time per token for C, E and F.
+
+Predictions (pooled over seeds 1-3, the mean over question types unless stated):
+1. B answers best on every question type (85%).
+2. C beats A on questions (a)-(c) (80%) and gains less on (e) than on (a)-(c) (65%).
+3. D beats A on library questions (80%).
+4. E beats F on answer CE (55%). On accuracy, E beats F by at least 10 points (35%).
+5. E reaches less than C's accuracy gain over A (75%).
+6. E and F both lower E4B's CE on untaught prose, the generic corrector's carry-over (70%); C does not (60%).
+
+Success bar for "a zero-shot graft carries a user's knowledge": E beats F by at least 10 accuracy points pooled, with a paired test p < 0.05 on questions, and E's gain over A is at least half of C's. If E is about equal to F, phase 2 decides whether a fitted graft beats the per-user LoRA.
+
+**Compute and queue.**
+- Runs on the 4090 after the online queue (ONLINE_REP2_DONE). The RSI pilot and 184 wait behind it.
+- The large and small models share the GPU with the per-layer embeddings in CPU memory (TR_PLE_CPU, as online.py); the corrector code (xbridge.py) is to get the same option.
+- Steps: library generation (about 1 h), sandbox check, questions, two LoRAs per seed, the evaluation of A-F. About 6 h.
+- Before queuing: a small CPU test, and an independent review of the generator, the sandbox check and the scoring.
+- Nothing leaves the machine. The library and questions are model-written, from E4B.

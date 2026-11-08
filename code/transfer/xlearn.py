@@ -44,6 +44,10 @@ untaught prose). Rank-64 LoRA on the MLPs of layers 9-27, the same rows, order a
   sft_es / sft_lr  188 (user 11-08: "queue the matched-loss test"): sft that stops once the running training CE (50 steps) reaches XL_STOP_CE
          (default 0.24, Qwen's final level on E4B's text), and sft at a tenth of the learning rate for the full run: is the Gemma student's damage
          to untaught text the over-fitting of familiar text?
+  sft_mt_s / sft_self_mt_s  190 (user 11-08: "run the k on prose also and see what happens... in that case both prose and agentic work/solved
+         should be similar to the correctors"): sft_s / sft_self_s plus, each step, MT_N rows of the corrector's own fitting text (split train,
+         kinds and weights XB.W: agent replies, prose, code, questions, stories) with cross-entropy on the reply: the multi-task baseline for the
+         corrector anchor (does the anchor only carry that text?)
   sft_b_s  187 (user 11-08: two-way E4B <-> E2B, "including the 600 trained correctors for both"): sft_b on the shortest rows (the cross-model
          corrector's KL over the span), the same rows and dose as sft_s / sft_c_s / sft_self_s
   sft_self_s  185 (user 11-08: "yes, run the SFT + KL-to-original baseline on colab"): sft_self on the shortest rows: the same rows and dose as
@@ -67,9 +71,10 @@ TRAIN_FILES = ("test.jsonl", "test2.jsonl", "test3.jsonl", "test4.jsonl"); HELD_
 NTRAIN, NHELD = (6, 4) if SMALL else (10 ** 6, 10 ** 6); NSAMP = 2 if SMALL else int(os.environ.get("XL_NSAMP", "4")); TEMP = 0.8
 EPOCHS = float(os.environ.get("XL_EPOCHS", "2")); LAM = float(os.environ.get("XL_LAMBDA", "1.0")); RANK = 64; LR = 3e-4
 SD_EMA, SD_MASK, SD_MAXNEW = 0.02, 3, 32 if SMALL else int(os.environ.get("XL_SD_MAXNEW", "512"))
-ARMS = ("sft", "sft_b", "sft_c", "kl_b", "sft_self", "sdft", "opd_b", "opd_c", "sft_s", "sft_c_s", "mix_c", "opd_cf", "rw_cf", "mix_cf", "rb", "sft_k", "sft_ck", "xk", "rb_c", "sft_self_s", "sft_b_s", "sft_es", "sft_lr"); ROWS = OD.parent / "xl_rows.jsonl"; BASE = OD.parent / "xl_base.json"
+ARMS = ("sft", "sft_b", "sft_c", "kl_b", "sft_self", "sdft", "opd_b", "opd_c", "sft_s", "sft_c_s", "mix_c", "opd_cf", "rw_cf", "mix_cf", "rb", "sft_k", "sft_ck", "xk", "rb_c", "sft_self_s", "sft_b_s", "sft_es", "sft_lr", "sft_mt_s", "sft_self_mt_s"); ROWS = OD.parent / "xl_rows.jsonl"; BASE = OD.parent / "xl_base.json"
 ROWS_SHORT = OD.parent / "xl_rows_short.jsonl"; SHORT = OD.parent / "xl_short.json"   # 179a: shortest-correct rows (sft_s, sft_c_s = sft, sft_c on them)
 NSHORT = 2 if SMALL else int(os.environ.get("XL_NSHORT", "4"))   # shared by every seed's folder
+MT_N = 4 if not SMALL else 1; MT_W = float(os.environ.get("XL_MT_W", "1.0"))   # 190a: mix rows per step: 4 x 299 = about 1,200 rows, the corrector's own exposure (600 steps x 2); weight of their mean
 CFN = "xb_control_cf"; CF_GATE = OD.parent / "xl_cf_gate.json"; ROWS_RW = OD.parent / "xl_rows_rw.jsonl"; RW = OD.parent / "xl_rw.json"   # 181: per seed folder
 CF_STEPS = 20 if SMALL else int(os.environ.get("XL_CF_STEPS", "600")); CF_LR = float(os.environ.get("XL_CF_LR", "1e-4")); CF_MIN = float(os.environ.get("XL_CF_MIN", "0.05"))
 NRW = 2 if SMALL else int(os.environ.get("XL_NRW", "4")); RW_ROWS = int(os.environ.get("XL_RW_ROWS", "48"))   # rewrite: samples per round; generated rows per batch
@@ -778,8 +783,8 @@ def fit_xk():
 
 def train_arm(arm):
     from peft import LoraConfig, get_peft_model
-    assert arm in ARMS; kind = {"sft_s": "sft", "sft_c_s": "sft_c", "opd_cf": "opd_c", "rw_cf": "sft", "mix_cf": "mix_c", "rb": "sft", "sft_k": "sft", "sft_ck": "sft_c", "xk": "sft_c", "rb_c": "sft_c", "sft_self_s": "sft_self", "sft_b_s": "sft_b", "sft_es": "sft", "sft_lr": "sft"}.get(arm, arm)   # 179a short rows; 181 refit translator, rewrite rows; 182 runbook rows; 184 keep rows
-    RP = ROWS_SHORT if arm in ("sft_s", "sft_c_s", "sft_self_s", "sft_b_s") else ROWS_RW if arm == "rw_cf" else ROWS_RB if arm in ("rb", "rb_c") else ROWS_K if arm in ("sft_k", "sft_ck", "xk") else ROWS; sub = RP in (ROWS_RW, ROWS_RB)
+    assert arm in ARMS; kind = {"sft_s": "sft", "sft_c_s": "sft_c", "opd_cf": "opd_c", "rw_cf": "sft", "mix_cf": "mix_c", "rb": "sft", "sft_k": "sft", "sft_ck": "sft_c", "xk": "sft_c", "rb_c": "sft_c", "sft_self_s": "sft_self", "sft_b_s": "sft_b", "sft_es": "sft", "sft_lr": "sft", "sft_mt_s": "sft", "sft_self_mt_s": "sft_self"}.get(arm, arm)   # 179a short rows; 181 refit translator, rewrite rows; 182 runbook rows; 184 keep rows
+    RP = ROWS_SHORT if arm in ("sft_s", "sft_c_s", "sft_self_s", "sft_b_s", "sft_mt_s", "sft_self_mt_s") else ROWS_RW if arm == "rw_cf" else ROWS_RB if arm in ("rb", "rb_c") else ROWS_K if arm in ("sft_k", "sft_ck", "xk") else ROWS; sub = RP in (ROWS_RW, ROWS_RB)
     B = XB.Bridge("bridge"); t0 = time.time(); rows = [json.loads(l) for l in open(RP)]; base = json.load(open(BASE))
     want = base["rows sha"] if RP == ROWS else json.load(open({ROWS_SHORT: SHORT, ROWS_RW: RW, ROWS_RB: RB, ROWS_K: KJ}[RP]))["sha"]
     same = ({r["id"] for r in rows} <= set(base["rows"]) and len(rows) > 0) if sub else {r["id"] for r in rows} == set(base["rows"])   # 181, 182: rewrite and runbook rows cover a subset
@@ -795,6 +800,12 @@ def train_arm(arm):
     if arm == "xk":                                                      # 184: each row's target from the cross-fit translator that never saw it
         fd = json.load(open(XKJ))["fold"]; assert SMALL or all(r["id"] in fd for r in rows), "a row has no fold"
         TX_ = [XB.load_tr(B, "control", name=f"{XKN}{f}")[0] for f in (0, 1)]; tsel = [TX_[1 - fd.get(r["id"], 0)] for r in rows]
+    MT = arm in ("sft_mt_s", "sft_self_mt_s"); mtl = []; nclip = 0                   # 190: + the corrector's own fitting text, directly (its split "train", its kind weights XB.W)
+    if MT:
+        mrows = [r for r in XB.rows_all(B.tg) if r["split"] == "train" and r["kind"] in XB.W]; mkinds = [k for k in XB.W if any(r["kind"] == k for r in mrows)]
+        menc = {k: [e for e in (XB.encode(B.tg, B.tq, r) for r in mrows if r["kind"] == k) if e is not None and e[3] - 1 >= e[4]] for k in mkinds}
+        mkinds = [k for k in mkinds if menc[k]]; mpw = np.array([XB.W[k] for k in mkinds]); mpw /= mpw.sum(); mrng = np.random.default_rng(190 + SEED)   # its own stream: the coding order is unchanged
+        log("arm", arm, "| mix rows (the corrector's fitting split):", {k: len(menc[k]) for k in mkinds}, "| weights", dict(zip(mkinds, mpw.round(3).tolist())), "|", MT_N, "per step, weight", MT_W)
     dose = len(base["rows"]) if sub else len(enc)                        # 181, 182: rw_cf and rb take sft's steps over their fewer rows (they cycle)
     steps = 4 if SMALL else max(1, math.ceil(EPOCHS * dose / XB.ACC)); rng = np.random.default_rng(174 + SEED)
     order = np.concatenate([rng.permutation(len(enc)) for _ in range(math.ceil(steps * XB.ACC / len(enc)) + 1)])   # the same order for every arm of a seed
@@ -878,7 +889,14 @@ def train_arm(arm):
             ex = (float(klp[:rstart - 1 - s0].mean()) if rstart - 1 > s0 else 0.0, float(klp[rstart - 1 - s0:].mean()), float(-lt[rstart - 1 - s0:n - 1 - s0].gather(-1, y[:, None])[:, 0].mean()) if lt is not None else 0.0)
             loss = {"sft": ce, "sft_b": ce + LAM * kl, "sft_c": ce + LAM * kl, "kl_b": kl, "sft_self": ce + LAM * kl}[kind]
             (loss / XB.ACC).backward(); vals.append((float(ce.detach()), float(kl.detach())) + ex); del ls, lt, loss, klp
-        torch.nn.utils.clip_grad_norm_(params, 1.0); opt.step(); hist.append(np.mean(vals, 0))
+        if MT:                                                           # 190: MT_N rows of the corrector's fitting text, cross-entropy on the reply, weight MT_W
+            for _ in range(MT_N):
+                k = mkinds[int(mrng.choice(len(mkinds), p=mpw))]; gm, qm, jm, rm, sm = menc[k][int(mrng.integers(len(menc[k])))]
+                xm = torch.tensor([qm], device=DEV); ym = torch.tensor(qm[rm:], device=DEV)
+                lm = Fn.log_softmax(B.mS(input_ids=xm, logits_to_keep=len(qm) - rm + 1, use_cache=False).logits[0, :-1].float(), -1)
+                cem = -lm.gather(-1, ym[:, None])[:, 0].mean(); (MT_W * cem / MT_N).backward();   # 190a: the mix rows' mean, weight MT_W
+                mtl.append(float(cem.detach())); del lm, cem
+        gn_ = float(torch.nn.utils.clip_grad_norm_(params, 1.0)); nclip += gn_ > 1.0; opt.step(); hist.append(np.mean(vals, 0))   # 190a: count clipped steps (the mix rows share the clip)
         if kind == "sdft":
             with torch.no_grad():
                 for p_, e_ in ema.values():
@@ -891,7 +909,7 @@ def train_arm(arm):
     d = OD / f"xl_{arm}"; pm.save_pretrained(str(d), selected_adapters=["default"])
     if onp:
         log(arm, ": samples too short to train on", n_skip)
-    json.dump({"arm": arm, "seed": SEED, "rows": len(enc), "steps": steps, "steps run": ran, "lr scale": LRX, "stop ce": STOP, "last50 ce at stop": float(np.mean([h[0] for h in hist[-50:]])), "epochs": EPOCHS, "lambda": LAM, "rank": RANK, "layers": lay, "first50": [float(v) for v in np.mean(hist[:50], 0)],
+    json.dump({"arm": arm, "seed": SEED, "rows": len(enc), "steps": steps, "steps run": ran, "lr scale": LRX, "mix rows ce first / last 200": [float(np.mean(mtl[:200])), float(np.mean(mtl[-200:]))] if mtl else None, "share of steps clipped": nclip / max(1, len(hist)), "stop ce": STOP, "last50 ce at stop": float(np.mean([h[0] for h in hist[-50:]])), "epochs": EPOCHS, "lambda": LAM, "rank": RANK, "layers": lay, "first50": [float(v) for v in np.mean(hist[:50], 0)],
                "last50": [float(v) for v in np.mean(hist[-50:], 0)]}, open(d / "train.json", "w"))
     if torch.cuda.is_available():
         log(arm, "peak GPU memory", round(torch.cuda.max_memory_allocated() / 2 ** 30, 2), "GB")   # review 11-08 (the 24 GB 4090)
@@ -989,7 +1007,7 @@ def evaluate():
             out["arms"][a]["3c lost on the fragile set (train pool, held)"] = [[sum(1 for i in fr_[k] if q.get(i) and not r_.get(i, True)), sum(1 for i in fr_[k] if q.get(i))] for k in ("train", "held")]
         if rbids:                                                        # 182: rb trains only the problems with a passing runbook solution
             out["arms"][a]["1 fixed, by runbook row (has one / none)"] = [fx(lambda i: i in rbids), fx(lambda i: i not in rbids)]
-    pairs = [("sft_b", "sft_c"), ("sft_b", "sft"), ("sft_c", "sft"), ("kl_b", "sft"), ("sft_c", "sft_self"), ("sft_self", "sft"), ("sdft", "sft"), ("sft_c", "sdft"), ("sdft", "sft_self"),
+    pairs = [("sft_mt_s", "sft"), ("sft_self_mt_s", "sft"), ("sft_self_mt_s", "sft_mt_s"), ("sft_b", "sft_c"), ("sft_b", "sft"), ("sft_c", "sft"), ("kl_b", "sft"), ("sft_c", "sft_self"), ("sft_self", "sft"), ("sdft", "sft"), ("sft_c", "sdft"), ("sdft", "sft_self"),
              ("opd_b", "opd_c"), ("opd_b", "sft"), ("opd_c", "sft"), ("opd_b", "sdft"), ("opd_c", "sdft"), ("opd_b", "sft_b"), ("opd_c", "sft_c"), ("mix_c", "sft"), ("mix_c", "opd_c"), ("mix_c", "sft_c"), ("sft_s", "sft"), ("sft_c_s", "sft_c"),
              ("opd_cf", "opd_c"), ("opd_cf", "sft"), ("opd_cf", "mix_c"), ("rw_cf", "sft"), ("rw_cf", "opd_cf"), ("rw_cf", "opd_c"), ("mix_cf", "mix_c"), ("mix_cf", "sft"), ("mix_cf", "opd_cf"),
              ("rb", "sft"), ("rb", "sft_s"), ("rb", "rw_cf"), ("rb", "mix_cf"), ("rb", "opd_cf"),

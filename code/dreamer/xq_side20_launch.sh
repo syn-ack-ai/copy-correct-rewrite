@@ -5,7 +5,7 @@
 # slot counter, lock and balance guard (MIN_CU for itself and each running session). Waits for runs/xqlML/READY. Log runs/xql/side.log.
 K=~/systemone/kaggle_g4agent; R=$K/runs; CR=~/systemone/v2/infra/colab/colab_run.sh; L=$R/xql/side.log; LOCK=/tmp/xq_slot_lock; MIN_CU=${MIN_CU:-25}
 log() { echo "$(date +%H:%M) $*" >> $L; }
-SESS="xqlE2B1 xqlE2B2 xqlE2B3 xqlTW2b1 xqlTW2b2 xqlTW2b3 xqlTW4b1 xqlTW4b2 xqlTW4b3 xqlML1 xqlML2 xqlML3"
+SESS="xqlE2B1 xqlE2B2 xqlE2B3 xqlTW2b1 xqlTW2b2 xqlTW2b3 xqlTW4b1 xqlTW4b2 xqlTW4b3 xqlML1 xqlML2 xqlML3 xqlMT1 xqlMT2 xqlMT3"
 running() { local n=0; for s in $SESS; do grep -qE "^(starting|running)" $R/$s/status 2>/dev/null && n=$((n + 1)); done; echo $n; }
 balance() { local b k; for k in 1 2 3; do
     b=$( (cd ~ && /usr/bin/perl -e 'alarm 120; exec @ARGV' ~/.local/bin/colab --auth oauth2 usage 2>/dev/null) | sed -n 's/^Current balance: \([0-9.]*\).*/\1/p' | head -n 1)
@@ -33,6 +33,7 @@ log "side v20: 188 matched-loss E2B (sft_es, sft_lr), 3 sessions after 187's hav
 until [ -f $R/xqlML/READY ]; do sleep 60; done; log "188 code ready"
 all_started() { for s in 1 2 3; do [ -f $R/xqlTW2b$s/status ] || return 1; [ -f $R/xqlTW4b$s/status ] || grep -q "direction e4b skipped" $L || return 1; done; }
 until all_started; do sleep 60; done; log "187 sessions all started: 188 may take slots"
+until [ -f $R/xqlMT1/status ] && [ -f $R/xqlMT2/status ] && [ -f $R/xqlMT3/status ]; do sleep 60; done; log "190 sessions all started: 188 may take slots (user 11-08: 190 first)"
 for s in 1 2 3; do
   start_when_free xqlML$s "188 matched-loss E2B: sft_es (stop at CE 0.24), sft_lr (lr x0.1), 186 sft re-scored, seed $s" $K/colab/xq_learn.sh STAGE=e2b XL_ARMS=sft_es,sft_lr XB_SEED=$s
 done
