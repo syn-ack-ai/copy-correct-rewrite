@@ -34,9 +34,8 @@ And in the results sections:
 
 The paper's limitations (Section 6) and the pre-registration scorecard apply to all of these.
 
-**Status (2026-11-08).** Two runs were still in progress when this repository was first published: the SFT + KL-to-the-original-student
-baseline on the coding task (addendum 185), and the coding recipes repeated with Gemma 4 E2B as the student (addendum 186, three seeds).
-Their results and the paper's final version will be added here.
+**Status (2026-11-08).** The SFT + KL-to-the-original-student baseline (addendum 185) is in the paper and in `data/runs/xqlSS*`.
+The coding recipes repeated with Gemma 4 E2B as the student (addendum 186, three seeds) were still running; their results will be added.
 
 ## Repository layout
 

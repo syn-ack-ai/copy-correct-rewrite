@@ -41,13 +41,23 @@ def family(files_by_seed):
         if pp:
             out["per seed"][s] = {a: counts(pp, a) for a in pp if a != "qwen"}; out["offtask"][s] = off; out["e4b held CE"][s] = ce
     arms = sorted({a for v in out["per seed"].values() for a in v})
+    if not arms:
+        out["pooled"] = {}; return out
     out["pooled"] = {a: {k: sum(out["per seed"][s][a][k] for s in out["per seed"] if a in out["per seed"][s]) for k in next(iter(out["per seed"].values()))["sft"]}
                      | {"seeds": sum(1 for s in out["per seed"] if a in out["per seed"][s])} for a in arms}
     return out
 
 
-res = {"main": family({s: [R / f"xqlO{s}/xl_eval_s{s}.json", R / f"xqlCF{s}/xl_eval_cf_s{s}.json", R / f"xqlRB{s}/xl_eval_rb_s{s}.json", R / f"xqlRBC{s}/xl_eval_rbc_s{s}.json"] for s in (1, 2, 3)}),
+res = {"main": family({s: [R / f"xqlO{s}/xl_eval_s{s}.json", R / f"xqlCF{s}/xl_eval_cf_s{s}.json", R / f"xqlRB{s}/xl_eval_rb_s{s}.json", R / f"xqlRBC{s}/xl_eval_rbc_s{s}.json", R / f"xqlSS{s}/xl_eval_sfself_s{s}.json"] for s in (1, 2, 3)}),
        "f174": family({s: [R / f"xqlS{s}/xl_eval_s{s}.json"] for s in (1, 2, 3)})}
+E2B = family({s: [R / f"xqlE2B{s}/xl_eval_e2b_s{s}.json"] for s in (1, 2, 3)})   # 186: Gemma 4 E2B as the student ("qwen" = the student alone)
+if E2B["per seed"]:
+    res["e2b"] = E2B; res["e2b drift"] = {}
+    for s in (1, 2, 3):
+        f = R / f"xqlE2B{s}/drift_e2b_s{s}.json"
+        if f.exists():
+            res["e2b drift"].update(json.load(open(f))["summary"])
+    res["e2b runbook build"] = {s: json.load(open(R / f"xqlE2B{s}/xl_rb.json")) for s in (1, 2, 3) if (R / f"xqlE2B{s}/xl_rb.json").exists()}
 
 # 178: wide LiveCodeBench, the agent-row LoRAs
 W = {}
@@ -96,7 +106,7 @@ res["agent169d"] = A
 
 # online test (170)
 res["online"] = {a: {"run": json.load(open(ONL / f"online_{a}.json")), "gate": json.load(open(ONL / f"gate_lora_onl_{a}.json"))} for a in ("direct", "bridge", "direct_keep_replay")}
-for f in (OUT.parent / "drift.json", OUT.parent / "drift_rbc.json"):   # review D1: drift from the original student (scripts/drift.py)
+for f in sorted(OUT.parent.glob("drift*.json")):   # review D1: drift from the original student (scripts/drift.py); every drift file of the paper
     if f.exists():
         res.setdefault("drift", {}).update(json.load(open(f))["summary"])
 json.dump(res, open(OUT, "w"), indent=1); print("wrote", OUT, "| main arms:", sorted(res["main"]["pooled"]), "| 174 arms:", sorted(res["f174"]["pooled"]))
