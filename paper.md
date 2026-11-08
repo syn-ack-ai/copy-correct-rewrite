@@ -44,7 +44,7 @@ L_fit = CE_corrected + 0.03 · ‖Δ‖ + 0.5 · H,  (3)
 
 with ‖Δ‖ the size of the change and H a do-no-harm term that keeps the student's own top-32 distribution wherever it already ranks the true token first. Rows: E4B's agent replies (50%), human prose (15%), Python code (15%), multiple-choice questions (10%) and stories (10%).
 
-**Use.** Run live, the corrected student is far closer to the teacher on agent replies than the student alone (0.67 nats against 1.39; self-corrector 0.73). We test it as an anchor (eq. 1), an on-policy teacher (eq. 2), a rewriter, a distilled LoRA and an online teacher.
+**Use.** Run live, the corrected student is far closer to the teacher on agent replies (0.67 nats against 1.39 alone; self-corrector 0.73). We test it as an anchor (eq. 1), an on-policy teacher (eq. 2), a rewriter, a distilled LoRA and an online teacher.
 
 ## 4 Experiments
 
@@ -91,7 +91,7 @@ Every anchor removed the damage in every seed and held E2B's training loss at 0.
 
 ![E2B per recipe](figures/fig9_e2b.png)
 
-Figure 3. Qwen3-1.7B (gray) and Gemma 4 E2B (colour) per recipe, grouped by kind.
+Figure 3. Qwen3-1.7B (gray) and Gemma 4 E2B (colour) per recipe.
 
 ### 4.4 Reversed: E2B teaching E4B
 
@@ -99,7 +99,7 @@ With E2B's 148 passing answers teaching E4B (weak-to-strong; Burns et al., 2023)
 
 ### 4.5 What keeps the student where it was
 
-On Qwen's shortest rows (Table 2, Figure 4), KL to the original moved the student 6-9× less than the other copying recipes and left prose loss unchanged. The corrector anchor moved it as far as SFT, toward much lower loss and softer predictions (entropy +0.66 nats on prose, against +0.29 for SFT). It never sees prose; the gain comes from the corrector's prose fit.
+Back on Qwen, where copying left untaught text unharmed, the anchors show their own effect (Table 2, Figure 4). On the shortest rows, KL to the original moved the student 6-9× less than the other copying recipes and left prose loss unchanged. The corrector anchor moved it as far as SFT, toward much lower loss and softer predictions (entropy +0.66 nats on prose, against +0.29 for SFT). It never sees prose; the gain comes from the corrector's prose fit.
 
 Table 2. Drift from the original Qwen on untaught text, three-seed means.
 
@@ -113,7 +113,7 @@ Table 2. Drift from the original Qwen on untaught text, three-seed means.
 
 Figure 4. Drift on untaught human prose, one point per seed.
 
-Neither anchor costs teaching (Table 3); the corrector anchor's value shows where training does damage (Sections 4.3 and 4.6).
+Neither anchor costs teaching (Table 3); they matter where training does damage (Sections 4.3 and 4.6).
 
 Table 3. Coding with the two anchors, three seeds pooled (held of 564).
 
@@ -160,7 +160,7 @@ Figure 6. Each corrector teacher run live, and the on-policy student it trained.
 
 ### 4.8 Online learning on agent decisions
 
-E2B with a rank-16 LoRA met 600 unseen agent decision points from the competition's harness, each once, scored before learning it. The target was the teacher's distribution (A) or the cross-model corrector (B), each also with keep + replay (C, D: KL to the original E2B on one untaught row per item, and an earlier item every fourth step). The corrector was fitted on the training repositories, which the stream draws from; the held measures and gate use repositories neither saw. The result is a plain LoRA; the corrector is needed only during training.
+E2B with a rank-16 LoRA met 600 unseen decision points from the competition's harness, each once, scored before learning it. The target was the teacher's distribution (A) or the cross-model corrector (B), each also with keep + replay (C, D: KL to the original E2B on one untaught row per item, and an earlier item every fourth step). The corrector was fitted on the training repositories, which the stream draws from; the held measures and gate use repositories neither saw. The result is a plain LoRA; the corrector is needed only during training.
 
 Table 6. Online learning, one seed per setup (D: two). Gate (220 held decisions): fixed of the 52 where E2B alone differs from the teacher, broken of the other 168.
 
@@ -182,7 +182,7 @@ Figure 7. Held cross-entropy to the teacher and drift on untaught text over the 
 
 **For training small agents.** Train on the teacher's shortest verified answers with a KL pull toward the original student, which within the family removed copying's damage at no cost; check the teacher's fit before on-policy distillation; and measure forgetting on held-out human text, with entropy, since loss on teacher text rewards imitation.
 
-**Where the corrector helps.** As an anchor it delivers its fitting text with less change; as an online teacher with keep + replay it gave the best net result in both its seeds; live, it brought the student closest to the teacher.
+**Where the corrector helps.** As an anchor it delivers its fitting text with less change; as an online teacher with keep + replay it gave the best net result in both its seeds.
 
 **Limitations.** Two coding students and one teacher; the online test has one seed per setup (D two). Pooled p-values are descriptive; differences under about 10 held solves are within noise. The KL pull ran at λ = 1 and the multi-task control only for E2B; a strength sweep was still running. A 768-token cap cannot separate forgetting from verbosity (lost answers ran long, 27% cut at the cap); a longer-cap re-grade is planned. Correctors had 600 fitting steps; longer ones gave mostly worse LoRAs (one seed).
 
@@ -192,7 +192,7 @@ Figure 7. Held cross-entropy to the teacher and drift on untaught text over the 
 
 **Distillation.** GKD (Agarwal et al., 2023), MiniLLM (Gu et al., 2023) and DistiLLM (Ko et al., 2024) distil on the student's own samples with reverse or skewed KL; our on-policy teacher is built from the corrector, whose fit bounds the gain.
 
-**Training on own solutions.** ReST (Gulcehre et al., 2023), ReST-EM (Singh et al., 2023), rejection-sampling fine-tuning (Yuan et al., 2023) and STaR (Zelikman et al., 2022) retrain on verified own samples; Terminal-RSI (Yang et al., 2026) adds plan-guided self-rewriting. The damage to untaught text we report is rarely measured; it resembles the entropy collapse of reinforcement learning on reasoning (Cui et al., 2025).
+**Training on own solutions.** ReST (Gulcehre et al., 2023), ReST-EM (Singh et al., 2023), rejection-sampling fine-tuning (Yuan et al., 2023) and STaR (Zelikman et al., 2022) retrain on verified own samples; Terminal-RSI (Yang et al., 2026) adds plan-guided self-rewriting. The damage to untaught text we report is rarely measured; it resembles entropy collapse in reasoning RL (Cui et al., 2025).
 
 **Forgetting.** Learning without forgetting (Li and Hoiem, 2016) and EWC (Kirkpatrick et al., 2016) protect old skills with output and weight penalties, and LoRA learns less and forgets less (Biderman et al., 2024); RL's Razor (Shenfeld et al., 2025) ties forgetting to KL from the original. Self-distillation fine-tuning (Yang et al., 2024) rewrites targets in the model's own words; in-context self-distillation (Shenfeld et al., 2026) is our SDFT arm.
 
@@ -200,7 +200,7 @@ Figure 7. Held cross-entropy to the teacher and drift on untaught text over the 
 
 ## 7 Conclusion
 
-Copying verified answers teaches best; within the family it also forgets, and a KL pull toward the original student is the cheapest fix.
+Copying verified answers teaches best; within the family it also causes forgetting, and a KL pull toward the original student is the cheapest fix. On-policy distillation stops at its teacher's level.
 
 ## References
 
@@ -264,7 +264,7 @@ S. Zhang, X. Zhang, Z. Sun, Y. Chen, and J. Xu (2024). Dual-Space Knowledge Dist
 
 ## Appendix A Code
 
-Code, per-problem results, over 40,000 graded model answers and the pre-registration log (addenda 165-193) are public at https://github.com/syn-ack-ai/copy-correct-rewrite (Apache-2.0); the corrector is `code/transfer/xbridge.py`. Not included: text corpora, competition data, problem statements and weights.
+Code, per-problem results, over 40,000 graded answers and the pre-registration log (addenda 165-193) are public at https://github.com/syn-ack-ai/copy-correct-rewrite (Apache-2.0); the corrector is `code/transfer/xbridge.py`. Not included: text corpora, competition data, problem statements and weights.
 
 ## Appendix B AI use
 
