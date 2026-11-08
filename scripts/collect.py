@@ -162,7 +162,7 @@ res["agent169d"] = A
 res["teachers live"] = {s: dict(zip(("refit", "old", "alone"), json.load(open(R / f"xqlCF{s}/xl_rw.json"))["teacher greedy, held (refit, old, Qwen alone)"])) for s in (1, 2, 3) if (R / f"xqlCF{s}/xl_rw.json").exists()}
 
 # online test (170)
-ONLA = [a for a in ("direct", "bridge", "direct_keep_replay", "bridge_keep_replay") if (ONL / f"online_{a}.json").exists()]   # 183: D = bridge_keep_replay
+ONLA = [a for a in ("direct", "bridge", "direct_keep_replay", "bridge_keep_replay", "bridge_keep_replay_s2") if (ONL / f"online_{a}.json").exists()]   # 183: D = bridge_keep_replay; 189: D seed 2
 res["online"] = {a: {"run": json.load(open(ONL / f"online_{a}.json")), "gate": json.load(open(ONL / f"gate_lora_onl_{a}.json"))} for a in ONLA}
 # 189: per-decision gate output (re-gated, identical totals): fixed / broken / net per setup, exact sign tests of D against each
 PK = "decision points (matches the teacher, probability of its choice, student alone differs)"

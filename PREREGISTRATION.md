@@ -982,6 +982,19 @@ Exact sign tests, D against each setup, D-only against the other's only:
 
 Reading: A fixes about as many decisions as D but breaks almost three times as many. Within this seed, D beats C. These p-values only cover the decisions of each trained adapter, not the spread between training runs; the replicated online arms (resdec) ranged 19-25 across seeds. Seeds 2-3 decide.
 
+**189, interim 2 (2026-11-08, 14:30 gate; read 15:05): D seed 2.** Same code7 and settings as seed 1, ON_SEED=2 (a different stream order, picks, LoRA init and samples). Gate on the same 220 decisions:
+
+| | Fixed (of 52) | Broken (of 168) | Net | Matches (of 220) | Held CE at item 600 | Untaught drift (end / peak) | Held-question drift |
+|---|---|---|---|---|---|---|---|
+| D seed 1 | 23 | 4 | +19 | 187 | 0.751 | 0.017 / 0.051 | 0.041 |
+| D seed 2 | 23 | 6 | +17 | 185 | 0.749 | 0.017 / 0.032 | 0.021 |
+
+- The two seeds differ on only 6 of the 220 decisions (seed 2 only 2, seed 1 only 4, p = 0.69).
+- Seed 2 against the seed-1 adapters of the other setups: vs C 13 vs 4 on the 52 (p = 0.049), 17 vs 8 on all 220 (p = 0.11); vs A 7 vs 9 (p = 0.80); vs B 10 vs 3 (p = 0.09). These pair seed 2 of D with seed 1 of the others; the matched-seed test against C waits for C seeds 2-3.
+- Prediction 2, seed 2 part (at least 19 fixed): held (23). Prediction 3, seed 2 part (untaught drift at most 0.035): held (0.017 at the end, 0.032 at its peak). Prediction 1 already held. Predictions 4-6 (control and blend) wait for those arms.
+
+Reading: the online result is not one lucky run; a second seed reproduced it nearly decision for decision. The success bar still needs D seed 3, C seeds 2-3 and both controls.
+
 ## Addendum 190 (2026-11-08, 12:05; built, in review, not yet run): the multi-task control for the corrector anchor (user: "run the k on prose also and see what happens... in that case both prose and agentic work/solved should be similar to the correctors")
 
 Why: in 187 (E2B student, seeds 1-2) the self-corrector anchor (sft_c_s) solved the most held problems and turned SFT's damage to untaught prose (ΔCE +0.69) into a gain (−0.61), with softer predictions (entropy +0.85). The corrector was fitted on a text mix: agent replies 0.5, prose 0.15, code 0.15, questions 0.1, stories 0.1, split "train", with the untaught drift rows held out from the same sources. So the anchor's benefit may only be that text arriving by another route. The paper lists the missing multi-task baseline as a limitation, and the Fable review named the confound.

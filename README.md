@@ -36,8 +36,8 @@ The paper's limitations (Section 5) and the pre-registration scorecard (Appendix
 
 **Status (2026-11-08, evening).** In the paper and in this repository: 185 (`data/runs/xqlSS*`), 186 (`xqlE2B*`), 187 (`xqlTW2b*`: E4B
 teaches E2B; `xqlTW4b*`: E2B teaches E4B), 190 (`xqlMT*`: the multi-task control for the corrector anchor) and the online test's setup D,
-seed 1 (183, `data/online/`). Running at the time of this snapshot, with designs and predictions in `PREREGISTRATION.md`: online D seeds
-2-3 with self-corrector and blend controls and setup C seeds 2-3 (189), online against offline SFT teachers (192), a matched-loss test
+seeds 1-2 (183, 189; `data/online/`; seed 2 reproduced seed 1, differing on 6 of 220 gate decisions). Running at the time of this snapshot, with designs and predictions in `PREREGISTRATION.md`: online D seed
+3 with self-corrector and blend controls and setup C seeds 2-3 (189), online against offline SFT teachers (192), a matched-loss test
 (188) and a KL strength sweep (193). A longer-cap re-grade of the lost coding problems (194) is being revised and will be added when final.
 Addendum 191 (per-user grafts) is planned for a separate paper.
 

@@ -6,7 +6,7 @@ Benjamin Babeshkin
 
 ## Abstract
 
-A small agent model trained by a stronger one must gain the teacher's skill without losing its own. Under one pre-registered protocol, with Gemma 4 E4B teaching Qwen3-1.7B and Gemma 4 E2B on contest coding and E2B on online agent decisions, we compare copying verified answers (SFT), anchoring, on-policy distillation and retraining on self-written solutions. Copying taught as much as anything, best with the shortest answers. Within the Gemma family it also forgot: E4B's text is familiar to E2B, and training on it sharpened the student and raised its loss on untaught text. A KL pull toward the original student removed that damage without costing held-out solves. Self-written solutions also sharpened, and on-policy distillation stopped at its teacher's level. A learned state corrector did not store the teacher's knowledge in an adapter; as an anchor it matched training on its own fitting text, and as an online teacher it gave the best net result in one seed.
+A small agent model trained by a stronger one must gain the teacher's skill without losing its own. Under one pre-registered protocol, with Gemma 4 E4B teaching Qwen3-1.7B and Gemma 4 E2B on contest coding and E2B on online agent decisions, we compare copying verified answers (SFT), anchoring, on-policy distillation and retraining on self-written solutions. Copying taught as much as anything, best with the shortest answers. Within the Gemma family it also forgot: E4B's text is familiar to E2B, and training on it sharpened the student and raised its loss on untaught text. A KL pull toward the original student removed that damage without costing held-out solves. Self-written solutions also sharpened, and on-policy distillation stopped at its teacher's level. A learned state corrector did not store the teacher's knowledge in an adapter; as an anchor it matched training on its own fitting text, and as an online teacher it gave the best net result, reproduced in a second seed.
 
 ## 1 Introduction
 
@@ -34,7 +34,7 @@ L = Σ_i KL(p_θ ‖ t) over the positions i of ŷ.  (2)
 
 ## 3 Method
 
-![How the corrector connects teacher and student](figures/fig1_corrector.png)
+![The corrector](figures/fig1_corrector.png)
 
 Figure 1. How the corrector connects teacher and student, and how its output trains the student.
 
@@ -62,7 +62,7 @@ with ‖Δ‖ the size of the change and H a do-no-harm term that keeps the stud
 
 ### 4.2 Copying the teacher's verified text teaches the most
 
-![Problems gained and lost per agent-turn LoRA](figures/fig2_wide_coding.png)
+![Gains and losses](figures/fig2_wide_coding.png)
 
 Figure 2. LoRAs trained on E4B's agent turns, on LiveCodeBench (1,739 problem-runs): problems gained and lost against the untrained student.
 
@@ -111,7 +111,7 @@ Table 2. Drift from the original Qwen on untaught text, three-seed means.
 | Shortest + KL to the original | **0.010** | +0.01 / −0.10 / −0.02 |
 | Shortest + corrector anchor | 0.089 | −0.24 / −0.21 / −0.51 |
 
-![Drift on untaught prose per seed](figures/fig4_untaught_prose.png)
+![Prose drift](figures/fig4_untaught_prose.png)
 
 Figure 4. Drift on untaught human prose, one point per seed.
 
@@ -141,7 +141,7 @@ Table 4. Runbook rows, three seeds pooled; prose ΔCE per seed.
 
 Runbook rows generalised less (83 new, against 90-95) but fixed the most training problems (vs SFT 133 vs 84, in every seed) and lost the fewest training-pool problems (24; others 29-43). They are the only Qwen recipe that raised loss on untaught text, in every seed and kind, while barely moving the student (KL 0.022), and lowered its entropy the most (−0.23 nats on prose): training on its own confident text sharpens the student. A small KL is no proof against forgetting (compare Shenfeld et al., 2025). The corrector anchor reversed that in every seed, to lower loss than the original (−0.23 to −0.25 on prose; entropy +0.64), and raised fresh-question p(true) by 0.028, at the cost of 39 fewer fixed problems (29 vs 71, p = 3e-5) and fewer held solves (133 vs 143).
 
-![Teaching against forgetting per recipe](figures/fig3_teach_vs_forget.png)
+![Teaching and forgetting](figures/fig3_teach_vs_forget.png)
 
 Figure 5. Every coding recipe, three seeds, numbered by held-out rank; best is bottom right. The leaders are within noise.
 
@@ -156,7 +156,7 @@ Table 5. Held solved, three seeds pooled.
 | On-policy only | 116 | 148 |
 | SFT + on-policy | 117 | 158 |
 
-![Each teacher live beside the student it trained](figures/fig5_teacher_cap.png)
+![Teachers and students](figures/fig5_teacher_cap.png)
 
 Figure 6. Each corrector teacher run live, and the on-policy student it trained.
 
@@ -164,7 +164,7 @@ Figure 6. Each corrector teacher run live, and the on-policy student it trained.
 
 E2B with a rank-16 LoRA met 600 unseen agent decision points from the competition's harness, each once, scored before learning it. The target was the teacher's distribution (A) or the cross-model corrector (B), each also with keep + replay (C, D: KL to the original E2B on one untaught row per item, and an earlier item every fourth step). The corrector was fitted on the training repositories, which the stream draws from; the held measures and gate use repositories neither saw. The result is a plain LoRA; the corrector is needed only during training.
 
-Table 6. Online learning, one seed per setup. Gate (220 held decisions): fixed of the 52 where E2B alone differs from the teacher, broken of the other 168.
+Table 6. Online learning, one seed per setup (D: two). Gate (220 held decisions): fixed of the 52 where E2B alone differs from the teacher, broken of the other 168.
 
 | Setup | Held CE (from 0.825) | Untaught drift | Held-question drift | Gate: fixed / broken |
 |---|---|---|---|---|
@@ -172,8 +172,9 @@ Table 6. Online learning, one seed per setup. Gate (220 held decisions): fixed o
 | B Corrector | 0.753 | 0.055 | 0.043 | 16 / 4 |
 | C Teacher + keep + replay | 0.775 | **0.014** | 0.034 | 14 / 6 |
 | D Corrector + keep + replay | **0.751** | 0.017 | 0.041 | 23 / **4** |
+| D, seed 2 | 0.749 | 0.017 | 0.021 | 23 / 6 |
 
-Keep + replay hurt the plain teacher (A to C: 11 fewer fixed) but helped the corrector teacher (B to D: 7 more). D had the best net gate result (+19, against +14 for A) and beat C on paired decisions (17 vs 6, exact sign test p = 0.035); its untaught drift peaked at 0.05 near item 450, then fell. Seeds 2-3 of C and D were still running, with a self-corrector teacher and a blend matched to the corrector's pull, akin to a teacher assistant (Mirzadeh et al., 2019).
+Keep + replay hurt the plain teacher (A to C: 11 fewer fixed) but helped the corrector teacher (B to D: 7 more). D had the best net gate result (+19, against +14 for A) and beat C on paired decisions (17 vs 6, p = 0.035); its untaught drift peaked at 0.05 near item 450, then fell. D's second seed reproduced it: the two differ on 6 of 220 decisions. Seed 3 of D and seeds 2-3 of C were still running, with a self-corrector teacher and a blend matched to the corrector's pull, akin to a teacher assistant (Mirzadeh et al., 2019).
 
 ![Online learning curves](figures/fig7_online.png)
 
@@ -183,9 +184,9 @@ Figure 7. Held cross-entropy to the teacher and drift on untaught text over the 
 
 **For training small agents.** Train on the teacher's shortest verified answers with a KL pull toward the original student, which within the family removed copying's damage at no cost; check the teacher's fit before on-policy distillation; and measure forgetting on held-out human text, with entropy, since loss on teacher text rewards imitation.
 
-**Where the corrector helps.** As an anchor it delivers its fitting text with less change; as an online teacher with keep + replay it gave the best net result in one seed; live, it brought the student closest to the teacher. Eight held problems neither E4B nor the untrained student solved were solved in all three seeds; for six, E4B's answer hit the cap, and two look genuine. This points to two-way composition of a generalist and a specialist, extending CALM (Bansal et al., 2024).
+**Where the corrector helps.** As an anchor it delivers its fitting text with less change; as an online teacher with keep + replay it gave the best net result in both its seeds; live, it brought the student closest to the teacher. Eight held problems neither E4B nor the untrained student solved were solved in all three seeds; for six, E4B's answer hit the cap, and two look genuine. This points to two-way composition of a generalist and a specialist, extending CALM (Bansal et al., 2024).
 
-**Limitations.** Two coding students and one teacher; the online test is one seed so far. Pooled p-values are descriptive; differences under about 10 held solves are within noise. The KL pull ran at λ = 1 and the multi-task control only for E2B; a strength sweep was still running. A 768-token cap cannot separate forgetting from verbosity (lost answers ran long, 27% cut at the cap); a longer-cap re-grade was still running.
+**Limitations.** Two coding students and one teacher; the online test has one seed per setup (D two). Pooled p-values are descriptive; differences under about 10 held solves are within noise. The KL pull ran at λ = 1 and the multi-task control only for E2B; a strength sweep was still running. A 768-token cap cannot separate forgetting from verbosity (lost answers ran long, 27% cut at the cap); a longer-cap re-grade was still running.
 
 **Ethical considerations.** Fitting and drift prose and stories come from locally held books, not released. Model-written code ran only in resource-limited, sandboxed interpreters.
 
@@ -291,6 +292,6 @@ Table 7. Predictions that held, per pre-registered addendum.
 | 186 (Gemma 4 E2B as the coding student) | 5 of 7 | — |
 | 187 (two-way, fresh Gemma correctors) | 5 of 7 | not met; cross-model = self |
 | 188 (matched-loss run, E2B) | — | running |
-| 189 (online setup D: re-gates reproduce) | 1 of 1 so far | running |
+| 189 (online setup D: replication, controls) | 3 of 3 so far (seed 2) | running |
 | 190 (multi-task control for the corrector anchor) | 4 of 5 | met: the anchor's gain is its fitting text |
 | 193 (KL strength sweep) | — | running |
