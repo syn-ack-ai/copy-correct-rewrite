@@ -250,16 +250,19 @@ def fig_online():
         for a in [a for a in ("direct", "bridge", "direct_keep_replay", "bridge_keep_replay") if a in O]:
             c = O[a]["run"]["held curve (bridge down)"]; x = [e["item"] for e in c]; y = [e[k] for e in c]
             ax.plot(x, y, color=col[a], lw=2, ls=dash[a], label=lab[a], solid_capstyle="round", dash_capstyle="round"); ends.append([y[-1], y[-1], x[-1], lab[a][0]])
+        if "bridge_keep_replay_s2" in O:   # 189: D's second seed, same hue, thin dotted, so the replication is visible without a fifth colour
+            c = O["bridge_keep_replay_s2"]["run"]["held curve (bridge down)"]; x = [e["item"] for e in c]; y = [e[k] for e in c]
+            ax.plot(x, y, color=S3, lw=1.3, ls=(0, (1, 1.6)), label="D, seed 2", dash_capstyle="round"); ends.append([y[-1], y[-1], x[-1], "D2"])
         lo, hi = ax.get_ylim(); gap = 0.05 * (hi - lo); ends.sort()   # end labels pushed apart so close values stay readable
         for i in range(1, len(ends)):
             ends[i][1] = max(ends[i][1], ends[i - 1][1] + gap)
         for v, yl_, x_, letter in ends:
-            ax.text(x_ + 8, yl_, f"{letter}  {v:.3f}", fontsize=8.2, va="center", color=INK2)
+            ax.text(x_ + 8, yl_, f"{letter}  {v:.3f}" if len(letter) == 1 else f"{letter} {v:.3f}", fontsize=8.2, va="center", color=INK2)
         ax.set_xlabel("Stream items learned (each seen once)"); ax.set_ylabel(yl, fontsize=8.5); ax.set_title(t, fontsize=10); ax.set_xlim(0, 700)
     axs[0].set_xticks(range(0, 601, 100)); axs[1].set_xticks(range(0, 601, 100))
     hs, ls_ = axs[0].get_legend_handles_labels()
-    fig.legend(hs, ls_, loc="lower center", ncol=4, bbox_to_anchor=(0.5, 0.0), fontsize=8.4, labelcolor=INK2, columnspacing=1.8, handlelength=2.4)
-    fig.suptitle("Online learning on agent decisions, E4B teaching E2B (one seed each): the corrector teacher gets closest; keep + replay cuts the drift", x=0.04, y=0.985, ha="left", fontsize=10.5, weight="bold")
+    fig.legend(hs, ls_, loc="lower center", ncol=len(hs), bbox_to_anchor=(0.5, 0.0), fontsize=8.4 if len(hs) < 5 else 7.9, labelcolor=INK2, columnspacing=1.8 if len(hs) < 5 else 1.2, handlelength=2.4)
+    fig.suptitle("Online learning on agent decisions, E4B teaching E2B (one seed each, D two): the corrector teacher gets closest; keep + replay cuts the drift", x=0.04, y=0.985, ha="left", fontsize=10.5, weight="bold")
     save(fig, "fig7_online.png")
 
 
