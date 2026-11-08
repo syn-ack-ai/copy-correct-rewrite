@@ -12,7 +12,7 @@ A small agent model trained by a stronger one must gain the teacher's skill with
 
 Submissions to the Gemma 4 Developer Agent competition (Kaggle, 2026) are Gemma 4 E2B or E4B (Google, 2026) plus LoRA adapters (Hu et al., 2021) of rank at most 128, so any gain from a stronger teacher must survive being stored in an adapter. Distillation (Hinton et al., 2015) is the main lever, but every route risks erasing what the small model already does well, such as reading, instruction following and decision making. We ask which route teaches the most and forgets the least.
 
-To test whether a teacher's internal states can be stored, we built a *state corrector*, inspired by Swarm Telepathy (Alabdulkareem et al., 2026), which moves one model's KV cache into a frozen receiver of another family. Ours reads hidden states and writes a correction into the student's residual stream; it also served as an anchor and online teacher. Our contributions:
+To test whether a teacher's internal states can be stored, we built a *state corrector*, inspired by Swarm Telepathy (Alabdulkareem et al., 2026), which moves one model's KV cache into a frozen receiver of another family. Ours writes a correction into the student's hidden states; it also served as an anchor and online teacher. Our contributions:
 
 - Copying verified answers teaches as much as any route, best with the shortest.
 - Same-family copying causes forgetting; a KL pull toward the original student removes it at no cost.
@@ -36,15 +36,24 @@ L = Σ_i KL(p_θ ‖ t) over the positions i of ŷ.  (2)
 
 Figure 1. How the corrector connects teacher and student, and how its output trains the student.
 
-**Structure.** A gated MLP (78M parameters for Qwen, 83M cross-model) reads the student's hidden states at 50% and 65% depth in a first pass. In a second pass it writes a gated, additive correction at 35% depth and every layer above. The *self-corrector* reads the student's own states; the *cross-model corrector* reads E4B's, aligned token by token across tokenizers.
+**Structure.** A gated MLP reads hidden states at 50% and 65% depth in a first pass. In a second pass it writes a gated, additive correction into the student at 35% depth and above. The *self-corrector* reads the student's own states; the *cross-model corrector* reads the teacher's, aligned token by token across tokenizers (Table 1).
 
 **Fit.** We fit it for 600 steps at lr 3e-4 on
 
 L_fit = CE_corrected + 0.03 · ‖Δ‖ + 0.5 · H,  (3)
 
-with ‖Δ‖ the size of the change and H a do-no-harm term that keeps the student's own top-32 distribution wherever it already ranks the true token first. Rows: E4B's agent replies (50%), human prose (15%), Python code (15%), multiple-choice questions (10%) and stories (10%).
+with ‖Δ‖ the size of the change and H a do-no-harm term that keeps the student's own top-32 distribution wherever it already ranks the true token first. Rows: E4B's agent replies (50%), human prose (15%), Python code (15%), multiple-choice questions (10%) and stories (10%). The online correctors drew 20% of rows from E2B's own samples, without the size term.
 
-**Use.** Run live, the corrected student is far closer to the teacher on agent replies (0.67 nats against 1.39 alone; self-corrector 0.73). We test it as an anchor (eq. 1), an on-policy teacher (eq. 2), a rewriter, a distilled LoRA and an online teacher.
+Table 1. Corrector parameters by student.
+
+| Student | Self-corrector | Cross-model corrector (reads) |
+|---|---|---|
+| Qwen3-1.7B, coding | 78M | 83M (E4B) |
+| Gemma 4 E2B, coding | 65M | 75M (E4B) |
+| Gemma 4 E4B, coding (Section 4.4) | 121M | 110M (E2B) |
+| Gemma 4 E2B, online (Section 4.8) | 69M | 83M (E4B) |
+
+**Use.** Run live, the corrected Qwen is far closer to the teacher on agent replies (0.67 nats against 1.39 alone; self-corrector 0.73). We test it as an anchor (eq. 1), an on-policy teacher (eq. 2), a rewriter, a distilled LoRA and an online teacher.
 
 ## 4 Experiments
 
@@ -70,9 +79,9 @@ In a separate coding run the anchors did not lose to SFT (held solved: SFT 143, 
 
 ### 4.3 Copying within the family forgets, and an anchor fixes it
 
-E2B replaced Qwen, all else equal; it starts stronger (57 held problems solved alone, against 25) and finds E4B's solutions nearly its own (0.27 nats per token, against 1.05). Gains were smaller, about 11 held problems per seed against 19-30 for Qwen. Runbook rows lost their advantage (fixed 61 vs 111 for SFT, p = 0.0002): E2B's rewrites were no closer to it than E4B's text (0.38 vs 0.27 nats). Every copying recipe damaged untaught text (Table 1, Figure 3): 4-13× Qwen's KL, sharper predictions (entropy −0.3 to −0.8) and higher loss on prose, code and stories, though a smaller share of solved coding problems was lost.
+E2B replaced Qwen, all else equal; it starts stronger (57 held problems solved alone, against 25) and finds E4B's solutions nearly its own (0.27 nats per token, against 1.05). Gains were smaller, about 11 held problems per seed against 19-30 for Qwen. Runbook rows lost their advantage (fixed 61 vs 111 for SFT, p = 0.0002): E2B's rewrites were no closer to it than E4B's text (0.38 vs 0.27 nats). Every copying recipe damaged untaught text (Table 2, Figure 3): 4-13× Qwen's KL, sharper predictions (entropy −0.3 to −0.8) and higher loss on prose, code and stories, though a smaller share of solved coding problems was lost.
 
-Table 1. Gemma 4 E2B as the student, per-seed means over three seeds (alone: 57 held solved).
+Table 2. Gemma 4 E2B as the student, per-seed means over three seeds (alone: 57 held solved).
 
 | Recipe | Held solved | Fixed (of 151) | Lost (of 205) | Prose KL | Prose Δ loss |
 |---|---|---|---|---|---|
@@ -99,9 +108,9 @@ With E2B's 148 passing answers teaching E4B (weak-to-strong; Burns et al., 2023)
 
 ### 4.5 What keeps the student where it was
 
-Back on Qwen, where copying left untaught text unharmed, the anchors show their own effect (Table 2, Figure 4). On the shortest rows, KL to the original moved the student 6-9× less than the other copying recipes and left prose loss unchanged. The corrector anchor moved it as far as SFT, toward much lower loss and softer predictions (entropy +0.66 nats on prose, against +0.29 for SFT). It never sees prose; the gain comes from the corrector's prose fit.
+Back on Qwen, where copying left untaught text unharmed, the anchors show their own effect (Table 3, Figure 4). On the shortest rows, KL to the original moved the student 6-9× less than the other copying recipes and left prose loss unchanged. The corrector anchor moved it as far as SFT, toward much lower loss and softer predictions (entropy +0.66 nats on prose, against +0.29 for SFT). It never sees prose; the gain comes from the corrector's prose fit.
 
-Table 2. Drift from the original Qwen on untaught text, three-seed means.
+Table 3. Drift from the original Qwen on untaught text, three-seed means.
 
 | Recipe | KL from the original (prose) | Change in loss (nats): prose / code / stories |
 |---|---|---|
@@ -113,9 +122,9 @@ Table 2. Drift from the original Qwen on untaught text, three-seed means.
 
 Figure 4. Drift on untaught human prose, one point per seed.
 
-Neither anchor costs teaching (Table 3); they matter where training does damage (Sections 4.3 and 4.6).
+Neither anchor costs teaching (Table 4); they matter where training does damage (Sections 4.3 and 4.6).
 
-Table 3. Coding with the two anchors, three seeds pooled (held of 564).
+Table 4. Coding with the two anchors, three seeds pooled (held of 564).
 
 | Recipe | Held solved | Lost (of 384) | Fresh-question p(true) |
 |---|---|---|---|
@@ -129,7 +138,7 @@ Table 3. Coding with the two anchors, three seeds pooled (held of 564).
 
 Adapting the self-rewrite step of Terminal-RSI (Yang et al., 2026), E4B turns each verified solution into a numbered plain-English plan (a screen rejects plans with code or over 10% of the solution's code 4-grams), the student solves the problem with the plan in its prompt, and passing solutions are trained on without the plan. With a plan it solved 166 problems greedily (95 without). The 228 rows kept are the student's own text: similarity to E4B's solution 0.20, 0.32 nats under the untrained student (E4B's rows 1.05), 110 tokens (350).
 
-Table 4. Runbook rows, three seeds pooled; prose ΔCE per seed.
+Table 5. Runbook rows, three seeds pooled; prose ΔCE per seed.
 
 | Recipe | Fixed | New | Held solved | Lost (of 384) | Prose ΔCE (per seed) |
 |---|---|---|---|---|---|
@@ -137,7 +146,7 @@ Table 4. Runbook rows, three seeds pooled; prose ΔCE per seed.
 | Runbook rows | **421** | 83 | 143 | 39 | **+0.10 to +0.16** |
 | Runbook rows + self-anchor | 382 | 71 | 133 | 37 | −0.23 to −0.25 |
 
-Runbook rows generalised less (83 new, against 90-95) but fixed the most training problems (vs SFT 133 vs 84, in every seed) and lost the fewest training-pool problems (24; others 29-43). They are the only Qwen recipe that raised loss on untaught text, in every seed and kind, while barely moving the student (KL 0.022), and lowered its entropy the most (−0.23 nats on prose): training on its own confident text sharpens the student. A small KL is no proof against forgetting (compare Shenfeld et al., 2025). The corrector anchor reversed that in every seed, to lower loss than the original (−0.23 to −0.25 on prose; entropy +0.64), and raised fresh-question p(true) by 0.028, at the cost of 39 fewer fixed problems (29 vs 71, p = 3e-5) and fewer held solves (133 vs 143).
+Runbook rows generalised less (83 new, against 90-95) but fixed the most training problems (vs SFT 133 vs 84, in every seed) and lost the fewest training-pool problems (24; others 29-43). They are the only Qwen recipe that raised loss on untaught text, in every seed and kind, while barely moving the student (KL 0.022), and lowered its entropy the most (−0.23 nats on prose). A small KL is no proof against forgetting (compare Shenfeld et al., 2025). The corrector anchor reversed that in every seed, to lower loss than the original (−0.23 to −0.25 on prose; entropy +0.64), and raised fresh-question p(true) by 0.028, at the cost of 39 fewer fixed problems (29 vs 71, p = 3e-5) and fewer held solves (133 vs 143).
 
 ![Teaching and forgetting](figures/fig3_teach_vs_forget.png)
 
@@ -145,9 +154,9 @@ Figure 5. Every coding recipe, three seeds, numbered by held-out rank; best is b
 
 ### 4.7 On-policy distillation stops at its teacher
 
-On-policy distillation through the self-corrector reached 116 held solves, its teacher's own live level (117; that teacher put 0.70 nats per token on E4B's solutions, the student alone 1.00). Refit on the 299 solutions (0.49 nats), the teacher solves 151 live and the student 148 (Table 5, Figure 6), beating the weak-teacher version in every seed but only tying SFT (38 vs 39) and losing more training problems (59 vs 42). As a rewriter it copied E4B's text (similarity 0.98).
+On-policy distillation through the self-corrector reached 116 held solves, its teacher's own live level (117; that teacher put 0.70 nats per token on E4B's solutions, the student alone 1.00). Refit on the 299 solutions (0.49 nats), the teacher solves 151 live and the student 148 (Table 6, Figure 6), beating the weak-teacher version in every seed but only tying SFT (38 vs 39) and losing more training problems (59 vs 42). As a rewriter it copied E4B's text (similarity 0.98).
 
-Table 5. Held solved, three seeds pooled.
+Table 6. Held solved, three seeds pooled.
 
 | Recipe | Weak teacher | Refit teacher |
 |---|---|---|
@@ -162,7 +171,7 @@ Figure 6. Each corrector teacher run live, and the on-policy student it trained.
 
 E2B with a rank-16 LoRA met 600 unseen decision points from the competition's harness, each once, scored before learning it. The target was the teacher's distribution (A) or the cross-model corrector (B), each also with keep + replay (C, D: KL to the original E2B on one untaught row per item, and an earlier item every fourth step). The corrector was fitted on the training repositories, which the stream draws from; the held measures and gate use repositories neither saw. The result is a plain LoRA; the corrector is needed only during training.
 
-Table 6. Online learning, one seed per setup (D: two). Gate (220 held decisions): fixed of the 52 where E2B alone differs from the teacher, broken of the other 168.
+Table 7. Online learning, one seed per setup (D: two). Gate (220 held decisions): fixed of the 52 where E2B alone differs from the teacher, broken of the other 168.
 
 | Setup | Held CE (from 0.825) | Untaught drift | Held-question drift | Gate: fixed / broken |
 |---|---|---|---|---|
@@ -182,7 +191,7 @@ Figure 7. Held cross-entropy to the teacher and drift on untaught text over the 
 
 **For training small agents.** Train on the teacher's shortest verified answers with a KL pull toward the original student, which within the family removed copying's damage at no cost; check the teacher's fit before on-policy distillation; and measure forgetting on held-out human text, with entropy, since loss on teacher text rewards imitation.
 
-**Where the corrector helps.** As an anchor it delivers its fitting text with less change; as an online teacher with keep + replay it gave the best net result in both its seeds.
+**Where the corrector helps.** As an anchor it delivers its fitting text with less change; as an online teacher with keep + replay it gave the best net result.
 
 **Limitations.** Two coding students and one teacher; the online test has one seed per setup (D two). Pooled p-values are descriptive; differences under about 10 held solves are within noise. The KL pull ran at λ = 1 and the multi-task control only for E2B; a strength sweep was still running. A 768-token cap cannot separate forgetting from verbosity (lost answers ran long, 27% cut at the cap); a longer-cap re-grade is planned. Correctors had 600 fitting steps; longer ones gave mostly worse LoRAs (one seed).
 
@@ -272,7 +281,7 @@ The author carried out this study with Claude Opus 5.5 (Anthropic) as an AI rese
 
 ## Appendix C Pre-registration scorecard
 
-Table 7. Predictions that held, per pre-registered addendum.
+Table 8. Predictions that held, per pre-registered addendum.
 
 | Addendum (question) | Predictions held | Pre-set bar |
 |---|---|---|
