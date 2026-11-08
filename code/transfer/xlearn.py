@@ -71,7 +71,7 @@ TRAIN_FILES = ("test.jsonl", "test2.jsonl", "test3.jsonl", "test4.jsonl"); HELD_
 NTRAIN, NHELD = (6, 4) if SMALL else (10 ** 6, 10 ** 6); NSAMP = 2 if SMALL else int(os.environ.get("XL_NSAMP", "4")); TEMP = 0.8
 EPOCHS = float(os.environ.get("XL_EPOCHS", "2")); LAM = float(os.environ.get("XL_LAMBDA", "1.0")); RANK = 64; LR = 3e-4
 SD_EMA, SD_MASK, SD_MAXNEW = 0.02, 3, 32 if SMALL else int(os.environ.get("XL_SD_MAXNEW", "512"))
-ARMS = ("sft", "sft_b", "sft_c", "kl_b", "sft_self", "sdft", "opd_b", "opd_c", "sft_s", "sft_c_s", "mix_c", "opd_cf", "rw_cf", "mix_cf", "rb", "sft_k", "sft_ck", "xk", "rb_c", "sft_self_s", "sft_b_s", "sft_es", "sft_lr", "sft_mt_s", "sft_self_mt_s"); ROWS = OD.parent / "xl_rows.jsonl"; BASE = OD.parent / "xl_base.json"
+ARMS = ("sft", "sft_b", "sft_c", "kl_b", "sft_self", "sdft", "opd_b", "opd_c", "sft_s", "sft_c_s", "mix_c", "opd_cf", "rw_cf", "mix_cf", "rb", "sft_k", "sft_ck", "xk", "rb_c", "sft_self_s", "sft_b_s", "sft_es", "sft_lr", "sft_mt_s", "sft_self_mt_s", "sft_self_s_l03", "sft_self_s_l3"); ROWS = OD.parent / "xl_rows.jsonl"; BASE = OD.parent / "xl_base.json"
 ROWS_SHORT = OD.parent / "xl_rows_short.jsonl"; SHORT = OD.parent / "xl_short.json"   # 179a: shortest-correct rows (sft_s, sft_c_s = sft, sft_c on them)
 NSHORT = 2 if SMALL else int(os.environ.get("XL_NSHORT", "4"))   # shared by every seed's folder
 MT_N = 4 if not SMALL else 1; MT_W = float(os.environ.get("XL_MT_W", "1.0"))   # 190a: mix rows per step: 4 x 299 = about 1,200 rows, the corrector's own exposure (600 steps x 2); weight of their mean
@@ -783,8 +783,8 @@ def fit_xk():
 
 def train_arm(arm):
     from peft import LoraConfig, get_peft_model
-    assert arm in ARMS; kind = {"sft_s": "sft", "sft_c_s": "sft_c", "opd_cf": "opd_c", "rw_cf": "sft", "mix_cf": "mix_c", "rb": "sft", "sft_k": "sft", "sft_ck": "sft_c", "xk": "sft_c", "rb_c": "sft_c", "sft_self_s": "sft_self", "sft_b_s": "sft_b", "sft_es": "sft", "sft_lr": "sft", "sft_mt_s": "sft", "sft_self_mt_s": "sft_self"}.get(arm, arm)   # 179a short rows; 181 refit translator, rewrite rows; 182 runbook rows; 184 keep rows
-    RP = ROWS_SHORT if arm in ("sft_s", "sft_c_s", "sft_self_s", "sft_b_s", "sft_mt_s", "sft_self_mt_s") else ROWS_RW if arm == "rw_cf" else ROWS_RB if arm in ("rb", "rb_c") else ROWS_K if arm in ("sft_k", "sft_ck", "xk") else ROWS; sub = RP in (ROWS_RW, ROWS_RB)
+    assert arm in ARMS; kind = {"sft_s": "sft", "sft_c_s": "sft_c", "opd_cf": "opd_c", "rw_cf": "sft", "mix_cf": "mix_c", "rb": "sft", "sft_k": "sft", "sft_ck": "sft_c", "xk": "sft_c", "rb_c": "sft_c", "sft_self_s": "sft_self", "sft_b_s": "sft_b", "sft_es": "sft", "sft_lr": "sft", "sft_mt_s": "sft", "sft_self_mt_s": "sft_self", "sft_self_s_l03": "sft_self", "sft_self_s_l3": "sft_self"}.get(arm, arm)   # 179a short rows; 181 refit translator, rewrite rows; 182 runbook rows; 184 keep rows
+    RP = ROWS_SHORT if arm in ("sft_s", "sft_c_s", "sft_self_s", "sft_b_s", "sft_mt_s", "sft_self_mt_s", "sft_self_s_l03", "sft_self_s_l3") else ROWS_RW if arm == "rw_cf" else ROWS_RB if arm in ("rb", "rb_c") else ROWS_K if arm in ("sft_k", "sft_ck", "xk") else ROWS; sub = RP in (ROWS_RW, ROWS_RB)
     B = XB.Bridge("bridge"); t0 = time.time(); rows = [json.loads(l) for l in open(RP)]; base = json.load(open(BASE))
     want = base["rows sha"] if RP == ROWS else json.load(open({ROWS_SHORT: SHORT, ROWS_RW: RW, ROWS_RB: RB, ROWS_K: KJ}[RP]))["sha"]
     same = ({r["id"] for r in rows} <= set(base["rows"]) and len(rows) > 0) if sub else {r["id"] for r in rows} == set(base["rows"])   # 181, 182: rewrite and runbook rows cover a subset
@@ -827,7 +827,8 @@ def train_arm(arm):
     if onp:
         eos_ = set(XC.stop_ids(B.mS, B.tq)); pad_ = B.tq.pad_token_id if B.tq.pad_token_id is not None else B.tq.eos_token_id; n_skip = 0
     opt = torch.optim.AdamW(params, lr=LR, weight_decay=0.0); sched = lambda s_: min(1.0, (s_ + 1) / 15) * (0.1 + 0.9 * 0.5 * (1 + math.cos(math.pi * s_ / steps)))  # noqa: E731
-    log("arm", arm, "| rows", len(enc), "of", len(rows), "| steps", steps, "(epochs", EPOCHS, ") | lambda", LAM, "| layers", lay, "rank", RANK); hist = []
+    lam_ = {"sft_self_s_l03": 0.3, "sft_self_s_l3": 3.0}.get(arm, LAM)   # 193: the KL strength sweep (KL to the original student)
+    log("arm", arm, "| rows", len(enc), "of", len(rows), "| steps", steps, "(epochs", EPOCHS, ") | lambda", lam_, "| layers", lay, "rank", RANK); hist = []
     STOP = float(os.environ.get("XL_STOP_CE", "0.24")) if arm == "sft_es" else None; LRX = 0.1 if arm == "sft_lr" else 1.0; ran = steps   # 188
     for step in range(steps):
         for g_ in opt.param_groups:
@@ -887,7 +888,7 @@ def train_arm(arm):
             ls = Fn.log_softmax(B.mS(input_ids=x, logits_to_keep=n - s0, use_cache=False).logits[0].float(), -1)
             ce = -ls[rstart - 1 - s0:n - 1 - s0].gather(-1, y[:, None])[:, 0].mean(); klp = (lt.exp() * (lt - ls)).sum(-1) if lt is not None else torch.zeros(n - s0, device=DEV); kl = klp.mean()
             ex = (float(klp[:rstart - 1 - s0].mean()) if rstart - 1 > s0 else 0.0, float(klp[rstart - 1 - s0:].mean()), float(-lt[rstart - 1 - s0:n - 1 - s0].gather(-1, y[:, None])[:, 0].mean()) if lt is not None else 0.0)
-            loss = {"sft": ce, "sft_b": ce + LAM * kl, "sft_c": ce + LAM * kl, "kl_b": kl, "sft_self": ce + LAM * kl}[kind]
+            loss = {"sft": ce, "sft_b": ce + lam_ * kl, "sft_c": ce + lam_ * kl, "kl_b": kl, "sft_self": ce + lam_ * kl}[kind]
             (loss / XB.ACC).backward(); vals.append((float(ce.detach()), float(kl.detach())) + ex); del ls, lt, loss, klp
         if MT:                                                           # 190: MT_N rows of the corrector's fitting text, cross-entropy on the reply, weight MT_W
             for _ in range(MT_N):
@@ -909,7 +910,7 @@ def train_arm(arm):
     d = OD / f"xl_{arm}"; pm.save_pretrained(str(d), selected_adapters=["default"])
     if onp:
         log(arm, ": samples too short to train on", n_skip)
-    json.dump({"arm": arm, "seed": SEED, "rows": len(enc), "steps": steps, "steps run": ran, "lr scale": LRX, "mix rows ce first / last 200": [float(np.mean(mtl[:200])), float(np.mean(mtl[-200:]))] if mtl else None, "share of steps clipped": nclip / max(1, len(hist)), "stop ce": STOP, "last50 ce at stop": float(np.mean([h[0] for h in hist[-50:]])), "epochs": EPOCHS, "lambda": LAM, "rank": RANK, "layers": lay, "first50": [float(v) for v in np.mean(hist[:50], 0)],
+    json.dump({"arm": arm, "seed": SEED, "rows": len(enc), "steps": steps, "steps run": ran, "lr scale": LRX, "mix rows ce first / last 200": [float(np.mean(mtl[:200])), float(np.mean(mtl[-200:]))] if mtl else None, "share of steps clipped": nclip / max(1, len(hist)), "stop ce": STOP, "last50 ce at stop": float(np.mean([h[0] for h in hist[-50:]])), "epochs": EPOCHS, "lambda": lam_, "rank": RANK, "layers": lay, "first50": [float(v) for v in np.mean(hist[:50], 0)],
                "last50": [float(v) for v in np.mean(hist[-50:], 0)]}, open(d / "train.json", "w"))
     if torch.cuda.is_available():
         log(arm, "peak GPU memory", round(torch.cuda.max_memory_allocated() / 2 ** 30, 2), "GB")   # review 11-08 (the 24 GB 4090)
@@ -949,6 +950,34 @@ def offtask(B, pm, names):
             out[name]["p(true)"] = {a: round(float(np.mean(v)), 4) for a, v in P.items() if v}
         out[name]["per row"] = C
     return out
+
+
+def regrade():
+    """194 (user 11-08, from the Fable review: "a 1,536-cap re-grade of the lost set"): each stored adapter of this seed regenerates the problems
+    it lost (solved by the student alone, failed by the adapter, both greedy at 768 new tokens) with XC_MAXNEW new tokens, greedy, and each answer
+    is scored alone. Lost lists: XL_REGRADE (json {seed: {arm: [ids]}}); adapters: XL_REGRADE_DIR/xl_ARM. No training."""
+    from peft import PeftModel
+    XC.selfcheck(); tr, he = pools(); byid = {p["id"]: p for p in tr + he}; B = XB.Bridge("bridge"); t0 = time.time()
+    lost = json.load(open(os.environ["XL_REGRADE"]))[str(SEED)]; pdir = Path(os.environ["XL_REGRADE_DIR"])
+    out = {"seed": SEED, "max new tokens": XC.MAXNEW, "arms": {}}; pm = None
+    with open(OD / f"xl_regrade_gens_s{SEED}.jsonl", "w") as fh:
+        for k, (a, lid) in enumerate(lost.items()):
+            if SMALL and k >= 2:
+                break
+            lid = [p_["id"] for p_ in (tr + he)[:2]] if SMALL else [i for i in lid if i in byid]   # the small pass: two problems of its small pools
+            assert SMALL or len(lid) == len(lost[a]), f"{a}: lost problems missing from the pools"
+            if pm is None:
+                pm = PeftModel.from_pretrained(B.mS, str(pdir / f"xl_{a}"), adapter_name=a)
+            else:
+                pm.load_adapter(str(pdir / f"xl_{a}"), adapter_name=a)
+            pm.set_adapter(a); pm.eval(); g = XC.gen_hf(pm, B.tq, [byid[i]["prompt"] for i in lid], bos=XB.SBOS) if lid else []
+            ok = [bool(XC.run_problem(byid[i], t)) for i, t in zip(lid, g)]; nt = [len(B.tq(t, add_special_tokens=False)["input_ids"]) for t in g]
+            for i, t, o in zip(lid, g, ok):
+                fh.write(json.dumps({"id": i, "arm": a, "text": t, "pass": o}) + "\n")
+            out["arms"][a] = {"lost": len(lid), "recovered": int(sum(ok)), "recovered ids": [i for i, o in zip(lid, ok) if o], "new tokens": nt,
+                              "longer than 768 tokens": int(sum(1 for n in nt if n > 768)), "recovered and longer than 768": int(sum(1 for n, o in zip(nt, ok) if o and n > 768))}
+            log(a, "lost", len(lid), "| recovered with", XC.MAXNEW, "tokens:", int(sum(ok)), "| answers over 768 tokens:", out["arms"][a]["longer than 768 tokens"], round(time.time() - t0), "s")
+    json.dump(out, open(OD / f"xl_regrade_s{SEED}.json", "w"), indent=1); print("REGRADE_DONE", flush=True)
 
 
 def evaluate():
@@ -1007,7 +1036,7 @@ def evaluate():
             out["arms"][a]["3c lost on the fragile set (train pool, held)"] = [[sum(1 for i in fr_[k] if q.get(i) and not r_.get(i, True)), sum(1 for i in fr_[k] if q.get(i))] for k in ("train", "held")]
         if rbids:                                                        # 182: rb trains only the problems with a passing runbook solution
             out["arms"][a]["1 fixed, by runbook row (has one / none)"] = [fx(lambda i: i in rbids), fx(lambda i: i not in rbids)]
-    pairs = [("sft_mt_s", "sft"), ("sft_self_mt_s", "sft"), ("sft_self_mt_s", "sft_mt_s"), ("sft_b", "sft_c"), ("sft_b", "sft"), ("sft_c", "sft"), ("kl_b", "sft"), ("sft_c", "sft_self"), ("sft_self", "sft"), ("sdft", "sft"), ("sft_c", "sdft"), ("sdft", "sft_self"),
+    pairs = [("sft_self_s_l03", "sft"), ("sft_self_s_l3", "sft"), ("sft_self_s_l3", "sft_self_s_l03"), ("sft_mt_s", "sft"), ("sft_self_mt_s", "sft"), ("sft_self_mt_s", "sft_mt_s"), ("sft_b", "sft_c"), ("sft_b", "sft"), ("sft_c", "sft"), ("kl_b", "sft"), ("sft_c", "sft_self"), ("sft_self", "sft"), ("sdft", "sft"), ("sft_c", "sdft"), ("sdft", "sft_self"),
              ("opd_b", "opd_c"), ("opd_b", "sft"), ("opd_c", "sft"), ("opd_b", "sdft"), ("opd_c", "sdft"), ("opd_b", "sft_b"), ("opd_c", "sft_c"), ("mix_c", "sft"), ("mix_c", "opd_c"), ("mix_c", "sft_c"), ("sft_s", "sft"), ("sft_c_s", "sft_c"),
              ("opd_cf", "opd_c"), ("opd_cf", "sft"), ("opd_cf", "mix_c"), ("rw_cf", "sft"), ("rw_cf", "opd_cf"), ("rw_cf", "opd_c"), ("mix_cf", "mix_c"), ("mix_cf", "sft"), ("mix_cf", "opd_cf"),
              ("rb", "sft"), ("rb", "sft_s"), ("rb", "rw_cf"), ("rb", "mix_cf"), ("rb", "opd_cf"),
@@ -1034,4 +1063,4 @@ def evaluate():
 
 
 if __name__ == "__main__":
-    {"build": build, "build_short": build_short, "precheck": precheck, "train": lambda: train_arm(sys.argv[2]), "evaluate": evaluate, "fit_cf": fit_cf, "rewrite": rewrite, "runbook": runbook, "build_keep": build_keep, "fit_xk": fit_xk, "build_from_gens": build_from_gens}[sys.argv[1]]()
+    {"build": build, "build_short": build_short, "precheck": precheck, "train": lambda: train_arm(sys.argv[2]), "evaluate": evaluate, "regrade": regrade, "fit_cf": fit_cf, "rewrite": rewrite, "runbook": runbook, "build_keep": build_keep, "fit_xk": fit_xk, "build_from_gens": build_from_gens}[sys.argv[1]]()

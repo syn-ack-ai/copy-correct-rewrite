@@ -16,8 +16,8 @@ arm() {   # arm TEACHER SEED: small pass, the 600-item run, its gate (as online_
   else log "small pass failed: $n not run"; fi
   log "disk free $(df -h --output=avail / | tail -1)"
 }
-log "addendum 189b: C seeds 2-3 queued after the 189 queue (ONLINE_REP_DONE)"
-until grep -q ONLINE_REP_DONE $L 2>/dev/null; do sleep 120; done
+log "addendum 189b: C seeds 2-3 queued after the 189 queue"
+until grep -qE '^[0-9]{2}:[0-9]{2} ONLINE_REP_DONE$' $L 2>/dev/null; do sleep 120; done   # review 192: the exact marker line, not a mention of it
 free=0; until [ $free -ge 2 ]; do                                       # no process on the GPU and under 2 GB used, twice in a row
   if [ -z "$(nvidia-smi --query-compute-apps=pid --format=csv,noheader | tr -d ' ')" ] && ! pgrep -f "[v]llm serve" > /dev/null && [ $(nvidia-smi --query-gpu=memory.used --format=csv,noheader,nounits | head -1) -lt 2000 ]; then free=$((free + 1)); else free=0; fi; sleep 60
 done

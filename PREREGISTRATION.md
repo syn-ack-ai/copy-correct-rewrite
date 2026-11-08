@@ -1,7 +1,7 @@
-# Pre-registration log: addenda 165-191
+# Pre-registration log: addenda 165-193
 
 This file is an excerpt of the project's running pre-registration log. It holds the addenda from "Addendum 165" through the end of
-"Addendum 191", copied verbatim and in their original order (addendum 180 sits between 177 and 178 in the source). Each addendum states its
+"Addendum 193", copied verbatim and in their original order (addendum 180 sits between 177 and 178 in the source). Each addendum states its
 design and its predictions before the run; results and readings were appended after the run. Addenda without a result were still
 running when this excerpt was taken.
 
@@ -1112,3 +1112,145 @@ Success bar for "a zero-shot graft carries a user's knowledge": E beats F by at 
 - Steps: library generation (about 1 h), sandbox check, questions, two LoRAs per seed, the evaluation of A-F. About 6 h.
 - Before queuing: a small CPU test, and an independent review of the generator, the sandbox check and the scoring.
 - Nothing leaves the machine. The library and questions are model-written, from E4B.
+
+**Amendment 191a (13:55, design, before any build; user: "with a graft we had no forgetting because the graft adds the extra layers").** The large model's weights never change. Detached, E4B is exactly the original, so forgetting inside the large model is excluded by construction, and per-user grafts cannot damage the shared model or each other. A per-user LoRA shares this frozen-base property when detached. The open question is forgetting *while attached*: a graft adds to E4B's residual stream on every input, a LoRA changes every forward pass, and either can change behaviour on unrelated inputs. The corrector-style graft is gated and fitted with a do-no-harm term, so it should stay off where E4B is already right. Added to 191:
+
+- **Drift with the module attached:** for C (per-user LoRA), E and F (grafts), E4B's KL from E4B alone and ΔCE on untaught prose, code and stories, on held agent replies, and p(true) on fresh questions.
+- **Online phase**, after phase 1 is read: a second release of the library, about 10 further modules written by E4B the same way, arrives as a stream. Each module is seen once and its questions are scored before its update (progressive validation), with keep + replay as in 189. Graft arm: the specialist's LoRA learns and the corrector stays fixed. LoRA arm: E4B's LoRA learns. Measured: accuracy on the new modules after the stream, release-1 accuracy kept, and drift with the module attached.
+- **Check:** detached, every arm reproduces E4B alone exactly.
+
+Predictions:
+7. With the module attached after phase 1, the graft's prose KL from E4B alone is below the per-user LoRA's (60%).
+8. After the online phase, the graft keeps more release-1 accuracy than the per-user LoRA (55%).
+9. The detached check passes for every arm (a check, not a finding).
+
+Bar for "always-on learning without forgetting": the graft's attached drift is at most half the per-user LoRA's on untaught prose. After the online phase, it keeps at least 90% of its release-1 accuracy and learns the new modules, gaining at least half of what the per-user LoRA gains on them.
+
+**Amendment 191b (14:10, design, before any build; user: "we chat with the model, and all interaction text, history, etc, is saved to the graft. We then clear the context and ask the model of what we talked about. If it remembers the graft in essence added the extra layer").** Conversation memory becomes the primary test. The library questions become the follow-up.
+
+**Material.**
+- 50 conversations about a fictional user's software projects. Each carries 8 randomized facts: a project name, a function name, a port, a version, a deadline, the bug discussed, the decision taken, a teammate's name. Values are drawn at random (random pronounceable names, numbers, dates), so no model can guess them.
+- E4B role-plays both the user, who brings the facts up naturally over several turns, and the assistant, so the text is model-written. A conversation is kept only if every fact string appears in it.
+
+**Memory step ("saved to the graft").**
+- The conversations arrive one after another as a stream, as in a user's history. After each one, the learning module takes K passes over its transcript, with K in {1, 3, 10} as a dose curve. E4B and the corrector stay frozen.
+- Two variants:
+  - (i) the transcript alone;
+  - (ii) the transcript plus about 10 question-answer pairs about it, written by the specialist itself (self-study, as in Cartridges and synthetic continued pretraining). Facts trained only as running text are often not answerable.
+
+**Test.** A cleared context, then the questions:
+- (a) direct: "Earlier we talked about my project: which port does the dev server use?";
+- (b) paraphrased;
+- (c) open: "What did we decide about the bug?", scored by the facts recalled.
+
+Exact match after normalisation, and the cross-entropy of the right answer. Reported for early against late conversations, which measures forgetting inside the memory as the stream grows.
+
+**Arms.**
+- **A.** E4B alone, cleared context. The floor: near chance.
+- **B.** E4B with the conversation in its context. The ceiling: in-context memory.
+- **C.** E4B with a per-user LoRA trained the same way.
+- **D.** The E2B specialist alone, trained the same way.
+- **E.** The graft: E4B with 187's generic E2B→E4B corrector reading the specialist.
+- **F.** Graft control: the same corrector reading an untrained E2B.
+
+Plus 191a's attached drift on untaught text and the detached check.
+
+Predictions:
+10. A is near chance and B near ceiling on direct questions (90%).
+11. With the transcript alone, C and D answer direct questions poorly at K = 1 (75%); self-study pairs (variant ii) raise both (70%).
+12. E beats F on answer CE in variant ii (55%); on direct-question accuracy E beats F by at least 10 points (35%).
+13. Early conversations are recalled less than late ones in C, D and E at the end of the stream (65%).
+
+Bar for "the graft added a memory layer": in variant ii, E beats F by at least 10 points on direct questions (paired test p < 0.05), keeps 191a's drift bar, and recalls at least half of what D (the specialist alone) recalls. A live demo, where the user chats and then asks in a cleared context, follows only if the bar is met.
+
+**Amendment 191c (14:25, design, before any build; user: "ideally we would need to create some kind of system in between the graft and the chat history, where it's automatically updated").** The 191 harness is built as that system, so the experiment runs it with a scripted user and a later live demo runs the same code with a person. Components:
+
+1. **History log:** every turn is appended with a timestamp. Until consolidation, retrieval over the log answers.
+2. **Memory writer:** runs after each conversation (cadence C = 1, plus C = 10 as a batch variant). The specialist writes study notes and question-answer pairs about the new turns (variant ii). Its adapter trains K passes on them, with replay of a sample of older memories and keep (KL to base E2B on untaught rows), as in 189. E4B and the corrector are frozen.
+3. **Gate before promotion:** recall on the new facts, kept recall on a sample of older ones, and attached drift on untaught text (191a). A failed candidate is logged and the previous version stays live.
+4. **Registry:** versioned adapter files, a current pointer and rollback. Deletion rebuilds from the last version without the deleted conversation.
+5. **Serving:** E4B, the corrector, and the specialist with the current adapter, swapped between turns.
+
+Added measures: the gate's pass rate and why candidates fail; recall over the stream for each version (the learning curve with the gate on and off); time per consolidation on the 4090. No new predictions: these describe the system. 191b's bar stays the test.
+
+## Addendum 192 (2026-11-08, 14:45; built, in review, not yet run): is online distillation a better teacher than SFT on agent decisions? (user: "is online a better teacher (with less breaking) then SFT?"; "yes, add both and queue them before the graft")
+
+Why: every model scored on the 220-decision gate learned on-policy (the student samples, the teacher scores every token), offline or online. Plain SFT, which copies E4B's logged replies, was never gated, so "online versus SFT" has no answer yet. On coding, plain SFT on verified answers beat on-policy distillation (179-181). The gate so far (seed 1):
+
+| Setup | Fixed (of 52) | Broken (of 168) | Net |
+|---|---|---|---|
+| Offline on-policy, alldirect | 20 | 5 | +15 |
+| Offline best recipe, resdec (4 runs) | 19-27 | 2-9 | +14 to +22 |
+| Online A, teacher | 25 | 11 | +14 |
+| Online C, teacher + keep + replay | 14 | 6 | +8 |
+| Online D, corrector + keep + replay | 23 | 4 | +19 |
+
+Design: online.py additions (additive; every earlier path unchanged), runner dreamer/online_rep3_4090.sh, after ONLINE_REP2_DONE and before the graft build. The RSI pilot and 184 wait behind it. Seed 1, the same 600 stream items as the online setups, rank-16 LoRA on E2B, then gate_lora on the same 240 points.
+1. **Offline SFT** (ON_LORA_LOSS=ce, ON_LORA_POOL=stream): plain cross-entropy on E4B's logged reply. 600 steps × 2 rows drawn from the 600 stream items, about two passes, at lr 3e-4 with warm-up and cosine decay. This is the classic batch baseline: the same data, revisited, no keep or replay.
+2. **Online SFT** (ON_ONL_TEACH=sft, keep 1.0, replay every 4th): each stream item once, cross-entropy on E4B's logged reply, flat lr, with D's protections.
+
+So copying versus distillation is compared online (2 vs D, both with keep + replay), and online versus batch for copying (2 vs 1).
+
+Caveat: a logged reply is a single sample, while D learns from two of the student's own samples per item scored by the corrector. Neither the token count nor the target type is matched, by design: these are the two recipes as a practitioner would run them.
+
+Predictions (seed 1):
+1. Offline SFT fixes at least 20 of the 52 (60%) and breaks more than D's 4 (70%).
+2. Online SFT breaks at most 6 (60%) and fixes fewer than D's 23 (55%).
+3. D's net (+19) is at least both SFT arms' net (55%).
+4. Offline SFT's untaught drift is above online SFT's (75%).
+
+Bar for "online distillation through the corrector is a better teacher than SFT": D's net beats both SFT arms' by at least 4, with paired exact sign tests on the 220 decisions at p < 0.1. One seed, so this reads as a direction until seeds are added.
+
+**Amendment 192a (13:45, after code review, before any run).** The review found no crash bug in online.py. It confirmed:
+- The cross-entropy scores exactly E4B's logged reply tokens.
+- The offline pool is exactly the online stream (seed 1).
+- The online sft branch trains with the adapter on.
+- Every earlier path is unchanged.
+
+It found one crash-level bug in the runners. online_rep2_4090.sh and online_rep3_4090.sh waited for their predecessor's marker with a plain grep, but each had just written a log line that named that marker. Both waits passed at once and left only the free-GPU check, so the two runners could have started together on the 24 GB card when the 189 queue ended. Neither had started.
+
+Fixed and deployed at 13:42 (each waiting runner was stopped by exact PID, the files swapped with mv, then relaunched):
+- The waits match only the exact marker line, and the log lines no longer name markers.
+- Offline SFT does not load E4B (about 9 GB freed) and starts its LoRA from seed 161, as the online arms do.
+- Both SFT small passes train first on the longest reply, to test the memory peak.
+- train_lora logs peak GPU memory.
+
+**Result 190 (2026-11-08, 15:20; Colab, seeds 1-3; each session re-scored 186's sft identically).** E2B; held solved pooled over three seeds (E2B alone 171); fixed and lost per seed; prose drift as three-seed means; held agent-reply CE (E2B alone 0.685).
+
+| Arm | Held | Fixed | Lost | Prose KL / ΔCE / Δentropy | Agent CE |
+|---|---|---|---|---|---|
+| sft | 204 | 119.7 | 15.7 | 0.290 / +0.69 / −0.77 | 0.749 |
+| sft_self_s (187) | 207 | 90.7 | 13.3 | 0.016 / −0.04 / −0.01 | 0.668 |
+| sft_c_s (187) | 216 | 95.3 | 16.0 | 0.326 / −0.60 / +0.83 | 0.650 |
+| sft_b_s (187) | 209 | 99.3 | 15.3 | 0.323 / −0.58 / +0.80 | 0.648 |
+| sft_mt_s | 214 | 105.0 | 16.3 | 0.829 / −0.75 / +1.18 | 0.504 |
+| sft_self_mt_s | 206 | 83.3 | 17.3 | 0.811 / −0.76 / +1.18 | 0.502 |
+
+Paired held tests: sft_mt_s vs sft_c_s 32 vs 34 (p = 0.90); vs sft_s 42 vs 32 (p = 0.30); vs sft 46 vs 36 (p = 0.32). sft_self_mt_s vs sft_self_s 40 vs 41.
+
+Training: coding CE last50 was 0.114-0.131 (sft_mt_s) and 0.135-0.149 (sft_self_mt_s), held up like the anchors' 0.11-0.12. Mix CE fell from 1.6-1.8 to 1.2-1.4. 93-97% of steps were clipped at norm 1.0, so the coding signal was scaled down along with the mix.
+
+Predictions:
+1. sft_mt_s prose ΔCE at most −0.3: yes (−0.75).
+2. sft_mt_s entropy change below +0.4: no (+1.18).
+3. sft_mt_s within ±10 held of sft_c_s: yes (214 vs 216).
+4. sft_self_mt_s lower prose KL than sft_mt_s: yes, barely (0.811 vs 0.829).
+5. sft_mt_s lower agent CE than sft_c_s: yes (0.504 vs 0.650).
+
+4 of 5 held. Success bar ("the anchor only carries the corrector's fitting text"): met. Held 214 vs 216 is within ±10, and prose ΔCE −0.75 vs −0.60 is within 0.15.
+
+Reading: the corrector anchor's gains on E2B (held solves, lower loss on untaught text) are reproduced by training on the text the corrector was fitted on. Direct training reaches lower agent-reply loss but moves the student about 2.5 times as far (prose KL 0.83 vs 0.33), and the KL pull to the original cannot hold it in place against that much new text. The anchor is a gentler channel for its fitting text, not a source of anything beyond it. The "untaught" prose comes from the same books as the fitting prose (every seventh passage held out), so these prose gains are in-domain for both routes.
+
+## Addendum 193 (2026-11-08, 15:40; built, in review, not yet run): KL strength sweep for the anchor to the original student (user chose it from the Fable review: "λ = 1 only. Even a three-point λ sweep on one seed would make the recommendation robust")
+
+Why: the paper recommends a KL pull toward the original student, which removed E2B's copying damage at no cost in held solves (λ = 1; 187: prose ΔCE −0.04, KL 0.016, held 207 vs SFT 204). Only λ = 1 was run.
+
+Design: arms sft_self_s_l03 and sft_self_s_l3 in xlearn.py: sft_self_s, the shortest rows plus KL to the student with the LoRA off, at λ = 0.3 and 3. E2B student, seeds 1-3, one Colab session per seed (xq_learn.sh STAGE=e2b, XL_ARMS=sft_self_s_l03,sft_self_s_l3, launcher dreamer/xq_side22_launch.sh). Each session re-scores 186's sft; λ = 1 is 187's sft_self_s, paired through stored per-problem results; drift for every adapter.
+
+Predictions (pooled over seeds 1-3):
+1. Prose KL from the original falls with λ: λ 0.3 > λ 1 (0.016) > λ 3 (80%).
+2. Training problems fixed fall with λ: λ 0.3 > λ 1 (90.7 per seed) > λ 3 (70%).
+3. Held solved within ±10 of each other across the three strengths (65%).
+4. Prose ΔCE at λ = 0.3 lies between λ 1's −0.04 and SFT's +0.69, above +0.1 (55%).
+
+Bar for "the KL pull removes copying damage across strengths": at λ = 0.3 and λ = 3, held solved within 10 of SFT (204) and prose ΔCE at most +0.15.

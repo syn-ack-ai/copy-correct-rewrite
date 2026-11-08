@@ -275,8 +275,24 @@ def tail_ce(lg, ti, tv):
 
 
 def train_lora():
+    """S3-style LoRA on E4B's logged replies. ON_LORA_LOSS: kd (default, E4B's top 32 with a tail bin) or ce (addendum 192: plain SFT, hard
+    labels on E4B's reply). ON_LORA_POOL: train (default, every training point) or stream (192: the online test's 600 stream items, seed 1).
+    ON_LORA_OUT names the adapter (default lora_31b)."""
     from peft import LoraConfig, get_peft_model
-    ids, tr, _ = data(); mT, mS, gT, gS = load_models(); rng = np.random.default_rng(7); t0 = time.time()
+    LLOSS, LPOOL, LOUT = os.environ.get("ON_LORA_LOSS", "kd"), os.environ.get("ON_LORA_POOL", "train"), os.environ.get("ON_LORA_OUT", "lora_31b")
+    assert LLOSS in ("kd", "ce") and LPOOL in ("train", "stream")
+    ids, tr, _ = data(); rng = np.random.default_rng(7); t0 = time.time()
+    if LLOSS == "ce":                                                    # review 192: plain SFT needs no teacher; E4B not loaded (about 9 GB free)
+        mT = gT = gS = None; mS = X.load(ST)
+    else:
+        mT, mS, gT, gS = load_models()
+    if LPOOL == "stream":                                                # 192: the same items, in the same draw, as train_online's stream (seed 1)
+        call, sub = call_ids(X.tok_()); keep = [r for r in tr if not after_submit(ids, r, call, sub)]
+        tr = [keep[i] for i in np.random.default_rng(170).permutation(len(keep))[:ONL_N]]
+        if SMALL:                                                        # review 192: the small pass trains first on the longest reply (the memory peak)
+            tr[0] = max((r for r in data()[1]), key=lambda q: (min(q["ctx_len"] + min(q["reply_len"], RMAX), CAP), min(q["reply_len"], RMAX)))
+        torch.manual_seed(161)                                           # review 192: the online arms' LoRA start (seed 1)
+    log("LoRA loss", LLOSS, "| pool", LPOOL, len(tr), "items | out", LOUT)
     tm, lay = lora_targets(mS); rk = int(os.environ.get("ON_RANK", "16")); llr = float(os.environ.get("ON_LORA_LR", "3e-4"))
     pm = get_peft_model(mS, LoraConfig(r=rk, lora_alpha=2 * rk, lora_dropout=0.0, target_modules=tm, bias="none")); params = [p_ for n_, p_ in mS.named_parameters() if "lora_" in n_]
     log("LoRA layers", lay, "rank", rk, "lr", llr, "trainable", sum(p_.numel() for p_ in params))
@@ -288,16 +304,21 @@ def train_lora():
             g["lr"] = llr * sched(step)
         opt.zero_grad(set_to_none=True); kds = []
         for _ in range(ACC):
-            r = tr[int(rng.integers(len(tr)))]; x, c, n, s0 = seq(ids, r)
-            with torch.no_grad():
-                tv, ti = Fn.log_softmax(mT(input_ids=x, logits_to_keep=n + 1, use_cache=False).logits[0, :-1].float(), -1).topk(X.TOPK, -1)
-            lg = mS(input_ids=x, logits_to_keep=n + 1, use_cache=False).logits[0, :-1].float(); kd = tail_ce(lg, ti, tv)
+            r = tr[0] if SMALL and LPOOL == "stream" and step == 0 else tr[int(rng.integers(len(tr)))]; x, c, n, s0 = seq(ids, r)
+            if LLOSS == "ce":                                            # 192: plain SFT on E4B's logged reply
+                lg = mS(input_ids=x, logits_to_keep=n + 1, use_cache=False).logits[0, :-1].float(); kd = Fn.cross_entropy(lg, x[0, -n:])
+            else:
+                with torch.no_grad():
+                    tv, ti = Fn.log_softmax(mT(input_ids=x, logits_to_keep=n + 1, use_cache=False).logits[0, :-1].float(), -1).topk(X.TOPK, -1)
+                lg = mS(input_ids=x, logits_to_keep=n + 1, use_cache=False).logits[0, :-1].float(); kd = tail_ce(lg, ti, tv)
             (kd / ACC).backward(); kds.append(float(kd.detach())); del lg
         torch.nn.utils.clip_grad_norm_(params, 1.0); opt.step(); hist.append(np.mean(kds))
         if step % 25 == 0 or step == STEPS - 1:
             log("lora step", step, "cross-entropy to the 31B (with tail bin)", round(float(np.mean(hist[-25:])), 4), round(time.time() - t0), "s")
     assert np.isfinite(np.array(hist[-25:])).all(), "training loss is not finite"
-    pm.save_pretrained(str(OD / "lora_31b")); json.dump({"layers": lay, "rank": rk, "lr": llr, "steps": STEPS, "last": float(np.mean(hist[-25:]))}, open(OD / "lora_31b" / "train.json", "w"))
+    pm.save_pretrained(str(OD / LOUT)); json.dump({"layers": lay, "rank": rk, "lr": llr, "steps": STEPS, "loss": LLOSS, "pool": LPOOL, "items": len(tr), "last": float(np.mean(hist[-25:]))}, open(OD / LOUT / "train.json", "w"))
+    if torch.cuda.is_available():
+        log("peak GPU memory", round(torch.cuda.max_memory_allocated() / 2 ** 30, 2), "GB")   # review 192
     print("TRAIN_DONE lora", flush=True)
 
 
@@ -1423,12 +1444,12 @@ def blend_alpha(mT, mS, gT, br, ids, items, tok, eos):
 
 def train_online():
     from peft import LoraConfig, get_peft_model
-    assert ONL_TEACH in ("direct", "bridge", "control", "blend"); ids, tr, held = data(); mT, mS, gT, gS = load_models(); tok = X.tok_(); call, sub = call_ids(tok); eos = eos_of(mS)
+    assert ONL_TEACH in ("direct", "bridge", "control", "blend", "sft"); ids, tr, held = data(); mT, mS, gT, gS = load_models(); tok = X.tok_(); call, sub = call_ids(tok); eos = eos_of(mS)
     rng = np.random.default_rng(170 + SEEDOFF); torch.manual_seed(170 + SEEDOFF); t0 = time.time()   # 189: ON_SEED (0 = every earlier online run)
     keep = [r for r in tr if not after_submit(ids, r, call, sub)]; perm = rng.permutation(len(keep)); stream = [keep[i] for i in perm[:ONL_N]]
     calib = [keep[i] for i in perm[ONL_N:ONL_N + ONL_NCALB]] if ONL_TEACH == "blend" else []   # 189: outside the stream
     if SMALL:                                                           # review 11-07: the small pass reaches peak memory (the longest row first)
-        stream[0] = max(keep, key=lambda q: min(q["ctx_len"] + min(q["reply_len"], RMAX), CAP))
+        stream[0] = max(keep, key=(lambda q: (min(q["ctx_len"] + min(q["reply_len"], RMAX), CAP), min(q["reply_len"], RMAX))) if ONL_TEACH == "sft" else (lambda q: min(q["ctx_len"] + min(q["reply_len"], RMAX), CAP)))   # review 192: sft also takes the longest reply
     hpick = [held[i] for i in np.random.default_rng(11).permutation(len(held))[:ONL_HELD]]   # the first ONL_HELD of the gate's own points
     _, mtr, mheld = data(kinds=("prose", "code", "story")); mpick = [mheld[i] for i in np.random.default_rng(12).permutation(len(mheld))[:ONL_MIX]]
     _, _, qheld = data(kinds=("question", "question_fresh")); qpick = [qheld[i] for i in np.random.default_rng(13).permutation(len(qheld))[:ONL_MIX]]   # review 11-07: untouched by the keep term
@@ -1463,6 +1484,9 @@ def train_online():
         json.dump({"partial": True, "items": len(preq), "prequential": preq, "held curve (bridge down)": curve}, open(OD / f"online_{tag}_partial.json", "w"))   # review 11-07: nothing lost on a late crash
 
     def learn(r):
+        if ONL_TEACH == "sft":                                           # 192: copy E4B's logged reply (cross-entropy), no sampling
+            x, c, n, s0 = seq(ids, r); lg = mS(input_ids=x, logits_to_keep=n + 1, use_cache=False).logits[0, :-1].float()
+            ce = Fn.cross_entropy(lg, x[0, -n:]); ce.backward(); v = float(ce.detach()); del lg, ce; return v
         x, c, n, s0 = seq(ids, r); ctx = x[:, :c]
         if c > CAP - OPD_GEN:
             ctx = torch.cat([ctx[:, :HEAD], ctx[:, -(CAP - OPD_GEN - HEAD):]], 1)

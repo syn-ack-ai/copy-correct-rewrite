@@ -22,26 +22,24 @@ each other with freshly fitted Gemma correctors (three seeds each way), and Gemm
 From the paper's abstract and results:
 
 - **Copying the teacher's verified answers taught as much as anything tested.** The shortest correct version did best.
-- **The corrector did not teach more than SFT in any stored form,** even when it read the teacher's states.
-- **To keep what the student knew, a plain KL pull toward the original student worked best.** It matched the best coding results and left
-  untaught text almost unchanged. The corrector anchor did something else: it lowered the student's loss on untaught text, carrying over
-  the corrector's own fit.
+- **Within the Gemma family, copying also forgot.** E4B's text is familiar to E2B; training on it sharpened E2B and raised its loss on
+  untaught text far more than Qwen's. The likely cause is over-fitting familiar text.
+- **A KL pull toward the original student removed that damage without costing held-out solves** (prose KL 0.016; held 207 vs 204 for SFT).
+  Reversed, with E2B's answers teaching E4B, SFT barely helped and every anchor did significantly better (244-250 held vs 224).
+- **Self-written solutions ("runbook rows") moved the student least yet sharpened it.** A small KL is no proof against forgetting.
 - **On-policy distillation reached its teacher's level and stopped there.**
-- **Student-written solutions fixed the most trained problems, but sharpened the student and raised its loss on untaught text** in every
-  seed. The corrector anchor reversed that.
-- **Within the Gemma family, plain copying damaged untaught text far more, and every anchor removed that damage** (three seeds, both
-  directions). When E4B learned from E2B's answers, the anchors also raised held-out coding (+20 to +26 problems over SFT, p ≤ 0.03).
-  The teacher's states added nothing over the student's own: cross-model and self-corrector anchors tied.
-- **As an online teacher with keep + replay, the corrector gave the best net result on agent decisions** (one seed; replication and
-  controls running at the time of this snapshot).
+- **The state corrector did not store the teacher's knowledge in an adapter:** fed E4B's states, it taught no better than fed the student's
+  own. As an anchor it matched training on its own fitting text (held 214 vs 216, p = 0.90; addendum 190), delivered with less change.
+  As an online teacher with keep + replay it gave the best net result on agent decisions in seed 1.
 
-The paper's limitations (Section 6) and the pre-registration scorecard apply to all of these.
+The paper's limitations (Section 5) and the pre-registration scorecard (Appendix C) apply to all of these.
 
 **Status (2026-11-08, evening).** In the paper and in this repository: 185 (`data/runs/xqlSS*`), 186 (`xqlE2B*`), 187 (`xqlTW2b*`: E4B
-teaches E2B; `xqlTW4b*`: E2B teaches E4B) and the online test's setup D, seed 1 (183, `data/online/`). Running at the time of this snapshot,
-with designs and predictions in `PREREGISTRATION.md`: online D seeds 2-3 with self-corrector and blend controls and setup C seeds 2-3 (189),
-a multi-task control for the corrector anchor (190) and a matched-loss test (188). Addendum 191 (per-user grafts) is planned for a separate
-paper.
+teaches E2B; `xqlTW4b*`: E2B teaches E4B), 190 (`xqlMT*`: the multi-task control for the corrector anchor) and the online test's setup D,
+seed 1 (183, `data/online/`). Running at the time of this snapshot, with designs and predictions in `PREREGISTRATION.md`: online D seeds
+2-3 with self-corrector and blend controls and setup C seeds 2-3 (189), online against offline SFT teachers (192), a matched-loss test
+(188) and a KL strength sweep (193). A longer-cap re-grade of the lost coding problems (194) is being revised and will be added when final.
+Addendum 191 (per-user grafts) is planned for a separate paper.
 
 ## Repository layout
 
@@ -61,7 +59,7 @@ code/
   transfer/              experiment code (Python)
   colab/                 session scripts for Colab G4 runs
   dreamer/               launchers and runners for the local RTX 4090
-PREREGISTRATION.md       the pre-registration log, addenda 165-191 (designs and predictions written before each run)
+PREREGISTRATION.md       the pre-registration log, addenda 165-193 (designs and predictions written before each run)
 MANIFEST.md              every file, its size and its purpose
 LICENSE                  Apache License 2.0
 ```
@@ -125,6 +123,7 @@ The code is a snapshot of 2026-11-08. It also holds paths that the paper does no
 | `xqlTW2b1`-`xqlTW2b3` | E4B teaches E2B with freshly fitted Gemma correctors: shortest rows + KL to the original, + self-anchor, + cross-model anchor (187) |
 | `xqlTW4b1`-`xqlTW4b3` | E2B teaches E4B on E2B's 148 passing answers: SFT, KL to the original, self-anchor, cross-model anchor (187) |
 | `xqr2`, `xqr3` | Fit logs of Qwen's per-seed correctors (the paper's recipe), read by `collect.py` |
+| `xqlMT1`-`xqlMT3` | The multi-task control on E2B: shortest rows + the corrector's fitting text, with and without KL to the original (190) |
 | `xqlE2B1`-`xqlE2B3` | Gemma 4 E2B as the student: SFT, shortest rows, runbook rows (E2B re-solves with the plans from `xqlRB0`), drift (186) |
 | `xqw1`-`xqw3` | LoRAs trained on agent turns, tested on all easy and medium LiveCodeBench problems (178) |
 | `xqd1`-`xqd3` | Corrector forms against dose-matched SFT on agent replies (169d) |
@@ -133,11 +132,12 @@ Arm keys in the data and their names in the figures (`scripts/figures.py`):
 
 | Key | Name |
 |---|---|
-| `qwen` | the untrained student alone (Qwen3-1.7B; Gemma 4 E2B in `xqlE2B*` and `xqlTW2b*`; Gemma 4 E4B in `xqlTW4b*`) |
+| `qwen` | the untrained student alone (Qwen3-1.7B; Gemma 4 E2B in `xqlE2B*`, `xqlTW2b*` and `xqlMT*`; Gemma 4 E4B in `xqlTW4b*`) |
 | `sft` | SFT on teacher text |
 | `sft_s` | SFT, shortest correct |
 | `sft_c_s` | SFT, shortest + self-anchor |
 | `sft_self_s` | SFT, shortest + KL to the original student (185) |
+| `sft_mt_s` / `sft_self_mt_s` | SFT, shortest + the corrector's fitting text / + KL to the original student (190) |
 | `opd_c` / `opd_cf` | On-policy (weak teacher) / (refit teacher) |
 | `mix_c` / `mix_cf` | SFT + on-policy (weak teacher) / (refit teacher) |
 | `rw_cf` | Rewrites via corrector |

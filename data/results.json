@@ -3235,6 +3235,429 @@
    "lines": 5
   }
  },
+ "mt e2b": {
+  "per seed": {
+   "1": {
+    "sft": {
+     "fixed": 119,
+     "fixed of": 151,
+     "new": 20,
+     "new of": 131,
+     "held solved": 67,
+     "held of": 188,
+     "lost held": 10,
+     "lost train pool": 7,
+     "qwen held": 57,
+     "qwen train pool": 148
+    },
+    "sft_mt_s": {
+     "fixed": 105,
+     "fixed of": 151,
+     "new": 20,
+     "new of": 131,
+     "held solved": 69,
+     "held of": 188,
+     "lost held": 8,
+     "lost train pool": 8,
+     "qwen held": 57,
+     "qwen train pool": 148
+    },
+    "sft_self_mt_s": {
+     "fixed": 85,
+     "fixed of": 151,
+     "new": 24,
+     "new of": 131,
+     "held solved": 75,
+     "held of": 188,
+     "lost held": 6,
+     "lost train pool": 10,
+     "qwen held": 57,
+     "qwen train pool": 148
+    }
+   },
+   "2": {
+    "sft": {
+     "fixed": 120,
+     "fixed of": 151,
+     "new": 22,
+     "new of": 131,
+     "held solved": 69,
+     "held of": 188,
+     "lost held": 10,
+     "lost train pool": 5,
+     "qwen held": 57,
+     "qwen train pool": 148
+    },
+    "sft_mt_s": {
+     "fixed": 98,
+     "fixed of": 151,
+     "new": 27,
+     "new of": 131,
+     "held solved": 77,
+     "held of": 188,
+     "lost held": 7,
+     "lost train pool": 10,
+     "qwen held": 57,
+     "qwen train pool": 148
+    },
+    "sft_self_mt_s": {
+     "fixed": 82,
+     "fixed of": 151,
+     "new": 17,
+     "new of": 131,
+     "held solved": 67,
+     "held of": 188,
+     "lost held": 7,
+     "lost train pool": 9,
+     "qwen held": 57,
+     "qwen train pool": 148
+    }
+   },
+   "3": {
+    "sft": {
+     "fixed": 120,
+     "fixed of": 151,
+     "new": 20,
+     "new of": 131,
+     "held solved": 68,
+     "held of": 188,
+     "lost held": 9,
+     "lost train pool": 6,
+     "qwen held": 57,
+     "qwen train pool": 148
+    },
+    "sft_mt_s": {
+     "fixed": 112,
+     "fixed of": 151,
+     "new": 20,
+     "new of": 131,
+     "held solved": 68,
+     "held of": 188,
+     "lost held": 9,
+     "lost train pool": 7,
+     "qwen held": 57,
+     "qwen train pool": 148
+    },
+    "sft_self_mt_s": {
+     "fixed": 83,
+     "fixed of": 151,
+     "new": 15,
+     "new of": 131,
+     "held solved": 64,
+     "held of": 188,
+     "lost held": 8,
+     "lost train pool": 12,
+     "qwen held": 57,
+     "qwen train pool": 148
+    }
+   }
+  },
+  "offtask": {
+   "1": {
+    "held agent | cross-entropy": {
+     "qwen": 0.6849,
+     "sft": 0.7499,
+     "sft_mt_s": 0.5058,
+     "sft_self_mt_s": 0.5038
+    },
+    "held question_fresh | cross-entropy": {
+     "qwen": 0.9386,
+     "sft": 1.0621,
+     "sft_mt_s": 0.8385,
+     "sft_self_mt_s": 0.8746
+    },
+    "held question_fresh | p(true)": {
+     "qwen": 0.5822,
+     "sft": 0.5952,
+     "sft_mt_s": 0.7447,
+     "sft_self_mt_s": 0.7471
+    },
+    "held prose (untaught) | cross-entropy": {
+     "qwen": 4.4729,
+     "sft": 5.1732,
+     "sft_mt_s": 3.6816,
+     "sft_self_mt_s": 3.6854
+    }
+   },
+   "2": {
+    "held agent | cross-entropy": {
+     "qwen": 0.6849,
+     "sft": 0.7458,
+     "sft_mt_s": 0.5009,
+     "sft_self_mt_s": 0.5002
+    },
+    "held question_fresh | cross-entropy": {
+     "qwen": 0.9386,
+     "sft": 1.1239,
+     "sft_mt_s": 1.2036,
+     "sft_self_mt_s": 0.7055
+    },
+    "held question_fresh | p(true)": {
+     "qwen": 0.5822,
+     "sft": 0.5749,
+     "sft_mt_s": 0.8197,
+     "sft_self_mt_s": 0.564
+    },
+    "held prose (untaught) | cross-entropy": {
+     "qwen": 4.4729,
+     "sft": 5.1902,
+     "sft_mt_s": 3.698,
+     "sft_self_mt_s": 3.6963
+    }
+   },
+   "3": {
+    "held agent | cross-entropy": {
+     "qwen": 0.6849,
+     "sft": 0.751,
+     "sft_mt_s": 0.5044,
+     "sft_self_mt_s": 0.5007
+    },
+    "held question_fresh | cross-entropy": {
+     "qwen": 0.9386,
+     "sft": 1.1327,
+     "sft_mt_s": 0.7976,
+     "sft_self_mt_s": 1.1098
+    },
+    "held question_fresh | p(true)": {
+     "qwen": 0.5822,
+     "sft": 0.5918,
+     "sft_mt_s": 0.7721,
+     "sft_self_mt_s": 0.7437
+    },
+    "held prose (untaught) | cross-entropy": {
+     "qwen": 4.4729,
+     "sft": 5.1813,
+     "sft_mt_s": 3.7186,
+     "sft_self_mt_s": 3.7017
+    }
+   }
+  },
+  "e4b held CE": {
+   "1": {
+    "qwen": 0.2428,
+    "sft": 0.2572,
+    "sft_mt_s": 0.2238,
+    "sft_self_mt_s": 0.2139
+   },
+   "2": {
+    "qwen": 0.2428,
+    "sft": 0.2523,
+    "sft_mt_s": 0.2248,
+    "sft_self_mt_s": 0.2149
+   },
+   "3": {
+    "qwen": 0.2428,
+    "sft": 0.2543,
+    "sft_mt_s": 0.23,
+    "sft_self_mt_s": 0.2163
+   }
+  },
+  "pooled": {
+   "sft": {
+    "fixed": 359,
+    "fixed of": 453,
+    "new": 62,
+    "new of": 393,
+    "held solved": 204,
+    "held of": 564,
+    "lost held": 29,
+    "lost train pool": 18,
+    "qwen held": 171,
+    "qwen train pool": 444,
+    "seeds": 3
+   },
+   "sft_mt_s": {
+    "fixed": 315,
+    "fixed of": 453,
+    "new": 67,
+    "new of": 393,
+    "held solved": 214,
+    "held of": 564,
+    "lost held": 24,
+    "lost train pool": 25,
+    "qwen held": 171,
+    "qwen train pool": 444,
+    "seeds": 3
+   },
+   "sft_self_mt_s": {
+    "fixed": 250,
+    "fixed of": 453,
+    "new": 56,
+    "new of": 393,
+    "held solved": 206,
+    "held of": 564,
+    "lost held": 21,
+    "lost train pool": 31,
+    "qwen held": 171,
+    "qwen train pool": 444,
+    "seeds": 3
+   }
+  }
+ },
+ "mt e2b drift": {
+  "sft_mt_s|1|prose": {
+   "kl": 0.84076,
+   "dce": -0.76432,
+   "ce": 3.63117,
+   "ce base": 4.39549,
+   "entropy": 3.38956,
+   "entropy base": 2.16261,
+   "rows": 43
+  },
+  "sft_self_mt_s|1|prose": {
+   "kl": 0.82918,
+   "dce": -0.7628,
+   "ce": 3.63269,
+   "ce base": 4.39549,
+   "entropy": 3.36161,
+   "entropy base": 2.16261,
+   "rows": 43
+  },
+  "sft_mt_s|1|story": {
+   "kl": 1.19268,
+   "dce": -1.11237,
+   "ce": 2.765,
+   "ce base": 3.87737,
+   "entropy": 2.22549,
+   "entropy base": 1.58796,
+   "rows": 24
+  },
+  "sft_self_mt_s|1|story": {
+   "kl": 1.12084,
+   "dce": -1.10238,
+   "ce": 2.77499,
+   "ce base": 3.87737,
+   "entropy": 2.19969,
+   "entropy base": 1.58796,
+   "rows": 24
+  },
+  "sft_mt_s|1|code": {
+   "kl": 0.34814,
+   "dce": -0.40952,
+   "ce": 1.61137,
+   "ce base": 2.02089,
+   "entropy": 1.53832,
+   "entropy base": 0.89321,
+   "rows": 57
+  },
+  "sft_self_mt_s|1|code": {
+   "kl": 0.32136,
+   "dce": -0.40618,
+   "ce": 1.61471,
+   "ce base": 2.02089,
+   "entropy": 1.51998,
+   "entropy base": 0.89321,
+   "rows": 57
+  },
+  "sft_mt_s|2|prose": {
+   "kl": 0.80743,
+   "dce": -0.75098,
+   "ce": 3.64451,
+   "ce base": 4.39549,
+   "entropy": 3.36688,
+   "entropy base": 2.16261,
+   "rows": 43
+  },
+  "sft_self_mt_s|2|prose": {
+   "kl": 0.79974,
+   "dce": -0.75457,
+   "ce": 3.64092,
+   "ce base": 4.39549,
+   "entropy": 3.33781,
+   "entropy base": 2.16261,
+   "rows": 43
+  },
+  "sft_mt_s|2|story": {
+   "kl": 0.94593,
+   "dce": -1.00328,
+   "ce": 2.87409,
+   "ce base": 3.87737,
+   "entropy": 2.35091,
+   "entropy base": 1.58796,
+   "rows": 24
+  },
+  "sft_self_mt_s|2|story": {
+   "kl": 0.87376,
+   "dce": -0.97483,
+   "ce": 2.90255,
+   "ce base": 3.87737,
+   "entropy": 2.33919,
+   "entropy base": 1.58796,
+   "rows": 24
+  },
+  "sft_mt_s|2|code": {
+   "kl": 0.31173,
+   "dce": -0.40497,
+   "ce": 1.61592,
+   "ce base": 2.02089,
+   "entropy": 1.47304,
+   "entropy base": 0.89321,
+   "rows": 57
+  },
+  "sft_self_mt_s|2|code": {
+   "kl": 0.29206,
+   "dce": -0.40743,
+   "ce": 1.61346,
+   "ce base": 2.02089,
+   "entropy": 1.47736,
+   "entropy base": 0.89321,
+   "rows": 57
+  },
+  "sft_mt_s|3|prose": {
+   "kl": 0.83984,
+   "dce": -0.73352,
+   "ce": 3.66197,
+   "ce base": 4.39549,
+   "entropy": 3.27998,
+   "entropy base": 2.16261,
+   "rows": 43
+  },
+  "sft_self_mt_s|3|prose": {
+   "kl": 0.80494,
+   "dce": -0.74883,
+   "ce": 3.64666,
+   "ce base": 4.39549,
+   "entropy": 3.31556,
+   "entropy base": 2.16261,
+   "rows": 43
+  },
+  "sft_mt_s|3|story": {
+   "kl": 1.28864,
+   "dce": -1.09311,
+   "ce": 2.78426,
+   "ce base": 3.87737,
+   "entropy": 1.94265,
+   "entropy base": 1.58796,
+   "rows": 24
+  },
+  "sft_self_mt_s|3|story": {
+   "kl": 1.15015,
+   "dce": -1.10911,
+   "ce": 2.76826,
+   "ce base": 3.87737,
+   "entropy": 2.00082,
+   "entropy base": 1.58796,
+   "rows": 24
+  },
+  "sft_mt_s|3|code": {
+   "kl": 0.32224,
+   "dce": -0.40468,
+   "ce": 1.61621,
+   "ce base": 2.02089,
+   "entropy": 1.49765,
+   "entropy base": 0.89321,
+   "rows": 57
+  },
+  "sft_self_mt_s|3|code": {
+   "kl": 0.30115,
+   "dce": -0.40609,
+   "ce": 1.6148,
+   "ce base": 2.02089,
+   "entropy": 1.50811,
+   "entropy base": 0.89321,
+   "rows": 57
+  }
+ },
  "wide": {
   "1": {
    "problems": 705,
@@ -5243,6 +5666,23 @@
     "step2 seqdense_d1000 LoRA": 1.3418,
     "step2 uld LoRA": 3.6286
    }
+  }
+ },
+ "teachers live": {
+  "1": {
+   "refit": 51,
+   "old": 37,
+   "alone": 23
+  },
+  "2": {
+   "refit": 53,
+   "old": 38,
+   "alone": 23
+  },
+  "3": {
+   "refit": 47,
+   "old": 42,
+   "alone": 23
   }
  },
  "online": {

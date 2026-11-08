@@ -104,6 +104,15 @@ for d_, pre in (("e2b", "xqlTW2b"), ("e4b", "xqlTW4b")):
             if f.exists():
                 res[f"two {d_} fit"][f"{kind}|{s}"] = fit_summary(f)
 
+# 190: the multi-task control (E2B; sft_mt_s, sft_self_mt_s; each session re-scores 186's sft)
+MT = family({s: [R / f"xqlMT{s}/xl_eval_e2b_s{s}.json"] for s in (1, 2, 3)})
+if MT["per seed"]:
+    res["mt e2b"] = MT; res["mt e2b drift"] = {}
+    for s in (1, 2, 3):
+        f = R / f"xqlMT{s}/drift_e2b_s{s}.json"
+        if f.exists():
+            res["mt e2b drift"].update({k: v for k, v in json.load(open(f))["summary"].items() if k.split("|")[0] in ("sft_mt_s", "sft_self_mt_s")})
+
 # 178: wide LiveCodeBench, the agent-row LoRAs
 W = {}
 for s in (1, 2, 3):
@@ -148,6 +157,9 @@ A = {}
 for s in (1, 2, 3):
     d = json.load(open(R / f"xqd{s}/xdb_eval_s{s}.json")); A[s] = {k: v["means"] for k, v in d["sets"].items() if "means" in v}
 res["agent169d"] = A
+
+# 181: the corrector teachers run live (greedy, the translator on Qwen's own states, no E4B), from the rewrite stage of each seed
+res["teachers live"] = {s: dict(zip(("refit", "old", "alone"), json.load(open(R / f"xqlCF{s}/xl_rw.json"))["teacher greedy, held (refit, old, Qwen alone)"])) for s in (1, 2, 3) if (R / f"xqlCF{s}/xl_rw.json").exists()}
 
 # online test (170)
 ONLA = [a for a in ("direct", "bridge", "direct_keep_replay", "bridge_keep_replay") if (ONL / f"online_{a}.json").exists()]   # 183: D = bridge_keep_replay
