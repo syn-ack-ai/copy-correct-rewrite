@@ -1,0 +1,29 @@
+{
+ "rows (trained)": {
+  "rows": 299,
+  "means": {
+   "alone": 1.0254,
+   "bridge": 0.6682,
+   "control": 0.7132
+  },
+  "lead (control - bridge) [mean, 5%, 95%]": [
+   0.0451,
+   0.0428,
+   0.0475
+  ]
+ },
+ "held, E4B's passing solutions": {
+  "rows": 74,
+  "means": {
+   "alone": 0.9997,
+   "bridge": 0.6462,
+   "control": 0.6942
+  },
+  "lead (control - bridge) [mean, 5%, 95%]": [
+   0.048,
+   0.0427,
+   0.0532
+  ]
+ },
+ "gate": "GATE_PASS"
+}

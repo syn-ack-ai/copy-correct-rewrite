@@ -1,0 +1,204 @@
+{
+ "problems": 517,
+ "passed": {
+  "lora_b": [
+   129,
+   517
+  ],
+  "lora_c": [
+   142,
+   517
+  ],
+  "lora_sd": [
+   165,
+   517
+  ],
+  "lora_self": [
+   137,
+   517
+  ],
+  "qwen": [
+   106,
+   517
+  ]
+ },
+ "by platform and difficulty": {
+  "lora_b": {
+   "leetcode easy": [
+    39,
+    101
+   ],
+   "leetcode medium": [
+    8,
+    153
+   ],
+   "atcoder easy": [
+    72,
+    133
+   ],
+   "atcoder medium": [
+    8,
+    124
+   ],
+   "codeforces easy": [
+    2,
+    4
+   ],
+   "codeforces medium": [
+    0,
+    2
+   ]
+  },
+  "lora_c": {
+   "leetcode easy": [
+    41,
+    101
+   ],
+   "leetcode medium": [
+    8,
+    153
+   ],
+   "atcoder easy": [
+    76,
+    133
+   ],
+   "atcoder medium": [
+    17,
+    124
+   ],
+   "codeforces easy": [
+    0,
+    4
+   ],
+   "codeforces medium": [
+    0,
+    2
+   ]
+  },
+  "lora_sd": {
+   "leetcode easy": [
+    44,
+    101
+   ],
+   "leetcode medium": [
+    21,
+    153
+   ],
+   "atcoder easy": [
+    78,
+    133
+   ],
+   "atcoder medium": [
+    21,
+    124
+   ],
+   "codeforces easy": [
+    1,
+    4
+   ],
+   "codeforces medium": [
+    0,
+    2
+   ]
+  },
+  "lora_self": {
+   "leetcode easy": [
+    24,
+    101
+   ],
+   "leetcode medium": [
+    5,
+    153
+   ],
+   "atcoder easy": [
+    82,
+    133
+   ],
+   "atcoder medium": [
+    25,
+    124
+   ],
+   "codeforces easy": [
+    1,
+    4
+   ],
+   "codeforces medium": [
+    0,
+    2
+   ]
+  },
+  "qwen": {
+   "leetcode easy": [
+    17,
+    101
+   ],
+   "leetcode medium": [
+    1,
+    153
+   ],
+   "atcoder easy": [
+    71,
+    133
+   ],
+   "atcoder medium": [
+    17,
+    124
+   ],
+   "codeforces easy": [
+    0,
+    4
+   ],
+   "codeforces medium": [
+    0,
+    2
+   ]
+  }
+ },
+ "paired over all problems (a only, b only, exact p)": {
+  "lora_b vs qwen": [
+   51,
+   28,
+   0.0128
+  ],
+  "lora_c vs qwen": [
+   57,
+   21,
+   0.0001
+  ],
+  "lora_sd vs qwen": [
+   81,
+   22,
+   0.0
+  ],
+  "lora_b vs lora_c": [
+   33,
+   46,
+   0.1766
+  ],
+  "lora_b vs lora_sd": [
+   25,
+   61,
+   0.0001
+  ],
+  "lora_self vs qwen": [
+   47,
+   16,
+   0.0001
+  ],
+  "lora_c vs lora_self": [
+   40,
+   35,
+   0.6445
+  ],
+  "lora_self vs lora_sd": [
+   27,
+   55,
+   0.0026
+  ],
+  "lora_c vs lora_sd": [
+   29,
+   52,
+   0.014
+  ]
+ }
+}

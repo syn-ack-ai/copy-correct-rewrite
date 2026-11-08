@@ -1,0 +1,34 @@
+{
+ "sha": "6a08dda6f3345a8c3cee12976f63a4ff94ec009993598944918f180a8916dfd8",
+ "rows": 293,
+ "row problems": 299,
+ "rows by kind": {
+  "greedy": 262,
+  "sample": 31
+ },
+ "covered where Qwen alone fails": [
+  198,
+  204
+ ],
+ "teacher greedy, row problems (refit, old, Qwen alone)": [
+  262,
+  143,
+  95
+ ],
+ "teacher greedy, held (refit, old, Qwen alone)": [
+  51,
+  37,
+  23
+ ],
+ "held problems": 188,
+ "Qwen alone cross-entropy, median (rewrite rows, E4B rows)": [
+  0.9482,
+  1.0253
+ ],
+ "similarity to E4B's row, median (difflib)": 0.9835,
+ "identical to E4B's row": 110,
+ "median Qwen tokens (rewrite rows, E4B rows)": [
+  336.0,
+  353.0
+ ]
+}

@@ -1,0 +1,53 @@
+{
+ "sha": "30dfc610780ad3f9a34133056d03fa587d37a81d5cc0302f0858281778c744e6",
+ "rows": 228,
+ "row problems": 299,
+ "rows by kind": {
+  "greedy": 166,
+  "sample": 62
+ },
+ "plans passing the screen": 298,
+ "plans by attempt": {
+  "0": 289,
+  "1": 7,
+  "2": 2
+ },
+ "no plan: last screen result": {
+  "code overlap": 1
+ },
+ "plan characters, median": 849.5,
+ "plan steps, median": 8.0,
+ "plan code-token 4-gram overlap, median (accepted)": 0.0,
+ "covered where Qwen alone fails": [
+  137,
+  204
+ ],
+ "Qwen greedy on row problems (with the plan, alone)": [
+  166,
+  95
+ ],
+ "Qwen greedy on the planned problems (with the plan, alone)": [
+  166,
+  95
+ ],
+ "Qwen greedy with the plan where Qwen alone fails": [
+  87,
+  204
+ ],
+ "Qwen alone cross-entropy, median (runbook rows, E4B rows)": [
+  0.3213,
+  1.0475
+ ],
+ "similarity to E4B's row, median (difflib)": 0.1993,
+ "identical to E4B's row": 0,
+ "similarity to Qwen alone's greedy, median (problems Qwen alone passes, fails)": [
+  0.5763,
+  0.2484
+ ],
+ "identical to Qwen alone's greedy": 2,
+ "median Qwen tokens (runbook rows, E4B rows, shortest E4B rows)": [
+  110.5,
+  350.5,
+  282.5
+ ]
+}

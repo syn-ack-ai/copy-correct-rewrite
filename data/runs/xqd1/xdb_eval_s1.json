@@ -1,0 +1,915 @@
+{
+ "seed": 1,
+ "forms": [
+  "graft_bridge_w0",
+  "graft_bridge_w1",
+  "graft_control_w0",
+  "graft_control_w1",
+  "lora_bridge_w1",
+  "lora_control_w1",
+  "step2 bridge LoRA",
+  "step2 control LoRA",
+  "step2 seq LoRA",
+  "step2 seq_d1000 LoRA",
+  "step2 seqdense_d1000 LoRA",
+  "step2 uld LoRA"
+ ],
+ "sets": {
+  "held agent": {
+   "rows": 120,
+   "means": {
+    "alone": 1.3853,
+    "bridge": 0.6659,
+    "control": 0.7239,
+    "graft_bridge_w0": 0.7071,
+    "graft_bridge_w1": 0.715,
+    "graft_control_w0": 0.723,
+    "graft_control_w1": 0.7263,
+    "lora_bridge_w1": 0.7102,
+    "lora_control_w1": 0.7223,
+    "step2 bridge LoRA": 0.78,
+    "step2 control LoRA": 0.786,
+    "step2 seq LoRA": 0.7742,
+    "step2 seq_d1000 LoRA": 0.6621,
+    "step2 seqdense_d1000 LoRA": 0.6321,
+    "step2 uld LoRA": 0.7883
+   },
+   "p(true)": {},
+   "KL from Qwen alone (per token)": {
+    "bridge": 0.4707,
+    "control": 0.4186,
+    "graft_bridge_w0": 0.4049,
+    "graft_bridge_w1": 0.3916,
+    "graft_control_w0": 0.3774,
+    "graft_control_w1": 0.371,
+    "lora_bridge_w1": 0.403,
+    "lora_control_w1": 0.3779,
+    "step2 bridge LoRA": 0.332,
+    "step2 control LoRA": 0.328,
+    "step2 seq LoRA": 0.4346,
+    "step2 seq_d1000 LoRA": 0.7628,
+    "step2 seqdense_d1000 LoRA": 0.7788,
+    "step2 uld LoRA": 0.4009
+   },
+   "live lead": 0.058,
+   "pairs": {
+    "graft_X_w0": {
+     "lead": 0.0159,
+     "gain over alone, bridge form / control form": [
+      0.6782,
+      0.6622
+     ],
+     "retention [mean, 5%, 95%]": [
+      0.275,
+      0.231,
+      0.317
+     ],
+     "fidelity bridge form": [
+      0.943,
+      0.934,
+      0.95
+     ],
+     "fidelity control form": [
+      1.001,
+      0.997,
+      1.005
+     ]
+    },
+    "graft_X_w1": {
+     "lead": 0.0113,
+     "gain over alone, bridge form / control form": [
+      0.6703,
+      0.659
+     ],
+     "retention [mean, 5%, 95%]": [
+      0.195,
+      0.144,
+      0.241
+     ],
+     "fidelity bridge form": [
+      0.932,
+      0.923,
+      0.939
+     ],
+     "fidelity control form": [
+      0.996,
+      0.993,
+      1.0
+     ]
+    },
+    "lora_X_w1": {
+     "lead": 0.0121,
+     "gain over alone, bridge form / control form": [
+      0.6751,
+      0.663
+     ],
+     "retention [mean, 5%, 95%]": [
+      0.208,
+      0.155,
+      0.254
+     ],
+     "fidelity bridge form": [
+      0.938,
+      0.931,
+      0.946
+     ],
+     "fidelity control form": [
+      1.002,
+      0.999,
+      1.006
+     ]
+    }
+   }
+  },
+  "held question": {
+   "rows": 120,
+   "means": {
+    "alone": 1.7171,
+    "bridge": 0.6079,
+    "control": 0.4884,
+    "graft_bridge_w0": 0.4524,
+    "graft_bridge_w1": 0.5528,
+    "graft_control_w0": 0.4135,
+    "graft_control_w1": 0.4577,
+    "lora_bridge_w1": 0.5358,
+    "lora_control_w1": 0.4045,
+    "step2 bridge LoRA": 0.6178,
+    "step2 control LoRA": 0.3985,
+    "step2 seq LoRA": 0.4047,
+    "step2 seq_d1000 LoRA": 0.6407,
+    "step2 seqdense_d1000 LoRA": 0.4063,
+    "step2 uld LoRA": 0.684
+   },
+   "p(true)": {
+    "alone": 0.4891,
+    "bridge": 0.8273,
+    "control": 0.818,
+    "graft_bridge_w0": 0.7978,
+    "graft_bridge_w1": 0.8049,
+    "graft_control_w0": 0.8272,
+    "graft_control_w1": 0.8115,
+    "lora_bridge_w1": 0.8025,
+    "lora_control_w1": 0.8076,
+    "step2 bridge LoRA": 0.7515,
+    "step2 control LoRA": 0.7753,
+    "step2 seq LoRA": 0.8488,
+    "step2 seq_d1000 LoRA": 0.8004,
+    "step2 seqdense_d1000 LoRA": 0.7773,
+    "step2 uld LoRA": 0.6334
+   },
+   "KL from Qwen alone (per token)": {
+    "bridge": 2.1291,
+    "control": 1.8703,
+    "graft_bridge_w0": 1.5342,
+    "graft_bridge_w1": 1.8573,
+    "graft_control_w0": 1.7544,
+    "graft_control_w1": 1.7846,
+    "lora_bridge_w1": 1.8306,
+    "lora_control_w1": 1.5019,
+    "step2 bridge LoRA": 1.6905,
+    "step2 control LoRA": 1.457,
+    "step2 seq LoRA": 2.4178,
+    "step2 seq_d1000 LoRA": 2.2374,
+    "step2 seqdense_d1000 LoRA": 1.4305,
+    "step2 uld LoRA": 1.1001
+   },
+   "live lead": -0.1196,
+   "pairs": {
+    "graft_X_w0": {
+     "lead": -0.0389,
+     "gain over alone, bridge form / control form": [
+      1.2647,
+      1.3035
+     ],
+     "retention [mean, 5%, 95%]": [
+      0.325,
+      -0.544,
+      1.149
+     ],
+     "fidelity bridge form": [
+      1.14,
+      1.042,
+      1.318
+     ],
+     "fidelity control form": [
+      1.061,
+      1.022,
+      1.128
+     ]
+    },
+    "graft_X_w1": {
+     "lead": -0.0951,
+     "gain over alone, bridge form / control form": [
+      1.1643,
+      1.2594
+     ],
+     "retention [mean, 5%, 95%]": [
+      0.795,
+      0.284,
+      1.412
+     ],
+     "fidelity bridge form": [
+      1.05,
+      1.0,
+      1.127
+     ],
+     "fidelity control form": [
+      1.025,
+      0.997,
+      1.065
+     ]
+    },
+    "lora_X_w1": {
+     "lead": -0.1314,
+     "gain over alone, bridge form / control form": [
+      1.1813,
+      1.3126
+     ],
+     "retention [mean, 5%, 95%]": [
+      1.099,
+      0.645,
+      2.676
+     ],
+     "fidelity bridge form": [
+      1.065,
+      1.007,
+      1.154
+     ],
+     "fidelity control form": [
+      1.068,
+      1.022,
+      1.147
+     ]
+    }
+   }
+  },
+  "held question_fresh": {
+   "rows": 200,
+   "means": {
+    "alone": 1.4978,
+    "bridge": 0.5187,
+    "control": 0.4729,
+    "graft_bridge_w0": 0.5101,
+    "graft_bridge_w1": 0.5752,
+    "graft_control_w0": 0.4685,
+    "graft_control_w1": 0.4638,
+    "lora_bridge_w1": 0.5963,
+    "lora_control_w1": 0.4159,
+    "step2 bridge LoRA": 0.4405,
+    "step2 control LoRA": 0.4406,
+    "step2 seq LoRA": 0.5408,
+    "step2 seq_d1000 LoRA": 0.4438,
+    "step2 seqdense_d1000 LoRA": 0.4864,
+    "step2 uld LoRA": 0.5924
+   },
+   "p(true)": {
+    "alone": 0.5128,
+    "bridge": 0.8209,
+    "control": 0.8204,
+    "graft_bridge_w0": 0.779,
+    "graft_bridge_w1": 0.7837,
+    "graft_control_w0": 0.8122,
+    "graft_control_w1": 0.8147,
+    "lora_bridge_w1": 0.7731,
+    "lora_control_w1": 0.8085,
+    "step2 bridge LoRA": 0.8103,
+    "step2 control LoRA": 0.7612,
+    "step2 seq LoRA": 0.822,
+    "step2 seq_d1000 LoRA": 0.8352,
+    "step2 seqdense_d1000 LoRA": 0.743,
+    "step2 uld LoRA": 0.6562
+   },
+   "KL from Qwen alone (per token)": {
+    "bridge": 1.8865,
+    "control": 1.7594,
+    "graft_bridge_w0": 1.4484,
+    "graft_bridge_w1": 1.6196,
+    "graft_control_w0": 1.6551,
+    "graft_control_w1": 1.681,
+    "lora_bridge_w1": 1.6287,
+    "lora_control_w1": 1.3962,
+    "step2 bridge LoRA": 1.7675,
+    "step2 control LoRA": 1.3786,
+    "step2 seq LoRA": 2.3225,
+    "step2 seq_d1000 LoRA": 1.881,
+    "step2 seqdense_d1000 LoRA": 1.4046,
+    "step2 uld LoRA": 1.1363
+   },
+   "live lead": -0.0458,
+   "pairs": {
+    "graft_X_w0": {
+     "lead": -0.0416,
+     "gain over alone, bridge form / control form": [
+      0.9877,
+      1.0293
+     ],
+     "retention [mean, 5%, 95%]": [
+      0.908,
+      -1.418,
+      3.632
+     ],
+     "fidelity bridge form": [
+      1.009,
+      0.961,
+      1.073
+     ],
+     "fidelity control form": [
+      1.004,
+      0.97,
+      1.044
+     ]
+    },
+    "graft_X_w1": {
+     "lead": -0.1114,
+     "gain over alone, bridge form / control form": [
+      0.9226,
+      1.034
+     ],
+     "retention [mean, 5%, 95%]": [
+      2.433,
+      -6.215,
+      9.0
+     ],
+     "fidelity bridge form": [
+      0.942,
+      0.895,
+      0.986
+     ],
+     "fidelity control form": [
+      1.009,
+      0.991,
+      1.031
+     ]
+    },
+    "lora_X_w1": {
+     "lead": -0.1804,
+     "gain over alone, bridge form / control form": [
+      0.9015,
+      1.0819
+     ],
+     "retention [mean, 5%, 95%]": [
+      3.941,
+      -13.436,
+      16.398
+     ],
+     "fidelity bridge form": [
+      0.921,
+      0.862,
+      0.971
+     ],
+     "fidelity control form": [
+      1.056,
+      1.023,
+      1.108
+     ]
+    }
+   }
+  },
+  "train agent": {
+   "rows": 120,
+   "means": {
+    "alone": 1.5663,
+    "bridge": 0.7028,
+    "control": 0.7563,
+    "graft_bridge_w0": 0.7774,
+    "graft_bridge_w1": 0.7856,
+    "graft_control_w0": 0.7946,
+    "graft_control_w1": 0.7936,
+    "lora_bridge_w1": 0.7736,
+    "lora_control_w1": 0.7872,
+    "step2 bridge LoRA": 0.8717,
+    "step2 control LoRA": 0.8772,
+    "step2 seq LoRA": 0.8561,
+    "step2 seq_d1000 LoRA": 0.6402,
+    "step2 seqdense_d1000 LoRA": 0.6578,
+    "step2 uld LoRA": 0.8732
+   },
+   "p(true)": {},
+   "KL from Qwen alone (per token)": {
+    "bridge": 0.545,
+    "control": 0.4905,
+    "graft_bridge_w0": 0.4665,
+    "graft_bridge_w1": 0.445,
+    "graft_control_w0": 0.4366,
+    "graft_control_w1": 0.4268,
+    "lora_bridge_w1": 0.4597,
+    "lora_control_w1": 0.4371,
+    "step2 bridge LoRA": 0.3895,
+    "step2 control LoRA": 0.3862,
+    "step2 seq LoRA": 0.5263,
+    "step2 seq_d1000 LoRA": 0.9076,
+    "step2 seqdense_d1000 LoRA": 0.8834,
+    "step2 uld LoRA": 0.4726
+   },
+   "live lead": 0.0535,
+   "pairs": {
+    "graft_X_w0": {
+     "lead": 0.0172,
+     "gain over alone, bridge form / control form": [
+      0.789,
+      0.7717
+     ],
+     "retention [mean, 5%, 95%]": [
+      0.322,
+      0.279,
+      0.364
+     ],
+     "fidelity bridge form": [
+      0.914,
+      0.899,
+      0.927
+     ],
+     "fidelity control form": [
+      0.953,
+      0.941,
+      0.965
+     ]
+    },
+    "graft_X_w1": {
+     "lead": 0.008,
+     "gain over alone, bridge form / control form": [
+      0.7808,
+      0.7728
+     ],
+     "retention [mean, 5%, 95%]": [
+      0.15,
+      0.093,
+      0.2
+     ],
+     "fidelity bridge form": [
+      0.904,
+      0.89,
+      0.917
+     ],
+     "fidelity control form": [
+      0.954,
+      0.943,
+      0.965
+     ]
+    },
+    "lora_X_w1": {
+     "lead": 0.0135,
+     "gain over alone, bridge form / control form": [
+      0.7927,
+      0.7792
+     ],
+     "retention [mean, 5%, 95%]": [
+      0.253,
+      0.199,
+      0.3
+     ],
+     "fidelity bridge form": [
+      0.918,
+      0.905,
+      0.93
+     ],
+     "fidelity control form": [
+      0.962,
+      0.952,
+      0.972
+     ]
+    }
+   }
+  },
+  "train question": {
+   "rows": 120,
+   "means": {
+    "alone": 1.9927,
+    "bridge": 0.4752,
+    "control": 0.3634,
+    "graft_bridge_w0": 0.4613,
+    "graft_bridge_w1": 0.4887,
+    "graft_control_w0": 0.4334,
+    "graft_control_w1": 0.4096,
+    "lora_bridge_w1": 0.5166,
+    "lora_control_w1": 0.3821,
+    "step2 bridge LoRA": 0.4956,
+    "step2 control LoRA": 0.3865,
+    "step2 seq LoRA": 0.5452,
+    "step2 seq_d1000 LoRA": 0.4443,
+    "step2 seqdense_d1000 LoRA": 0.3703,
+    "step2 uld LoRA": 0.5374
+   },
+   "p(true)": {
+    "alone": 0.4405,
+    "bridge": 0.8411,
+    "control": 0.8712,
+    "graft_bridge_w0": 0.8272,
+    "graft_bridge_w1": 0.8349,
+    "graft_control_w0": 0.8627,
+    "graft_control_w1": 0.86,
+    "lora_bridge_w1": 0.8289,
+    "lora_control_w1": 0.862,
+    "step2 bridge LoRA": 0.8124,
+    "step2 control LoRA": 0.7945,
+    "step2 seq LoRA": 0.8646,
+    "step2 seq_d1000 LoRA": 0.8843,
+    "step2 seqdense_d1000 LoRA": 0.8461,
+    "step2 uld LoRA": 0.7068
+   },
+   "KL from Qwen alone (per token)": {
+    "bridge": 2.6416,
+    "control": 2.4984,
+    "graft_bridge_w0": 2.3026,
+    "graft_bridge_w1": 2.4335,
+    "graft_control_w0": 2.4199,
+    "graft_control_w1": 2.4005,
+    "lora_bridge_w1": 2.5512,
+    "lora_control_w1": 2.1289,
+    "step2 bridge LoRA": 2.3383,
+    "step2 control LoRA": 1.8487,
+    "step2 seq LoRA": 3.0109,
+    "step2 seq_d1000 LoRA": 2.7856,
+    "step2 seqdense_d1000 LoRA": 2.1306,
+    "step2 uld LoRA": 1.3966
+   },
+   "live lead": -0.1118,
+   "pairs": {
+    "graft_X_w0": {
+     "lead": -0.0279,
+     "gain over alone, bridge form / control form": [
+      1.5315,
+      1.5594
+     ],
+     "retention [mean, 5%, 95%]": [
+      0.249,
+      -2.499,
+      2.726
+     ],
+     "fidelity bridge form": [
+      1.009,
+      0.975,
+      1.053
+     ],
+     "fidelity control form": [
+      0.957,
+      0.892,
+      1.006
+     ]
+    },
+    "graft_X_w1": {
+     "lead": -0.079,
+     "gain over alone, bridge form / control form": [
+      1.5041,
+      1.5831
+     ],
+     "retention [mean, 5%, 95%]": [
+      0.706,
+      -0.924,
+      2.144
+     ],
+     "fidelity bridge form": [
+      0.991,
+      0.966,
+      1.015
+     ],
+     "fidelity control form": [
+      0.972,
+      0.926,
+      1.004
+     ]
+    },
+    "lora_X_w1": {
+     "lead": -0.1345,
+     "gain over alone, bridge form / control form": [
+      1.4762,
+      1.6107
+     ],
+     "retention [mean, 5%, 95%]": [
+      1.202,
+      -0.274,
+      2.912
+     ],
+     "fidelity bridge form": [
+      0.973,
+      0.928,
+      1.013
+     ],
+     "fidelity control form": [
+      0.989,
+      0.95,
+      1.024
+     ]
+    }
+   }
+  },
+  "held prose (untaught)": {
+   "rows": 30,
+   "means": {
+    "alone": 3.6798,
+    "bridge": 3.328,
+    "control": 3.3444,
+    "graft_bridge_w0": 3.4122,
+    "graft_bridge_w1": 3.3924,
+    "graft_control_w0": 3.4337,
+    "graft_control_w1": 3.4104,
+    "lora_bridge_w1": 3.4,
+    "lora_control_w1": 3.4196,
+    "step2 bridge LoRA": 3.5408,
+    "step2 control LoRA": 3.546,
+    "step2 seq LoRA": 3.5487,
+    "step2 seq_d1000 LoRA": 3.5938,
+    "step2 seqdense_d1000 LoRA": 4.4954,
+    "step2 uld LoRA": 3.5561
+   },
+   "p(true)": {},
+   "KL from Qwen alone (per token)": {
+    "bridge": 0.2165,
+    "control": 0.2102,
+    "graft_bridge_w0": 0.1738,
+    "graft_bridge_w1": 0.1706,
+    "graft_control_w0": 0.1423,
+    "graft_control_w1": 0.1382,
+    "lora_bridge_w1": 0.1691,
+    "lora_control_w1": 0.1339,
+    "step2 bridge LoRA": 0.0454,
+    "step2 control LoRA": 0.048,
+    "step2 seq LoRA": 0.0602,
+    "step2 seq_d1000 LoRA": 0.1289,
+    "step2 seqdense_d1000 LoRA": 0.7998,
+    "step2 uld LoRA": 0.0711
+   },
+   "live lead": 0.0164,
+   "pairs": {
+    "graft_X_w0": {
+     "lead": 0.0215,
+     "gain over alone, bridge form / control form": [
+      0.2676,
+      0.2461
+     ],
+     "retention [mean, 5%, 95%]": [
+      1.309,
+      0.956,
+      2.108
+     ],
+     "fidelity bridge form": [
+      0.761,
+      0.721,
+      0.796
+     ],
+     "fidelity control form": [
+      0.734,
+      0.696,
+      0.767
+     ]
+    },
+    "graft_X_w1": {
+     "lead": 0.0179,
+     "gain over alone, bridge form / control form": [
+      0.2874,
+      0.2695
+     ],
+     "retention [mean, 5%, 95%]": [
+      1.095,
+      0.806,
+      1.615
+     ],
+     "fidelity bridge form": [
+      0.817,
+      0.785,
+      0.847
+     ],
+     "fidelity control form": [
+      0.803,
+      0.771,
+      0.833
+     ]
+    },
+    "lora_X_w1": {
+     "lead": 0.0196,
+     "gain over alone, bridge form / control form": [
+      0.2798,
+      0.2602
+     ],
+     "retention [mean, 5%, 95%]": [
+      1.195,
+      0.85,
+      1.887
+     ],
+     "fidelity bridge form": [
+      0.795,
+      0.763,
+      0.824
+     ],
+     "fidelity control form": [
+      0.776,
+      0.741,
+      0.807
+     ]
+    }
+   }
+  },
+  "held code (untaught)": {
+   "rows": 30,
+   "means": {
+    "alone": 1.7293,
+    "bridge": 1.4594,
+    "control": 1.4606,
+    "graft_bridge_w0": 1.4941,
+    "graft_bridge_w1": 1.4881,
+    "graft_control_w0": 1.4993,
+    "graft_control_w1": 1.489,
+    "lora_bridge_w1": 1.493,
+    "lora_control_w1": 1.4933,
+    "step2 bridge LoRA": 1.5691,
+    "step2 control LoRA": 1.5711,
+    "step2 seq LoRA": 1.5779,
+    "step2 seq_d1000 LoRA": 1.5457,
+    "step2 seqdense_d1000 LoRA": 1.5576,
+    "step2 uld LoRA": 1.6025
+   },
+   "p(true)": {},
+   "KL from Qwen alone (per token)": {
+    "bridge": 0.1469,
+    "control": 0.161,
+    "graft_bridge_w0": 0.1251,
+    "graft_bridge_w1": 0.1174,
+    "graft_control_w0": 0.1108,
+    "graft_control_w1": 0.1069,
+    "lora_bridge_w1": 0.1418,
+    "lora_control_w1": 0.1284,
+    "step2 bridge LoRA": 0.0524,
+    "step2 control LoRA": 0.0492,
+    "step2 seq LoRA": 0.0555,
+    "step2 seq_d1000 LoRA": 0.1212,
+    "step2 seqdense_d1000 LoRA": 0.1928,
+    "step2 uld LoRA": 0.0439
+   },
+   "live lead": 0.0012,
+   "pairs": {
+    "graft_X_w0": {
+     "lead": 0.0051,
+     "gain over alone, bridge form / control form": [
+      0.2351,
+      0.23
+     ],
+     "retention [mean, 5%, 95%]": [
+      4.184,
+      -10.112,
+      8.7
+     ],
+     "fidelity bridge form": [
+      0.871,
+      0.84,
+      0.905
+     ],
+     "fidelity control form": [
+      0.856,
+      0.821,
+      0.893
+     ]
+    },
+    "graft_X_w1": {
+     "lead": 0.0008,
+     "gain over alone, bridge form / control form": [
+      0.2412,
+      0.2403
+     ],
+     "retention [mean, 5%, 95%]": [
+      0.682,
+      -2.887,
+      3.275
+     ],
+     "fidelity bridge form": [
+      0.893,
+      0.869,
+      0.92
+     ],
+     "fidelity control form": [
+      0.894,
+      0.866,
+      0.924
+     ]
+    },
+    "lora_X_w1": {
+     "lead": 0.0003,
+     "gain over alone, bridge form / control form": [
+      0.2362,
+      0.236
+     ],
+     "retention [mean, 5%, 95%]": [
+      0.222,
+      -2.911,
+      3.93
+     ],
+     "fidelity bridge form": [
+      0.875,
+      0.847,
+      0.904
+     ],
+     "fidelity control form": [
+      0.878,
+      0.851,
+      0.907
+     ]
+    }
+   }
+  },
+  "held story (untaught)": {
+   "rows": 24,
+   "means": {
+    "alone": 3.7532,
+    "bridge": 2.9606,
+    "control": 2.9722,
+    "graft_bridge_w0": 3.0279,
+    "graft_bridge_w1": 2.9871,
+    "graft_control_w0": 3.0793,
+    "graft_control_w1": 3.0494,
+    "lora_bridge_w1": 2.986,
+    "lora_control_w1": 3.0473,
+    "step2 bridge LoRA": 3.5388,
+    "step2 control LoRA": 3.5438,
+    "step2 seq LoRA": 3.5963,
+    "step2 seq_d1000 LoRA": 3.5757,
+    "step2 seqdense_d1000 LoRA": 1.3792,
+    "step2 uld LoRA": 3.5844
+   },
+   "p(true)": {},
+   "KL from Qwen alone (per token)": {
+    "bridge": 0.5452,
+    "control": 0.5346,
+    "graft_bridge_w0": 0.3774,
+    "graft_bridge_w1": 0.4214,
+    "graft_control_w0": 0.3135,
+    "graft_control_w1": 0.3537,
+    "lora_bridge_w1": 0.4045,
+    "lora_control_w1": 0.3323,
+    "step2 bridge LoRA": 0.0767,
+    "step2 control LoRA": 0.0756,
+    "step2 seq LoRA": 0.121,
+    "step2 seq_d1000 LoRA": 0.2092,
+    "step2 seqdense_d1000 LoRA": 3.5145,
+    "step2 uld LoRA": 0.148
+   },
+   "live lead": 0.0116,
+   "pairs": {
+    "graft_X_w0": {
+     "lead": 0.0514,
+     "gain over alone, bridge form / control form": [
+      0.7252,
+      0.6738
+     ],
+     "retention [mean, 5%, 95%]": [
+      4.441,
+      -11.189,
+      17.642
+     ],
+     "fidelity bridge form": [
+      0.915,
+      0.878,
+      0.95
+     ],
+     "fidelity control form": [
+      0.863,
+      0.824,
+      0.9
+     ]
+    },
+    "graft_X_w1": {
+     "lead": 0.0623,
+     "gain over alone, bridge form / control form": [
+      0.766,
+      0.7038
+     ],
+     "retention [mean, 5%, 95%]": [
+      5.38,
+      -13.925,
+      23.098
+     ],
+     "fidelity bridge form": [
+      0.967,
+      0.933,
+      0.998
+     ],
+     "fidelity control form": [
+      0.901,
+      0.864,
+      0.937
+     ]
+    },
+    "lora_X_w1": {
+     "lead": 0.0613,
+     "gain over alone, bridge form / control form": [
+      0.7672,
+      0.7059
+     ],
+     "retention [mean, 5%, 95%]": [
+      5.295,
+      -13.123,
+      21.845
+     ],
+     "fidelity bridge form": [
+      0.968,
+      0.935,
+      0.999
+     ],
+     "fidelity control form": [
+      0.904,
+      0.87,
+      0.936
+     ]
+    }
+   }
+  }
+ }
+}
