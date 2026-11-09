@@ -18,7 +18,7 @@ To test whether a teacher's internal states can be stored, we built a *state cor
 - Same-family copying causes forgetting; a KL pull toward the original student removes it at no cost.
 - Self-written solutions move the student least yet make it overconfident; on-policy distillation stops at its teacher.
 - Teacher states did not help in coding: the corrector fed E4B's states taught no better than fed the student's own. Online, on agent decisions with keep + replay, they did (one control seed).
-- Code, results, 40,000+ graded answers and pre-registrations (Appendix A).
+- Code, results, 40,000+ graded answers and pre-registrations: https://github.com/syn-ack-ai/copy-correct-rewrite.
 
 ## 2 Background
 
@@ -191,7 +191,7 @@ Table 7. Online learning, one seed per setup (D: two). Gate (220 held decisions)
 | D, seed 2 | 0.749 | 0.017 | 0.021 | 23 / 6 |
 | Self-corrector + keep + replay (control) | 0.755 | 0.025 | 0.073 | 13 / 5 |
 
-Keep + replay hurt the plain teacher (A to C: 11 fewer fixed; C sits closer yet flips fewer top choices) but helped the corrector teacher (B to D: 7 more), and D matched B's closeness at a third of its drift. D had the best net gate result (+19; A +14, within noise, p = 0.40) and beat C on paired decisions (17 vs 6 and 17 vs 8 for its two seeds, p = 0.035 and 0.11). D's second seed reproduced it, differing on 6 of 220 decisions. Without E4B's states it fell away: the same setup with the self-corrector, which reads E2B's own states, came as close to the teacher (0.755), moved held-question answers most (0.073) and fixed no more than C (net +8; D beat it 12 vs 1 and 12 vs 3, p = 0.003 and 0.035). Seed 3 of D, seeds 2-3 of C, a blend matched to the corrector's pull (akin to a teacher assistant; Mirzadeh et al., 2019), a teacher gated by E2B's disagreement and a live test of D's LoRA were still running.
+Keep + replay hurt the plain teacher (A to C: 11 fewer fixed; C sits closer yet flips fewer top choices) but helped the corrector teacher (B to D: 7 more), and D matched B's closeness at a third of its drift. D had the best net gate result (+19; A +14, within noise, p = 0.40) and beat C on paired decisions (17 vs 6 and 17 vs 8 for its two seeds, p = 0.035 and 0.11). D's second seed reproduced it, differing on 6 of 220 decisions. Without E4B's states it fell away: the same setup with the self-corrector, which reads E2B's own states, came as close to the teacher (0.755), moved held-question answers most (0.073) and fixed no more than C (net +8; D beat it 12 vs 1 and 12 vs 3, p = 0.003 and 0.035). Seed 3 of D, seeds 2-3 of C, a blend matched to the corrector's pull, a teacher gated by E2B's disagreement and a live test of D's LoRA were still running.
 
 ![Online curves](figures/fig7_online.png)
 
@@ -205,11 +205,11 @@ Figure 7. Held cross-entropy to the teacher and drift on untaught text over the 
 
 **Limitations.** Two coding students; the online test has one seed per setup (D two). Pooled p-values are descriptive; differences under about 10 held solves are within noise. The KL strength sweep and the multi-task control ran only for E2B. Given 768 more tokens, 59 of the 176 lost answers cut at the cap passed (9% of all losses; 18-25% for refit-teacher recipes). Correctors had 600 fitting steps; longer ones gave mostly worse LoRAs (one seed). Unlike the coding correctors, the online ones had no size term and saw some of E2B's own samples, confounding the coding-online contrast.
 
-**Ethical considerations.** Fitting and drift prose and stories come from locally held books, not released. Model-written code ran only in sandboxed interpreters.
+**Ethical considerations.** Prose and stories for fitting and drift come from locally held books, not released. Model-written code ran only in sandboxed interpreters. AI use: under the author's direction, Claude Opus 5.5 (Anthropic) designed and ran the experiments, wrote the code and drafted the text (Appendix B).
 
 ## 6 Related Work
 
-**Distillation.** GKD (Agarwal et al., 2023), MiniLLM (Gu et al., 2023) and DistiLLM (Ko et al., 2024) distil on the student's own samples with reverse or skewed KL; our on-policy teacher is built from the corrector, whose fit bounds the gain. Reachable targets also drive ProKT (Shi et al., 2021), DIST (Huang et al., 2022) and PACED (Xu et al., 2026), which makes expert solutions attainable, like our runbook rows.
+**Distillation.** GKD (Agarwal et al., 2023), MiniLLM (Gu et al., 2023) and DistiLLM (Ko et al., 2024) distil on the student's own samples with reverse or skewed KL. Reachable targets drive ProKT (Shi et al., 2021), DIST (Huang et al., 2022) and PACED (Xu et al., 2026), which makes expert solutions attainable, like our runbook rows.
 
 **Training on own solutions.** ReST (Gulcehre et al., 2023), ReST-EM (Singh et al., 2023), rejection-sampling fine-tuning (Yuan et al., 2023) and STaR (Zelikman et al., 2022) retrain on verified own samples; Terminal-RSI (Yang et al., 2026) adds plan-guided self-rewriting. The damage to untaught text we report resembles entropy collapse in reasoning RL (Cui et al., 2025).
 
@@ -268,8 +268,6 @@ K. Lenc and A. Vedaldi (2014). Understanding image representations by measuring 
 Z. Li and D. Hoiem (2016). Learning without Forgetting. arXiv:1606.09282. https://arxiv.org/abs/1606.09282
 
 K. Lu and Thinking Machines Lab (2025). On-Policy Distillation. Connectionism (Thinking Machines Lab blog). https://thinkingmachines.ai/blog/on-policy-distillation/
-
-S.-I. Mirzadeh, M. Farajtabar, A. Li, N. Levine, A. Matsukawa, and H. Ghasemzadeh (2019). Improved Knowledge Distillation via Teacher Assistant. arXiv:1902.03393. https://arxiv.org/abs/1902.03393
 
 T. On, H. Pei, L. Lausen, and G. Karypis (2026). Knowledge Distillation for Large Language Models through Residual Learning. ICLR 2026. https://openreview.net/forum?id=Dh6KxUxG20
 
