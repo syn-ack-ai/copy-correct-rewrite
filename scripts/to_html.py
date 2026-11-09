@@ -86,7 +86,7 @@ while i < len(lines):
         buf.append(lines[i]); i += 1
     if buf:
         p = " ".join(buf); cls = ' class="note"' if p.startswith("*[") else ""
-        if re.match(r"^Table \d+\. ", p):
+        if re.match(r"^Table [A-Z]?\d+\. ", p):   # body "Table 3." and appendix "Table D1."
             cls = ' class="tcap"'                                       # a table caption, above its table
         elif re.search(r"\s\(\d+\)$", p) and len(p) < 140:
             cls = ' class="eq"'                                         # a numbered equation

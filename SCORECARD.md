@@ -1,6 +1,6 @@
 # Pre-registration scorecard
 
-Which pre-registered predictions held, per addendum, for the paper "Copy, Correct, or Rewrite?" (paper.md). The predictions, designs and results are in PREREGISTRATION.md. Rows marked running were updated as results landed.
+Which pre-registered predictions held, per addendum, for the paper "Copy, Correct, or Rewrite?" (paper.md). The predictions, designs and results are in PREREGISTRATION.md. Rows marked running were updated as results landed. The paper's Appendix C carries the rows for this paper (all but 191 and 195).
 
 Predictions that held, per pre-registered addendum.
 
@@ -21,9 +21,9 @@ Predictions that held, per pre-registered addendum.
 | 189 (online setup D: replication, controls) | 4 of 4 so far (seed 2, self-corrector control) | running |
 | 190 (multi-task control for the corrector anchor) | 4 of 5 | met: the anchor's gain is its fitting text |
 | 191 (per-user grafts) | — | separate paper |
-| 192 (online vs offline SFT teachers) | — | running |
+| 192 (online vs offline SFT teachers) | — | queued (4090) |
 | 193 (KL strength sweep) | 2 of 4 | not met: λ 0.3 holds, λ 3 costs held solves |
 | 194a (longer-cap re-grade of capped losses) | 6 of 6 | — (9% of losses recovered) |
 | 195 (lottery-ticket grafts; for the per-user graft paper) | — | queued (4090) |
 | 196 (online setup D live on 80 held-out agent tasks) | — | queued (4090) |
-| 197 (disagreement-gated online teacher) | — | queued (4090) |
+| 197 (disagreement-gated online teacher) | — | queued (Colab) |

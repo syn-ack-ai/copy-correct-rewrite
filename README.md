@@ -30,21 +30,23 @@ From the paper's abstract and results:
 - **On-policy distillation reached its teacher's level and stopped there.**
 - **The state corrector did not store the teacher's knowledge in an adapter:** fed E4B's states, it taught no better than fed the student's
   own. As an anchor it matched training on its own fitting text (held 214 vs 216, p = 0.90; addendum 190), delivered with less change.
-  As an online teacher with keep + replay it gave the best net result on agent decisions in seed 1.
+  As an online teacher with keep + replay it gave the best net result on agent decisions in two seeds; a corrector
+  reading the student's own states did not.
 
 The paper's limitations (Section 5) and the pre-registration scorecard (Appendix C) apply to all of these.
 
 **Status (2026-11-08, evening).** In the paper and in this repository: 185 (`data/runs/xqlSS*`), 186 (`xqlE2B*`), 187 (`xqlTW2b*`: E4B
 teaches E2B; `xqlTW4b*`: E2B teaches E4B), 188 (`xqlML*`: the matched-loss test), 193 (`xqlKL*`: the KL strength sweep), 194a (`xqlRG*`: the longer-cap re-grade), 190 (`xqlMT*`: the multi-task control for the corrector anchor) and the online test's setup D,
-seeds 1-2 (183, 189; `data/online/`; seed 2 reproduced seed 1, differing on 6 of 220 gate decisions). Running at the time of this snapshot, with designs and predictions in `PREREGISTRATION.md`: online D seed
-3 with self-corrector and blend controls and setup C seeds 2-3 (189), and online against offline SFT teachers (192).
-Addendum 191 (per-user grafts) is planned for a separate paper.
+seeds 1-2 with the self-corrector control (183, 189; `data/online/`; seed 2 reproduced seed 1, differing on 6 of 220 gate decisions). Running or queued at the time of
+this snapshot, with designs and predictions in `PREREGISTRATION.md`: online D seed 3, the blend control and setup C seeds 2-3 (189), D's LoRA live on 80
+held-out agent tasks (196), a disagreement-gated teacher (197) and online against offline SFT teachers (192).
+Addenda 191 and 195 (per-user and lottery-ticket grafts) are planned for a separate paper.
 
 ## Repository layout
 
 ```
 paper.md                 the paper
-figures/                 the figures (PNG), made by scripts/figures.py: seven in the paper, two extra (see MANIFEST.md)
+figures/                 the figures (PNG), made by scripts/figures.py: four in the body, three in Appendix D, two extra (MANIFEST.md)
 scripts/                 collect.py, figures.py, drift.py, to_html.py (paper data and rendering)
 data/
   results.json           every number the paper uses (scripts/collect.py)

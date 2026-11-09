@@ -7,9 +7,9 @@ Run labels give the addendum and seed (see README.md, "Run folders").
 |---|---|---|
 | `LICENSE` | 11.1 KB | Apache License 2.0 |
 | `MANIFEST.md` | (this file) | This file: every file with its size and purpose |
-| `PREREGISTRATION.md` | 202.2 KB | Pre-registration log, addenda 165-194, verbatim (one phrase redacted) |
-| `README.md` | 14.0 KB | Overview: the study, findings, layout, how the runs worked, what is excluded, rebuild steps, licence |
-| `SCORECARD.md` | 1.8 KB | Which pre-registered predictions held, per addendum (moved out of the paper) |
+| `PREREGISTRATION.md` | 203.7 KB | Pre-registration log, addenda 165-197, verbatim (one phrase redacted) |
+| `README.md` | 14.3 KB | Overview: the study, findings, layout, how the runs worked, what is excluded, rebuild steps, licence |
+| `SCORECARD.md` | 1.9 KB | Which pre-registered predictions held, per addendum (moved out of the paper) |
 | `code/colab/xq_bridge.sh` | 3.0 KB | Colab session: fit the bridge and control correctors and run the suite (166) |
 | `code/colab/xq_curve.sh` | 5.2 KB | Colab session: corrector training-length curve (176) |
 | `code/colab/xq_dosebase.sh` | 3.2 KB | Colab session: dose-matched SFT baselines and their evaluation (169d) |
@@ -341,16 +341,16 @@ Run labels give the addendum and seed (see README.md, "Run folders").
 | `data/runs/xqw2/xw_results_s2.json` | 2.1 KB | Wide coding results (178, seed 2): passes per form, by platform and difficulty, paired tests |
 | `data/runs/xqw3/xw_results_s3.json` | 2.1 KB | Wide coding results (178, seed 3): passes per form, by platform and difficulty, paired tests |
 | `figures/fig1_corrector.png` | 231.4 KB | Figure 1: how the corrector connects teacher and student, and its uses (schematic) |
-| `figures/fig2_wide_coding.png` | 90.4 KB | Figure 2: agent-turn LoRAs on all easy and medium LiveCodeBench problems, problems gained and lost (178) |
-| `figures/fig3_teach_vs_forget.png` | 189.8 KB | Figure 5: held solved and trained fixed vs problems lost, every coding recipe |
-| `figures/fig4_untaught_prose.png` | 154.2 KB | Figure 4: drift on untaught human prose per recipe and seed |
-| `figures/fig5_teacher_cap.png` | 86.9 KB | Figure 6: each corrector teacher run live beside the on-policy student it trained |
+| `figures/fig2_wide_coding.png` | 90.4 KB | Figure D1: agent-turn LoRAs on all easy and medium LiveCodeBench problems, problems gained and lost (178) |
+| `figures/fig3_teach_vs_forget.png` | 189.8 KB | Figure 3: held solved and trained fixed vs problems lost, every coding recipe |
+| `figures/fig4_untaught_prose.png` | 154.2 KB | Figure D2: drift on untaught human prose per recipe and seed |
+| `figures/fig5_teacher_cap.png` | 86.9 KB | Figure D3: each corrector teacher run live beside the on-policy student it trained |
 | `figures/fig6_losses.png` | 169.9 KB | Extra figure (cut from the paper): how often each solved problem was lost, and answer length per recipe |
-| `figures/fig7_online.png` | 245.2 KB | Figure 7: online learning, E4B to E2B, four setups, held cross-entropy and drift |
+| `figures/fig7_online.png` | 245.2 KB | Figure 4: online learning, E4B to E2B, the setups and the self-corrector control, held cross-entropy and drift |
 | `figures/fig8_agent_turns.png` | 103.7 KB | Extra figure (cut from the paper): agent replies, E4B to Qwen3-1.7B (169d) |
-| `figures/fig9_e2b.png` | 160.0 KB | Figure 3: Gemma 4 E2B as the coding student against Qwen3-1.7B, with the anchors and the multi-task control (186, 187, 190) |
-| `paper.md` | 25.4 KB | The paper: Copy, Correct, or Rewrite? |
+| `figures/fig9_e2b.png` | 160.0 KB | Figure 2: Gemma 4 E2B as the coding student against Qwen3-1.7B, with the anchors and the fitting-text control (186, 187, 190) |
+| `paper.md` | 31.0 KB | The paper: Copy, Correct, or Rewrite? |
 | `scripts/collect.py` | 13.9 KB | Collects every number the paper uses from the run folders into data/results.json (standard library) |
 | `scripts/drift.py` | 3.7 KB | Measures drift from the original student on untaught text (needs adapters and text rows not included) |
 | `scripts/figures.py` | 30.7 KB | Draws the nine figures from data/results.json (matplotlib) |
-| `scripts/to_html.py` | 9.7 KB | Renders paper.md into one self-contained HTML page |
+| `scripts/to_html.py` | 9.8 KB | Renders paper.md into one self-contained HTML page |
