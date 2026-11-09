@@ -131,7 +131,7 @@ On-policy distillation through the self-corrector reached 116 held solves, its t
 
 ### 4.8 Online learning on agent decisions
 
-E2B with a rank-16 LoRA met 600 unseen decision points from the competition's harness, each once, scored before learning it. The target was the teacher's distribution (A) or the cross-model corrector (B), each also with keep + replay (C, D: KL to the original E2B on one untaught row per item, and an earlier item every fourth step). The corrector was fitted on the training repositories, which the stream draws from; the held measures and gate use repositories neither saw. The gate has 220 held decisions: *fixed* counts the 52 where E2B alone differs from the teacher, *broken* the other 168. The result is a plain LoRA; the corrector is needed only during training. Two controls replace D's corrector, with keep + replay: a self-corrector, which reads E2B's own states, and a pull-matched blend, the teacher mixed with the original E2B (weight 0.43) so that it pulls E2B as far as the corrector does.
+E2B with a rank-16 LoRA met 600 unseen decision points from the competition's harness, each once, scored before learning it. The target was the teacher's distribution (A) or the cross-model corrector (B), each also with keep + replay (C, D: KL to the original E2B on one untaught row per item, and an earlier item every fourth step). The corrector was fitted on the training repositories, which the stream draws from; the held measures and gate use repositories neither saw. The gate has 220 held decisions: *fixed* counts the 52 where E2B alone differs from the teacher, *broken* the other 168. The result is a plain LoRA; the corrector is needed only during training. Two controls replace D's corrector: a self-corrector reading E2B's own states, and a pull-matched blend, the teacher mixed with the original E2B (weight 0.43) to pull E2B as far as the corrector does on average.
 
 Table 4. Online learning on agent decisions; one seed per row.
 
@@ -147,7 +147,7 @@ Table 4. Online learning on agent decisions; one seed per row.
 
 Keep + replay hurt the plain teacher (A to C: 11 fewer fixed) but helped the corrector teacher (B to D: 7 more), and D matched B's closeness at a third of its drift. D had the best net gate result (+19; A +14, within noise, p = 0.40) and beat C on paired decisions (17 vs 6 and 17 vs 8 for its two seeds, p = 0.035 and 0.11). D's second seed reproduced it, differing on 6 of 220 decisions.
 
-Both controls fell back to C's level. The self-corrector came as close to the teacher as D and moved held-question answers most, but fixed no more than C (net +8; D beat it 12 vs 1 and 12 vs 3, p = 0.003 and 0.035): the gain needs E4B's states. The blend also behaved like C (net +10; D beat it 11 vs 2 and 11 vs 4, p = 0.02 and 0.12): D is not just a softer target. Further seeds of C and D, a disagreement-gated teacher and a live test of D's LoRA were still running.
+Both controls fell back to C's level. The self-corrector came as close to the teacher as D but fixed no more than C (net +8; D beat it 12 vs 1 and 12 vs 3, p = 0.003 and 0.035): E2B's own states do not give the gain. The blend also behaved like C (net +10; D beat it 11 vs 2 and 11 vs 4, p = 0.02 and 0.12): D is not a uniformly softer target. It may be a selective one, pulling mostly where E4B and E2B disagree; a teacher applied only there would do that without a learned module. That run, further seeds of C and D and a live test of D's LoRA were still running.
 
 ![Online curves](figures/fig7_online.png)
 

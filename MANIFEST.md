@@ -7,7 +7,7 @@ Run labels give the addendum and seed (see README.md, "Run folders").
 |---|---|---|
 | `LICENSE` | 11.1 KB | Apache License 2.0 |
 | `MANIFEST.md` | (this file) | This file: every file with its size and purpose |
-| `PREREGISTRATION.md` | 205.4 KB | Pre-registration log, addenda 165-197, verbatim (one phrase redacted) |
+| `PREREGISTRATION.md` | 206.0 KB | Pre-registration log, addenda 165-197, verbatim (one phrase redacted) |
 | `README.md` | 14.3 KB | Overview: the study, findings, layout, how the runs worked, what is excluded, rebuild steps, licence |
 | `SCORECARD.md` | 1.9 KB | Which pre-registered predictions held, per addendum (moved out of the paper) |
 | `code/colab/xq_bridge.sh` | 3.0 KB | Colab session: fit the bridge and control correctors and run the suite (166) |
