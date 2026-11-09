@@ -352,7 +352,7 @@ Run labels give the addendum and seed (see README.md, "Run folders").
 | `figures/fig7_online.png` | 264.6 KB | Figure 4: online learning, E4B to E2B, the setups and the self-corrector control, held cross-entropy and drift |
 | `figures/fig8_agent_turns.png` | 103.7 KB | Extra figure (cut from the paper): agent replies, E4B to Qwen3-1.7B (169d) |
 | `figures/fig9_e2b.png` | 160.0 KB | Figure 2: Gemma 4 E2B as the coding student against Qwen3-1.7B, with the anchors and the fitting-text control (186, 187, 190) |
-| `paper.md` | 31.2 KB | The paper: Copy, Correct, or Rewrite? |
+| `paper.md` | 31.3 KB | The paper: Copy, Correct, or Rewrite? |
 | `scripts/collect.py` | 14.0 KB | Collects every number the paper uses from the run folders into data/results.json (standard library) |
 | `scripts/drift.py` | 3.7 KB | Measures drift from the original student on untaught text (needs adapters and text rows not included) |
 | `scripts/figures.py` | 31.3 KB | Draws the nine figures from data/results.json (matplotlib) |

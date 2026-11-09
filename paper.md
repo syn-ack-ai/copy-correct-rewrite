@@ -12,7 +12,7 @@ A small agent model trained by a stronger one must gain the teacher's skill with
 
 Submissions to the Gemma 4 Developer Agent competition (Kaggle, 2026) are Gemma 4 E2B or E4B (Google, 2026) plus LoRA adapters (Hu et al., 2021) of rank at most 128, so any gain from a stronger teacher must be stored in an adapter. Distillation (Hinton et al., 2015) is the main lever; we ask which route teaches the most and forgets the least.
 
-To test whether a teacher's internal states can be stored, we built a *state corrector*, inspired by Swarm Telepathy (Alabdulkareem et al., 2026), which moves one model's KV cache into a frozen receiver of another family. Ours writes a correction into the student's hidden states; it also served as an anchor and online teacher. Our contributions:
+To test whether a teacher's internal states can be stored, we built a *state corrector*, inspired by Swarm Telepathy (Alabdulkareem et al., 2026), which moves one model's KV cache into a frozen receiver of another family. Ours writes a correction into the student's hidden states. Our contributions:
 
 - Copying verified answers teaches as much as any route, best with the shortest.
 - Same-family copying causes forgetting; a KL pull toward the original student removes it at no cost.
@@ -44,7 +44,7 @@ L_fit = CE_corrected + 0.03 · ‖Δ‖ + 0.5 · H,  (3)
 
 with ‖Δ‖ the size of the change and H a do-no-harm term that keeps the student's own top-32 distribution wherever it already ranks the true token first. Fitting rows mix agent replies (40-50%) with prose, code, questions, stories and, online, E2B's own samples (Table D1).
 
-**Use.** Live, the corrected Qwen is far closer to the teacher on agent replies (0.67 nats vs 1.39 alone; self-corrector 0.73). We test it as an anchor (eq. 1), an on-policy teacher (eq. 2), a rewriter, a distilled LoRA and an online teacher.
+**Use.** Live, the corrected Qwen is far closer to the teacher on agent replies (0.67 nats vs 1.39 alone; self-corrector 0.73). We test it as an anchor (eq. 1), an on-policy teacher (eq. 2), a distilled LoRA and an online teacher.
 
 ## 4 Experiments
 
@@ -131,7 +131,7 @@ On-policy distillation through the self-corrector reached 116 held solves, its t
 
 ### 4.8 Online learning on agent decisions
 
-E2B with a rank-16 LoRA met 600 unseen decision points from the competition's harness, each once, scored before learning it. The target was the teacher's distribution (A) or the cross-model corrector (B), each also with keep + replay (C, D: KL to the original E2B on one untaught row per item, and an earlier item every fourth step). The corrector was fitted on the training repositories, which the stream draws from; the held measures and gate use repositories neither saw. The gate has 220 held decisions: *fixed* counts the 52 where E2B alone differs from the teacher, *broken* the other 168. The result is a plain LoRA; the corrector is needed only during training.
+E2B with a rank-16 LoRA met 600 unseen decision points from the competition's harness, each once, scored before learning it. The target was the teacher's distribution (A) or the cross-model corrector (B), each also with keep + replay (C, D: KL to the original E2B on one untaught row per item, and an earlier item every fourth step). The corrector was fitted on the training repositories, which the stream draws from; the held measures and gate use repositories neither saw. The gate has 220 held decisions: *fixed* counts the 52 where E2B alone differs from the teacher, *broken* the other 168. The result is a plain LoRA; the corrector is needed only during training. Two controls replace D's corrector, with keep + replay: a self-corrector, which reads E2B's own states, and a pull-matched blend, the teacher mixed with the original E2B (weight 0.43) so that it pulls E2B as far as the corrector does.
 
 Table 4. Online learning on agent decisions; one seed per row.
 
@@ -145,7 +145,9 @@ Table 4. Online learning on agent decisions; one seed per row.
 | Self-corrector + keep + replay (control) | 0.755 | 0.025 | 0.073 | 13 / 5 |
 | Pull-matched blend + keep + replay (control) | 0.781 | 0.014 | 0.022 | 14 / 4 |
 
-Keep + replay hurt the plain teacher (A to C: 11 fewer fixed) but helped the corrector teacher (B to D: 7 more), and D matched B's closeness at a third of its drift. D had the best net gate result (+19; A +14, within noise, p = 0.40) and beat C on paired decisions (17 vs 6 and 17 vs 8 for its two seeds, p = 0.035 and 0.11). D's second seed reproduced it, differing on 6 of 220 decisions. Without E4B's states it fell away: the same setup with the self-corrector, which reads E2B's own states, came as close to the teacher (0.755), moved held-question answers most (0.073) and fixed no more than C (net +8; D beat it 12 vs 1 and 12 vs 3, p = 0.003 and 0.035). Nor is D just a softer target: blending the teacher with the original E2B (weight 0.43) to the corrector's pull, a fifth of the teacher's, behaved like C (net +10; D beat it 11 vs 2, p = 0.02). Further seeds of C and D, a disagreement-gated teacher and a live test of D's LoRA were still running.
+Keep + replay hurt the plain teacher (A to C: 11 fewer fixed) but helped the corrector teacher (B to D: 7 more), and D matched B's closeness at a third of its drift. D had the best net gate result (+19; A +14, within noise, p = 0.40) and beat C on paired decisions (17 vs 6 and 17 vs 8 for its two seeds, p = 0.035 and 0.11). D's second seed reproduced it, differing on 6 of 220 decisions.
+
+Both controls fell back to C's level. The self-corrector came as close to the teacher as D and moved held-question answers most, but fixed no more than C (net +8; D beat it 12 vs 1 and 12 vs 3, p = 0.003 and 0.035): the gain needs E4B's states. The blend also behaved like C (net +10; D beat it 11 vs 2 and 11 vs 4, p = 0.02 and 0.12): D is not just a softer target. Further seeds of C and D, a disagreement-gated teacher and a live test of D's LoRA were still running.
 
 ![Online curves](figures/fig7_online.png)
 
@@ -169,7 +171,7 @@ Figure 4. Held cross-entropy and untaught drift over the stream.
 
 **Forgetting.** Learning without forgetting (Li and Hoiem, 2016) and EWC (Kirkpatrick et al., 2016) protect old skills with output and weight penalties, and LoRA learns less and forgets less (Biderman et al., 2024); RL's Razor (Shenfeld et al., 2025) ties forgetting to KL from the original. On-policy distillation from the original model restores lost skills (Lu, 2025), continual variants add replay (Chen et al., 2026), and EAFT gates loss by entropy (Diao et al., 2026).
 
-**Cross-model transfer.** Logit-space methods align vocabularies (Boizard et al., 2024; Zhang et al., 2024), model fusion merges distributions (Wan et al., 2024), and model stitching joins representations (Lenc and Vedaldi, 2014; Bansal et al., 2021). The corrector descends from Swarm Telepathy (Alabdulkareem et al., 2026). Residual-learning distillation projects teacher states for the student (On et al., 2026); steering-vector distillation stores a training-time intervention in a LoRA (Blank et al., 2026).
+**Cross-model transfer.** Logit-space methods align vocabularies (Boizard et al., 2024; Zhang et al., 2024), model fusion merges distributions (Wan et al., 2024), and model stitching joins representations (Lenc and Vedaldi, 2014; Bansal et al., 2021). Residual-learning distillation projects teacher states for the student (On et al., 2026); steering-vector distillation stores a training-time intervention in a LoRA (Blank et al., 2026).
 
 ## 7 Conclusion
 
