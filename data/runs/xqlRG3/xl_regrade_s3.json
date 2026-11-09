@@ -1,0 +1,267 @@
+{
+ "seed": 3,
+ "continuation tokens": 768,
+ "arms": {
+  "sft": {
+   "lost": 23,
+   "capped": 11,
+   "complete (left failed)": 12,
+   "recovered": 3,
+   "recovered ids": [
+    "abc305_a",
+    "abc361_a",
+    "abc383_b"
+   ],
+   "closed": 5,
+   "continuation tokens": [
+    768,
+    45,
+    768,
+    168,
+    768,
+    768,
+    768,
+    768,
+    120,
+    146,
+    555
+   ],
+   "prefix tokens": [
+    768,
+    768,
+    768,
+    768,
+    768,
+    768,
+    768,
+    768,
+    768,
+    768,
+    768
+   ]
+  },
+  "sft_s": {
+   "lost": 13,
+   "capped": 3,
+   "complete (left failed)": 10,
+   "recovered": 1,
+   "recovered ids": [
+    "abc399_c"
+   ],
+   "closed": 3,
+   "continuation tokens": [
+    420,
+    134,
+    64
+   ],
+   "prefix tokens": [
+    768,
+    768,
+    768
+   ]
+  },
+  "sft_c_s": {
+   "lost": 15,
+   "capped": 3,
+   "complete (left failed)": 12,
+   "recovered": 1,
+   "recovered ids": [
+    "abc305_a"
+   ],
+   "closed": 2,
+   "continuation tokens": [
+    276,
+    768,
+    28
+   ],
+   "prefix tokens": [
+    768,
+    768,
+    768
+   ]
+  },
+  "opd_c": {
+   "lost": 30,
+   "capped": 6,
+   "complete (left failed)": 24,
+   "recovered": 2,
+   "recovered ids": [
+    "3324",
+    "abc368_a"
+   ],
+   "closed": 2,
+   "continuation tokens": [
+    718,
+    768,
+    35,
+    768,
+    768,
+    768
+   ],
+   "prefix tokens": [
+    768,
+    768,
+    768,
+    768,
+    768,
+    768
+   ]
+  },
+  "mix_c": {
+   "lost": 46,
+   "capped": 6,
+   "complete (left failed)": 40,
+   "recovered": 1,
+   "recovered ids": [
+    "abc378_b"
+   ],
+   "closed": 2,
+   "continuation tokens": [
+    768,
+    768,
+    768,
+    768,
+    690,
+    361
+   ],
+   "prefix tokens": [
+    768,
+    768,
+    768,
+    768,
+    768,
+    768
+   ]
+  },
+  "opd_cf": {
+   "lost": 19,
+   "capped": 6,
+   "complete (left failed)": 13,
+   "recovered": 2,
+   "recovered ids": [
+    "3685",
+    "abc318_a"
+   ],
+   "closed": 4,
+   "continuation tokens": [
+    83,
+    4,
+    585,
+    11,
+    768,
+    768
+   ],
+   "prefix tokens": [
+    768,
+    768,
+    768,
+    768,
+    768,
+    768
+   ]
+  },
+  "rw_cf": {
+   "lost": 15,
+   "capped": 9,
+   "complete (left failed)": 6,
+   "recovered": 3,
+   "recovered ids": [
+    "abc318_a",
+    "abc368_a",
+    "abc383_b"
+   ],
+   "closed": 6,
+   "continuation tokens": [
+    768,
+    768,
+    749,
+    222,
+    485,
+    46,
+    11,
+    768,
+    227
+   ],
+   "prefix tokens": [
+    768,
+    768,
+    768,
+    768,
+    768,
+    768,
+    768,
+    768,
+    768
+   ]
+  },
+  "mix_cf": {
+   "lost": 14,
+   "capped": 5,
+   "complete (left failed)": 9,
+   "recovered": 2,
+   "recovered ids": [
+    "abc305_a",
+    "abc361_b"
+   ],
+   "closed": 5,
+   "continuation tokens": [
+    258,
+    115,
+    157,
+    294,
+    41
+   ],
+   "prefix tokens": [
+    768,
+    768,
+    768,
+    768,
+    768
+   ]
+  },
+  "rb": {
+   "lost": 11,
+   "capped": 1,
+   "complete (left failed)": 10,
+   "recovered": 0,
+   "recovered ids": [],
+   "closed": 0,
+   "continuation tokens": [
+    768
+   ],
+   "prefix tokens": [
+    768
+   ]
+  },
+  "rb_c": {
+   "lost": 12,
+   "capped": 1,
+   "complete (left failed)": 11,
+   "recovered": 0,
+   "recovered ids": [],
+   "closed": 0,
+   "continuation tokens": [
+    768
+   ],
+   "prefix tokens": [
+    768
+   ]
+  },
+  "sft_self_s": {
+   "lost": 13,
+   "capped": 2,
+   "complete (left failed)": 11,
+   "recovered": 0,
+   "recovered ids": [],
+   "closed": 1,
+   "continuation tokens": [
+    768,
+    218
+   ],
+   "prefix tokens": [
+    768,
+    768
+   ]
+  }
+ }
+}

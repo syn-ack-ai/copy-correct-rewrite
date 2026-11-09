@@ -952,33 +952,54 @@ def offtask(B, pm, names):
     return out
 
 
+@torch.no_grad()
+def gen_continue(model, tok, prompts, prefixes, bos, maxnew):
+    """194a: greedy continuation of stored answers. The input is the prompt's ids followed by the stored answer's ids, tokenized apart as when the
+    answer was generated, left-padded; the same stopping as XC.gen_hf (closing ``` or an end token). Returns the continuations and prefix lengths."""
+    pad = tok.pad_token_id if tok.pad_token_id is not None else tok.eos_token_id; eos = XC.stop_ids(model, tok); outs, npre = [], []
+    for a in range(0, len(prompts), XC.BATCH):
+        pre = [tok(x, add_special_tokens=False)["input_ids"] for x in prefixes[a:a + XC.BATCH]]
+        seqs = [tok(bos + p, add_special_tokens=False)["input_ids"] + x for p, x in zip(prompts[a:a + XC.BATCH], pre)]; L = max(map(len, seqs))
+        ids = torch.tensor([[pad] * (L - len(s)) + s for s in seqs], device=XC.DEV); am = torch.tensor([[0] * (L - len(s)) + [1] * len(s) for s in seqs], device=XC.DEV)
+        y = model.generate(input_ids=ids, attention_mask=am, do_sample=False, max_new_tokens=maxnew, pad_token_id=pad, eos_token_id=eos, use_cache=True, stop_strings=["```"], tokenizer=tok)
+        outs += [tok.decode(r[L:], skip_special_tokens=True) for r in y]; npre += [len(x) for x in pre]
+        log("continued", a + len(seqs), "of", len(prompts))
+    return outs, npre
+
+
 def regrade():
-    """194 (user 11-08, from the Fable review: "a 1,536-cap re-grade of the lost set"): each stored adapter of this seed regenerates the problems
-    it lost (solved by the student alone, failed by the adapter, both greedy at 768 new tokens) with XC_MAXNEW new tokens, greedy, and each answer
-    is scored alone. Lost lists: XL_REGRADE (json {seed: {arm: [ids]}}); adapters: XL_REGRADE_DIR/xl_ARM. No training."""
+    """194a (user 11-08: "go ahead and fix 194"; review: regenerating the lost problems in new batches changes greedy outputs by itself). Only the
+    lost answers that hit the 768-token cap (no closing ```) are re-graded: each stored adapter of this seed continues its own stored answer for
+    up to XL_REGRADE_CONT more tokens (768: 1,536 in all), greedy, and the stored answer + continuation is scored. The complete lost answers stay
+    failed (identical batches reproduce them exactly). Input XL_REGRADE: json {seed: {arm: {"capped": [{"id", "text"}], "complete": n, "lost": n}}};
+    adapters XL_REGRADE_DIR/xl_ARM. The small pass continues the first two capped answers of the first two arms by 32 tokens. No training."""
     from peft import PeftModel
-    XC.selfcheck(); tr, he = pools(); byid = {p["id"]: p for p in tr + he}; B = XB.Bridge("bridge"); t0 = time.time()
+    XC.selfcheck(); B = XB.Bridge("bridge"); t0 = time.time(); cont = 32 if SMALL else int(os.environ.get("XL_REGRADE_CONT", "768"))
+    byid = {p["id"]: p for p in load(TRAIN_FILES, ("easy", "medium", "hard"), 10 ** 6) + load(HELD_FILES, ("easy", "medium"), 10 ** 6)}   # the full pools, small pass too
     lost = json.load(open(os.environ["XL_REGRADE"]))[str(SEED)]; pdir = Path(os.environ["XL_REGRADE_DIR"])
-    out = {"seed": SEED, "max new tokens": XC.MAXNEW, "arms": {}}; pm = None
+    miss = [a for a in lost if not (pdir / f"xl_{a}").is_dir()]; assert not miss, f"adapters missing: {miss}"   # review: fail in the small pass, not mid-run
+    out = {"seed": SEED, "continuation tokens": cont, "arms": {}}; pm = None
     with open(OD / f"xl_regrade_gens_s{SEED}.jsonl", "w") as fh:
-        for k, (a, lid) in enumerate(lost.items()):
+        for k, (a, v) in enumerate(lost.items()):
+            cap = v["capped"][:2] if SMALL else v["capped"]
             if SMALL and k >= 2:
                 break
-            lid = [p_["id"] for p_ in (tr + he)[:2]] if SMALL else [i for i in lid if i in byid]   # the small pass: two problems of its small pools
-            assert SMALL or len(lid) == len(lost[a]), f"{a}: lost problems missing from the pools"
+            assert all(c["id"] in byid and "```" not in c["text"] for c in cap), f"{a}: a capped answer is not in the pools or has a closing fence"
             if pm is None:
                 pm = PeftModel.from_pretrained(B.mS, str(pdir / f"xl_{a}"), adapter_name=a)
             else:
                 pm.load_adapter(str(pdir / f"xl_{a}"), adapter_name=a)
-            pm.set_adapter(a); pm.eval(); g = XC.gen_hf(pm, B.tq, [byid[i]["prompt"] for i in lid], bos=XB.SBOS) if lid else []
-            ok = [bool(XC.run_problem(byid[i], t)) for i, t in zip(lid, g)]; nt = [len(B.tq(t, add_special_tokens=False)["input_ids"]) for t in g]
-            for i, t, o in zip(lid, g, ok):
-                fh.write(json.dumps({"id": i, "arm": a, "text": t, "pass": o}) + "\n")
-            out["arms"][a] = {"lost": len(lid), "recovered": int(sum(ok)), "recovered ids": [i for i, o in zip(lid, ok) if o], "new tokens": nt,
-                              "longer than 768 tokens": int(sum(1 for n in nt if n > 768)), "recovered and longer than 768": int(sum(1 for n, o in zip(nt, ok) if o and n > 768))}
-            log(a, "lost", len(lid), "| recovered with", XC.MAXNEW, "tokens:", int(sum(ok)), "| answers over 768 tokens:", out["arms"][a]["longer than 768 tokens"], round(time.time() - t0), "s")
+            pm.set_adapter(a); pm.eval()
+            g, npre = gen_continue(pm, B.tq, [byid[c["id"]]["prompt"] for c in cap], [c["text"] for c in cap], XB.SBOS, cont) if cap else ([], [])
+            full = [c["text"] + x for c, x in zip(cap, g)]; ok = [bool(XC.run_problem(byid[c["id"]], f_)) for c, f_ in zip(cap, full)]   # one at a time (as evaluate re-scores): no parallel load near the time limit
+            nt = [len(B.tq(x, add_special_tokens=False)["input_ids"]) for x in g]; closed = ["```" in x for x in g]
+            for c, x, o, n, m in zip(cap, g, ok, nt, npre):
+                fh.write(json.dumps({"id": c["id"], "arm": a, "continuation": x, "pass": bool(o), "closed": "```" in x, "continuation tokens": n, "prefix tokens": m}) + "\n")
+            out["arms"][a] = {"lost": v["lost"], "capped": len(cap), "complete (left failed)": v["complete"], "recovered": int(sum(map(bool, ok))),
+                              "recovered ids": [c["id"] for c, o in zip(cap, ok) if o], "closed": int(sum(closed)), "continuation tokens": nt, "prefix tokens": npre}
+            log(a, "lost", v["lost"], "| capped", len(cap), "| closed within", cont, "more:", int(sum(closed)), "| recovered:", int(sum(map(bool, ok))),
+                "| prefix tokens min/median", (min(npre), sorted(npre)[len(npre) // 2]) if npre else None, round(time.time() - t0), "s")
     json.dump(out, open(OD / f"xl_regrade_s{SEED}.json", "w"), indent=1); print("REGRADE_DONE", flush=True)
-
 
 def evaluate():
     """generation on the problems where a count can move: the trained ones, the held ones, and the untrained train-pool problems Qwen passed (for

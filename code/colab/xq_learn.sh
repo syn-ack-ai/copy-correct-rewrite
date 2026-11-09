@@ -51,7 +51,7 @@ if [ "$STAGE" = two ]; then   # 187: XL_DIR=e2b: E4B teaches E2B; XL_DIR=e4b: E2
   case "${XL_DIR:?}" in e2b) export XB_TEACHER=/content/me4b_qat XB_STUDENT=/content/me2b_qat ;; e4b) export XB_TEACHER=/content/me2b_qat XB_STUDENT=/content/me4b_qat XL_ROWS_FROM=/content/inx/xq/learn/xl_gens_e2b_alone.jsonl XL_ROWS_PASS=/content/inx/xq/learn/xl_eval_e2b_alone.json ;; *) echo "XL_DIR must be e2b or e4b"; exit 1 ;; esac
   export XB_SBOS="<bos>" XL_NO_KEPT_POOL=1
 fi
-[ "$STAGE" = regrade ] && export XB_TEACHER=/content/me4b_tok XB_TEACHER_TOK_ONLY=1 XC_MAXNEW=${XL_REGRADE_MAXNEW:-1536} XL_REGRADE=/content/inx/xq/regrade/lost.json XL_REGRADE_DIR=/content/inx/xq/prior/s$XB_SEED   # 194
+[ "$STAGE" = regrade ] && export XB_TEACHER=/content/me4b_tok XB_TEACHER_TOK_ONLY=1 XL_REGRADE=/content/inx/xq/regrade/capped.json XL_REGRADE_DIR=/content/inx/xq/prior/s$XB_SEED   # 194a: the capped lost answers, continued (XL_REGRADE_CONT, 768)
 [ "$STAGE" = e2b ] && export XB_TEACHER=/content/me4b_tok XB_TEACHER_TOK_ONLY=1 XB_STUDENT=/content/me2b_qat XB_SBOS="<bos>" XL_NO_KEPT_POOL=1 XL_RB_PLANS=/content/inx/xq/learn/xl_rb_gens.jsonl   # 186
 run() { local lg=$1; shift; echo "$(date +%H:%M) $lg"; "$@" > $O/xl_$lg.log 2>&1 || { echo "$lg FAILED"; tail -n 25 $O/xl_$lg.log; exit 1; }
         grep -E "pools|solved|Qwen alone|E4B greedy|arm |step [0-9]+ of|passed|self-check|short rows|refit|rewrite|plans|runbook|first plan" $O/xl_$lg.log | tail -n 6 | cut -c1-300; }
@@ -194,13 +194,13 @@ PY
   DRIFT_DIR=$XB_DIR/out python drift.py $XB_STUDENT $XB_DIR/rows_untaught.json /content $O/drift_two_${XL_DIR}_s$XB_SEED.json $(ls -d $XB_DIR/out/xl_*/ | xargs -n1 basename | sed 's/^xl_//') > $O/xl_drift.log 2>&1 && echo "drift done" || { echo "drift FAILED (the results above stand)"; tail -n 5 $O/xl_drift.log; }
   cp $XB_DIR/out/xb_control.pt $O/xb_control_${XL_DIR}_s$XB_SEED.pt; cp $XB_DIR/out/xb_bridge.pt $O/xb_bridge_${XL_DIR}_s$XB_SEED.pt   # the fitted correctors (for later use)
   echo "$(date +%H:%M) XQL_TWO_DONE"
-elif [ "$STAGE" = regrade ]; then   # 194 (user 11-08, from the Fable review): the problems each stored Qwen adapter of this seed lost, regenerated with XC_MAXNEW tokens; no training
+elif [ "$STAGE" = regrade ]; then   # 194a: each stored Qwen adapter of this seed continues its own lost answers that hit the 768-token cap; no training
   : "${XB_SEED:?}"; ls /content/inx/xq/prior/s$XB_SEED | tr '\n' ' '; echo
   setup /content/xl_rg_small || exit 1; export XB_SMALL=1; run regrade_small python xlearn.py regrade || exit 1
   unset XB_SMALL; setup /content/xl_rg || exit 1; run regrade python xlearn.py regrade || exit 1
   cp $XB_DIR/out/xl_regrade_s$XB_SEED.json $XB_DIR/out/xl_regrade_gens_s$XB_SEED.jsonl $O/
-  python -c "import json; d = json.load(open('$O/xl_regrade_s$XB_SEED.json')); print({a: (v['lost'], v['recovered'], v['longer than 768 tokens']) for a, v in d['arms'].items()})"
+  python -c "import json; d = json.load(open('$O/xl_regrade_s$XB_SEED.json')); print({a: (v['lost'], v['capped'], v['closed'], v['recovered']) for a, v in d['arms'].items()})"
   echo "$(date +%H:%M) XQL_REGRADE_DONE"
 else
-  echo "STAGE must be build, arms, short, cf, rbuild, rb, e2b or two"; exit 1
+  echo "STAGE must be build, arms, short, cf, rbuild, rb, e2b, two or regrade"; exit 1
 fi

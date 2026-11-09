@@ -1,0 +1,306 @@
+{
+ "seed": 1,
+ "continuation tokens": 768,
+ "arms": {
+  "sft": {
+   "lost": 20,
+   "capped": 12,
+   "complete (left failed)": 8,
+   "recovered": 4,
+   "recovered ids": [
+    "abc318_a",
+    "abc368_a",
+    "abc373_c",
+    "abc378_b"
+   ],
+   "closed": 6,
+   "continuation tokens": [
+    768,
+    768,
+    18,
+    768,
+    768,
+    85,
+    768,
+    14,
+    202,
+    312,
+    60,
+    768
+   ],
+   "prefix tokens": [
+    768,
+    768,
+    768,
+    768,
+    768,
+    768,
+    768,
+    768,
+    768,
+    768,
+    768,
+    768
+   ]
+  },
+  "sft_s": {
+   "lost": 18,
+   "capped": 6,
+   "complete (left failed)": 12,
+   "recovered": 1,
+   "recovered ids": [
+    "abc361_b"
+   ],
+   "closed": 3,
+   "continuation tokens": [
+    768,
+    44,
+    51,
+    768,
+    768,
+    42
+   ],
+   "prefix tokens": [
+    768,
+    768,
+    768,
+    768,
+    768,
+    768
+   ]
+  },
+  "sft_c_s": {
+   "lost": 18,
+   "capped": 7,
+   "complete (left failed)": 11,
+   "recovered": 1,
+   "recovered ids": [
+    "abc305_a"
+   ],
+   "closed": 2,
+   "continuation tokens": [
+    768,
+    204,
+    768,
+    12,
+    768,
+    768,
+    768
+   ],
+   "prefix tokens": [
+    768,
+    768,
+    768,
+    768,
+    768,
+    768,
+    768
+   ]
+  },
+  "opd_c": {
+   "lost": 31,
+   "capped": 2,
+   "complete (left failed)": 29,
+   "recovered": 0,
+   "recovered ids": [],
+   "closed": 0,
+   "continuation tokens": [
+    768,
+    768
+   ],
+   "prefix tokens": [
+    768,
+    768
+   ]
+  },
+  "mix_c": {
+   "lost": 35,
+   "capped": 5,
+   "complete (left failed)": 30,
+   "recovered": 2,
+   "recovered ids": [
+    "abc305_b",
+    "abc399_c"
+   ],
+   "closed": 3,
+   "continuation tokens": [
+    626,
+    64,
+    768,
+    768,
+    505
+   ],
+   "prefix tokens": [
+    768,
+    768,
+    768,
+    768,
+    768
+   ]
+  },
+  "opd_cf": {
+   "lost": 27,
+   "capped": 13,
+   "complete (left failed)": 14,
+   "recovered": 7,
+   "recovered ids": [
+    "3220",
+    "abc305_b",
+    "abc327_d",
+    "abc367_b",
+    "abc378_b",
+    "abc391_b",
+    "abc399_c"
+   ],
+   "closed": 10,
+   "continuation tokens": [
+    445,
+    161,
+    409,
+    70,
+    232,
+    768,
+    38,
+    768,
+    768,
+    325,
+    361,
+    67,
+    102
+   ],
+   "prefix tokens": [
+    768,
+    768,
+    768,
+    768,
+    768,
+    768,
+    768,
+    768,
+    768,
+    768,
+    768,
+    768,
+    768
+   ]
+  },
+  "rw_cf": {
+   "lost": 21,
+   "capped": 7,
+   "complete (left failed)": 14,
+   "recovered": 6,
+   "recovered ids": [
+    "abc304_a",
+    "abc305_a",
+    "abc327_d",
+    "abc378_b",
+    "abc383_b",
+    "abc400_b"
+   ],
+   "closed": 7,
+   "continuation tokens": [
+    73,
+    42,
+    53,
+    87,
+    69,
+    121,
+    60
+   ],
+   "prefix tokens": [
+    768,
+    768,
+    768,
+    768,
+    768,
+    768,
+    768
+   ]
+  },
+  "mix_cf": {
+   "lost": 19,
+   "capped": 11,
+   "complete (left failed)": 8,
+   "recovered": 6,
+   "recovered ids": [
+    "3324",
+    "abc305_a",
+    "abc352_a",
+    "abc368_a",
+    "abc378_b",
+    "abc391_b"
+   ],
+   "closed": 9,
+   "continuation tokens": [
+    31,
+    722,
+    82,
+    531,
+    190,
+    15,
+    268,
+    768,
+    287,
+    378,
+    768
+   ],
+   "prefix tokens": [
+    768,
+    768,
+    768,
+    768,
+    768,
+    768,
+    768,
+    768,
+    768,
+    768,
+    768
+   ]
+  },
+  "rb": {
+   "lost": 14,
+   "capped": 0,
+   "complete (left failed)": 14,
+   "recovered": 0,
+   "recovered ids": [],
+   "closed": 0,
+   "continuation tokens": [],
+   "prefix tokens": []
+  },
+  "rb_c": {
+   "lost": 12,
+   "capped": 0,
+   "complete (left failed)": 12,
+   "recovered": 0,
+   "recovered ids": [],
+   "closed": 0,
+   "continuation tokens": [],
+   "prefix tokens": []
+  },
+  "sft_self_s": {
+   "lost": 13,
+   "capped": 5,
+   "complete (left failed)": 8,
+   "recovered": 1,
+   "recovered ids": [
+    "abc305_a"
+   ],
+   "closed": 2,
+   "continuation tokens": [
+    768,
+    152,
+    604,
+    768,
+    768
+   ],
+   "prefix tokens": [
+    768,
+    768,
+    768,
+    768,
+    768
+   ]
+  }
+ }
+}

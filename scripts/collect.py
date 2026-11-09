@@ -122,6 +122,20 @@ if ML["per seed"]:
         if f.exists():
             res["ml e2b drift"].update({k: v for k, v in json.load(open(f))["summary"].items() if k.split("|")[0] in ("sft_es", "sft_lr")})
 
+# 193: the KL strength sweep (E2B; sft_self_s at lambda 0.3 and 3; lambda 1 is 187's sft_self_s; each session re-scores 186's sft)
+KL = family({s: [R / f"xqlKL{s}/xl_eval_e2b_s{s}.json"] for s in (1, 2, 3)})
+if KL["per seed"]:
+    res["kl e2b"] = KL; res["kl e2b drift"] = {}
+    for s in (1, 2, 3):
+        f = R / f"xqlKL{s}/drift_e2b_s{s}.json"
+        if f.exists():
+            res["kl e2b drift"].update({k: v for k, v in json.load(open(f))["summary"].items() if k.split("|")[0] in ("sft_self_s_l03", "sft_self_s_l3")})
+
+# 194a: the capped lost answers of the 11 Qwen recipes, continued by 768 tokens (pooled over seeds)
+RG = {s: json.load(open(R / f"xqlRG{s}/xl_regrade_s{s}.json")) for s in (1, 2, 3) if (R / f"xqlRG{s}/xl_regrade_s{s}.json").exists()}
+if RG:
+    res["regrade"] = {a: {k: sum(RG[s]["arms"][a][k] for s in RG) for k in ("lost", "capped", "closed", "recovered")} for a in RG[min(RG)]["arms"]}
+
 # 178: wide LiveCodeBench, the agent-row LoRAs
 W = {}
 for s in (1, 2, 3):

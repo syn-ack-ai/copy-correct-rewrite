@@ -90,15 +90,17 @@ Table 2. Gemma 4 E2B as the student, per-seed means over three seeds (alone: 57 
 | Runbook rows | 67.0 | 106.0 | 19.3 | 0.29 | +0.85 |
 | SFT, stopped at loss 0.24 | 56.7 | 79.0 | 40.7 | 0.16 | +0.09 |
 | SFT, a tenth of the learning rate | 68.7 | 77.7 | 23.7 | 0.12 | +0.18 |
-| Shortest + KL to the original | 69.0 | 90.7 | **13.3** | **0.016** | −0.04 |
+| Shortest + KL to the original, λ 0.3 | 70.0 | 108.0 | 15.0 | 0.031 | +0.01 |
+| Shortest + KL to the original, λ 1 | 69.0 | 90.7 | **13.3** | 0.016 | −0.04 |
+| Shortest + KL to the original, λ 3 | 60.7 | 59.7 | 24.3 | **0.014** | −0.05 |
 | Shortest + self-corrector anchor | **72.0** | 95.3 | 16.0 | 0.33 | −0.60 |
 | Shortest + cross-model anchor | 69.7 | 99.3 | 15.3 | 0.32 | −0.58 |
 | Shortest + the corrector's fitting text | 71.3 | 105.0 | 16.3 | 0.83 | −0.75 |
 | Shortest + fitting text + KL to the original | 68.7 | 83.3 | 17.3 | 0.81 | −0.76 |
 
-The likely cause is over-fitting familiar text. E2B's training loss on E4B's rows started low (0.28 nats), barely fell in the first epoch and reached 0.07 in the second; Qwen's ended at 0.24. Stopped there after one epoch, E2B's prose damage fell from +0.69 to +0.09, yet it moved twice as far as Qwen (KL 0.16 against 0.074), so part of the effect is the student. Stopping early is no fix: it kept no held gain and lost 122 solved problems (SFT 47). A tenth of the learning rate kept the gain with +0.18 damage; KL to the original kept it without damage.
+The likely cause is over-fitting familiar text. E2B's training loss on E4B's rows started low (0.28 nats), barely fell in the first epoch and reached 0.07 in the second; Qwen's ended at 0.24. Stopped there after one epoch, E2B's prose damage fell from +0.69 to +0.09, yet it moved twice as far as Qwen (KL 0.16 against 0.074), so part of the effect is the student. Stopping early is no fix: it kept no held gain and lost 122 solved problems (SFT 47). A tenth of the learning rate kept the gain with +0.18 damage.
 
-Every anchor removed the damage in every seed and held E2B's training loss at 0.11-0.12, not 0.08. KL to the original kept E2B in place (prose KL 0.016, Δ loss −0.04) without costing held solves (207 vs 204). Anchors to fresh Gemma correctors moved it as far as SFT, toward lower loss and softer predictions (Δ loss −0.58 to −0.60); held solves rose by at most 12 (216 vs 204, p = 0.22), at about 25 fewer fixes per seed. Training directly on the corrector's fitting text matched that anchor (held 214 vs 216, p = 0.90; prose Δ loss −0.75) and came closer on agent replies (0.50 vs 0.65), but moved E2B much further (prose KL 0.83 vs 0.33): the anchor's gain is its fitting text, delivered with less change. The KL pull did not reduce that (0.81): it covers only the coding replies. Gemma correctors fit their mix less well (27-29% loss cut; Qwen's 34-37%) and left E2B's coding loss unchanged.
+Every anchor removed the damage in every seed and held E2B's training loss at 0.11-0.12, not 0.08. KL to the original kept E2B in place (prose KL 0.016, Δ loss −0.04) without costing held solves (207 vs 204). A lighter pull (λ = 0.3) also removed the damage and fixed 52 more (p = 0.0001); λ = 3 cost 25 held solves. Anchors to fresh Gemma correctors moved it as far as SFT, toward lower loss and softer predictions (Δ loss −0.58 to −0.60); held solves rose by at most 12 (216 vs 204, p = 0.22), at about 25 fewer fixes per seed. Training directly on the corrector's fitting text matched that anchor (held 214 vs 216, p = 0.90; prose Δ loss −0.75) and came closer on agent replies (0.50 vs 0.65), but moved E2B much further (prose KL 0.83 vs 0.33): the anchor's gain is its fitting text, delivered with less change. The KL pull did not reduce that (0.81): it covers only the coding replies. The Gemma correctors left E2B's loss on E4B's coding rows unchanged.
 
 ![E2B per recipe](figures/fig9_e2b.png)
 
@@ -191,11 +193,11 @@ Figure 7. Held cross-entropy to the teacher and drift on untaught text over the 
 
 ## 5 Discussion
 
-**For training small agents.** Train on the teacher's shortest verified answers with a KL pull toward the original student, which within the family removed copying's damage at no cost; check the teacher's fit before on-policy distillation; and measure forgetting on held-out human text, with entropy, since loss on teacher text rewards imitation.
+**For training small agents.** Train on the teacher's shortest verified answers with a light KL pull toward the original student, which within the family removed copying's damage at no cost; check the teacher's fit before on-policy distillation; and measure forgetting on held-out human text, with entropy, since loss on teacher text rewards imitation.
 
 **Where the corrector helps.** As an anchor it delivers its fitting text with less change; as an online teacher with keep + replay it gave the best net result.
 
-**Limitations.** Two coding students and one teacher; the online test has one seed per setup (D two). Pooled p-values are descriptive; differences under about 10 held solves are within noise. The KL pull ran at λ = 1 and the multi-task control only for E2B; a strength sweep was still running. A 768-token cap cannot separate forgetting from verbosity (lost answers ran long, 27% cut at the cap); a longer-cap re-grade is planned. Correctors had 600 fitting steps; longer ones gave mostly worse LoRAs (one seed).
+**Limitations.** Two coding students and one teacher; the online test has one seed per setup (D two). Pooled p-values are descriptive; differences under about 10 held solves are within noise. The KL strength sweep and the multi-task control ran only for E2B. Given 768 more tokens, 59 of the 176 lost answers cut at the cap passed (9% of all losses; 18-25% for refit-teacher recipes). Correctors had 600 fitting steps; longer ones gave mostly worse LoRAs (one seed).
 
 **Ethical considerations.** Fitting and drift prose and stories come from locally held books, not released. Model-written code ran only in sandboxed interpreters.
 
@@ -275,7 +277,7 @@ S. Zhang, X. Zhang, Z. Sun, Y. Chen, and J. Xu (2024). Dual-Space Knowledge Dist
 
 ## Appendix A Code
 
-Code, per-problem results, over 40,000 graded answers and the pre-registration log (addenda 165-193) are public at https://github.com/syn-ack-ai/copy-correct-rewrite (Apache-2.0); the corrector is `code/transfer/xbridge.py`. Not included: text corpora, competition data, problem statements and weights.
+Code, per-problem results, over 40,000 graded answers and the pre-registration log (addenda 165-194) are public at https://github.com/syn-ack-ai/copy-correct-rewrite (Apache-2.0); the corrector is `code/transfer/xbridge.py`. Not included: text corpora, competition data, problem statements and weights.
 
 ## Appendix B AI use
 
@@ -303,5 +305,5 @@ Table 8. Predictions that held, per pre-registered addendum.
 | 190 (multi-task control for the corrector anchor) | 4 of 5 | met: the anchor's gain is its fitting text |
 | 191 (per-user grafts) | — | separate paper |
 | 192 (online vs offline SFT teachers) | — | running |
-| 193 (KL strength sweep) | — | running |
-| 194 (longer-cap re-grade) | — | in revision, not yet run |
+| 193 (KL strength sweep) | 2 of 4 | not met: λ 0.3 holds, λ 3 costs held solves |
+| 194a (longer-cap re-grade of capped losses) | 6 of 6 | — (9% of losses recovered) |

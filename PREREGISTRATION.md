@@ -1,7 +1,7 @@
-# Pre-registration log: addenda 165-193
+# Pre-registration log: addenda 165-194
 
 This file is an excerpt of the project's running pre-registration log. It holds the addenda from "Addendum 165" through the end of
-"Addendum 193", copied verbatim and in their original order (addendum 180 sits between 177 and 178 in the source). Each addendum states its
+"Addendum 194", copied verbatim and in their original order (addendum 180 sits between 177 and 178 in the source). Each addendum states its
 design and its predictions before the run; results and readings were appended after the run. Addenda without a result were still
 running when this excerpt was taken.
 
@@ -1284,3 +1284,70 @@ Predictions (pooled over seeds 1-3):
 4. Prose ΔCE at λ = 0.3 lies between λ 1's −0.04 and SFT's +0.69, above +0.1 (55%).
 
 Bar for "the KL pull removes copying damage across strengths": at λ = 0.3 and λ = 3, held solved within 10 of SFT (204) and prose ΔCE at most +0.15.
+
+**193 result (2026-11-08, 16:55; xqlKL1-3, all exit 0).** Each session's re-scored 186 sft and E2B alone matched the stored results exactly (487 of 487, every seed), so λ = 1 (187's sft_self_s) pairs exactly. Pooled over seeds (E2B alone: 171 held solved):
+
+| Arm | Held solved (of 564) | Fixed (of 453) | Lost (of 615) | Prose KL | Prose ΔCE | Prose entropy change |
+|---|---|---|---|---|---|---|
+| sft | 204 | 359 | 47 | 0.29 | +0.69 | −0.76 |
+| KL to the original, λ 0.3 | 210 | 324 | 45 | 0.031 | +0.006 | −0.09 |
+| KL to the original, λ 1 (187) | 207 | 272 | 40 | 0.016 | −0.035 | −0.01 |
+| KL to the original, λ 3 | 182 | 179 | 73 | 0.014 | −0.045 | +0.04 |
+
+Paired (exact sign test, pooled): λ 0.3 vs λ 1, held 34 vs 31 (p = 0.80), trained 94 vs 48 (p = 0.0001). λ 3 vs λ 1, held 23 vs 48 (p = 0.004), trained 39 vs 156. λ 3 vs sft, held 34 vs 56 (p = 0.026). Prose ΔCE per seed: λ 0.3 −0.013, +0.023, +0.007; λ 3 −0.056, −0.041, −0.040.
+
+Predictions: 1 held (prose KL 0.031 > 0.016 > 0.014). 2 held (fixed 324 > 272 > 179). 3 failed (held 210, 207, 182: λ 3 is 25 below λ 1). 4 failed (λ 0.3's ΔCE is +0.006, not above +0.1: the light pull removes the damage too). 2 of 4.
+
+Bar ("removes copying damage across strengths": held within 10 of sft's 204 and prose ΔCE at most +0.15 at both λ 0.3 and λ 3): not met. λ 0.3 passes both parts (210; +0.006). λ 3 removes the damage but loses 22 held solves, fixes half as many and loses more solved problems than sft (73 vs 47).
+
+Reading: the protection does not need a strong pull. λ 0.3 keeps the student as close (prose ΔCE about zero, KL a tenth of sft's) and teaches more than λ 1 (52 more fixes, held level). Too strong a pull (λ 3) both blocks learning and breaks solved problems. The recommendation becomes a light pull, λ 0.3 to 1; λ 0.3 is the better tested point (three seeds, E2B only).
+
+## Addendum 194 (2026-11-08, 15:40; built, in review, not yet run): do coding losses mean forgetting or verbosity? A longer-cap re-grade (user chose it from the Fable review: "Greedy + 768-cap conflates 'forgot how to solve' with 'got verbose'. Even a 1,536-cap re-grade of the lost set")
+
+Why: 30% of lost answers had no closing fence at the 768-token cap, and lost answers ran long (median 1,456 characters against 535). A "lost" problem may be one the trained student still knows how to solve but now answers too verbosely to finish.
+
+Design: no training. For each of the 11 Qwen recipes of Figure 5 and seeds 1-3, the stored adapter regenerates every problem it lost (solved by Qwen alone, failed by the recipe, both greedy at 768 new tokens): 665 problems in total, 37-115 per recipe pooled. Generation is greedy with 1,536 new tokens; each answer is scored alone in the sandboxed scorer. xlearn.py regrade, xq_learn.sh STAGE=regrade (Qwen only, E4B tokenizer), lost lists from the stored per-problem results (xq/regrade/lost.json), adapters at xq/prior/sS. One Colab session per seed. Measured per recipe: recovered (now passes), answers longer than 768 tokens, and recovered among those.
+
+Predictions (pooled):
+1. At least 25% of the 665 lost problems are recovered (55%).
+2. Runbook rows, whose answers are short, recover a smaller share than plain SFT (65%).
+3. The weak-teacher on-policy arms (opd_c, mix_c), whose answers were short but lost the most, recover under 20% (60%).
+
+Reading rule, set now: if at least half the lost problems are recovered, the paper calls most coding losses verbosity at the cap, not forgetting. Below a quarter, they are mostly real forgetting. In between, both, and the paper reports the share.
+
+**Amendment 194a (2026-11-08, 16:20, before any re-grade run; user: "go ahead and fix 194").** A code review found that 194 as built regenerated each recipe's lost problems in new batches. Greedy outputs change with batch composition alone: Qwen alone, generated in two different batchings, differed on 144 of 495 texts and 16 pass results. The lost set was chosen for failures, so a regeneration would "recover" some of them by chance. Only 176 of the 665 lost answers (26.5%) actually hit the 768-token cap (no closing fence). The other 489 are complete answers that failed; identical batches reproduce them exactly (495 of 495 across sessions), so more room cannot change them.
+
+Revised design:
+- Only the 176 capped answers are re-graded. Each stored adapter continues its own stored answer by up to 768 more tokens (1,536 in all), greedy. The input is the prompt's ids followed by the stored answer's ids, tokenized apart as when it was generated. Then stored answer + continuation is scored, one problem at a time. The 489 complete lost answers stay failed. Input scratchpad regrade/capped.json, uploaded as xq/regrade/capped.json; code xlearn.py regrade() and gen_continue(); sessions xqlRG1-3, unchanged otherwise.
+- Fidelity check before the run (CPU, fp32, Qwen3-1.7B alone, two prompts): the re-tokenized prefix equals the original ids, and prefix + continuation equals the uninterrupted greedy text, in both prompts. On GPU in bf16 batches, small numerical differences may still change a continuation.
+- What the capped answers look like (inspected before the run; no outcome is known): 136 of 176 stop inside a comment or docstring line, so the student was writing explanations when it ran out of room. 31 (18%) look like loops (a line repeated at least 3 times in the last 12, or the last 300 characters repeated earlier). Capped / lost per recipe, pooled: sft 29/58, sft_s 12/48, sft_c_s 12/52, opd_c 10/94, mix_c 21/115 (11 loop-like), opd_cf 34/75, rw_cf 19/55, mix_cf 26/52, rb 1/39, rb_c 1/37, sft_self_s 11/40.
+
+Predictions (replacing 194's):
+1. At least 40% of the 176 capped answers close their code block within the 768 extra tokens (60%).
+2. Between 15% and 40% of the 176 pass after the continuation (55%).
+3. Of the 31 loop-like answers, at most 2 pass (75%).
+4. Pooled over all 665 lost answers, at most 10% are recovered (70%), so the paper's "lost" counts are mostly real failures.
+5. The recipe with the highest recovered share of its lost answers is opd_cf or mix_cf (55%).
+6. rb and rb_c recover at most 1 answer between them (90%).
+
+Reading rule: if at least 10% of the 665 are recovered, the paper reports lost counts with and without the recovered answers and says that part of "lost" is verbosity at the cap. If under 5%, the Limitations sentence says the cap barely changes the lost counts. In between, the paper gives the number. Recipe rankings in the paper change only if a recipe's corrected lost count moves past another's by more than the noise level stated in the paper (about 10 problems).
+
+**194a result (2026-11-08, 16:55; xqlRG1-3, all exit 0, 4-13 min each).** Every capped answer re-tokenized to exactly 768 prefix tokens. Pooled: 104 of the 176 capped answers (59%) closed their code block within 768 more tokens, 72 ran to the new cap, and 59 (34% of capped) passed. That is 8.9% of all 665 lost answers. Of the 31 loop-like answers, 2 passed.
+
+| Recipe | Lost | Capped | Closed | Recovered | Share of lost | Lost after |
+|---|---|---|---|---|---|---|
+| mix_cf | 52 | 26 | 21 | 13 | 25.0% | 39 |
+| opd_cf | 75 | 34 | 24 | 14 | 18.7% | 61 |
+| rw_cf | 55 | 19 | 16 | 10 | 18.2% | 45 |
+| sft | 58 | 29 | 15 | 8 | 13.8% | 50 |
+| sft_s | 48 | 12 | 9 | 3 | 6.2% | 45 |
+| sft_c_s | 52 | 12 | 6 | 3 | 5.8% | 49 |
+| sft_self_s | 40 | 11 | 4 | 2 | 5.0% | 38 |
+| mix_c | 115 | 21 | 7 | 4 | 3.5% | 111 |
+| opd_c | 94 | 10 | 2 | 2 | 2.1% | 92 |
+| rb | 39 | 1 | 0 | 0 | 0% | 39 |
+| rb_c | 37 | 1 | 0 | 0 | 0% | 37 |
+
+Predictions: 1 held (59% closed). 2 held (34% passed). 3 held (2 of 31). 4 held (8.9%). 5 held (mix_cf, 25%). 6 held (rb + rb_c: 0). 6 of 6.
+
+Reading (pre-registered rule: between 5% and 10%, the paper gives the number): most losses are real failures, not verbosity. Verbosity matters for the refit-teacher recipes (mix_cf, opd_cf, rw_cf: 18-25% of their losses) and plain SFT (14%). Rankings move only for mix_cf, whose losses fall from 52 to 39, level with runbook rows (39, 37) and KL to the original (38). The other orderings in the paper hold within the stated noise.

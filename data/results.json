@@ -4081,6 +4081,497 @@
    "rows": 57
   }
  },
+ "kl e2b": {
+  "per seed": {
+   "1": {
+    "sft": {
+     "fixed": 119,
+     "fixed of": 151,
+     "new": 20,
+     "new of": 131,
+     "held solved": 67,
+     "held of": 188,
+     "lost held": 10,
+     "lost train pool": 7,
+     "qwen held": 57,
+     "qwen train pool": 148
+    },
+    "sft_self_s_l03": {
+     "fixed": 102,
+     "fixed of": 151,
+     "new": 21,
+     "new of": 131,
+     "held solved": 71,
+     "held of": 188,
+     "lost held": 7,
+     "lost train pool": 7,
+     "qwen held": 57,
+     "qwen train pool": 148
+    },
+    "sft_self_s_l3": {
+     "fixed": 59,
+     "fixed of": 151,
+     "new": 14,
+     "new of": 131,
+     "held solved": 59,
+     "held of": 188,
+     "lost held": 12,
+     "lost train pool": 19,
+     "qwen held": 57,
+     "qwen train pool": 148
+    }
+   },
+   "2": {
+    "sft": {
+     "fixed": 120,
+     "fixed of": 151,
+     "new": 22,
+     "new of": 131,
+     "held solved": 69,
+     "held of": 188,
+     "lost held": 10,
+     "lost train pool": 5,
+     "qwen held": 57,
+     "qwen train pool": 148
+    },
+    "sft_self_s_l03": {
+     "fixed": 110,
+     "fixed of": 151,
+     "new": 20,
+     "new of": 131,
+     "held solved": 69,
+     "held of": 188,
+     "lost held": 8,
+     "lost train pool": 10,
+     "qwen held": 57,
+     "qwen train pool": 148
+    },
+    "sft_self_s_l3": {
+     "fixed": 66,
+     "fixed of": 151,
+     "new": 14,
+     "new of": 131,
+     "held solved": 61,
+     "held of": 188,
+     "lost held": 10,
+     "lost train pool": 11,
+     "qwen held": 57,
+     "qwen train pool": 148
+    }
+   },
+   "3": {
+    "sft": {
+     "fixed": 120,
+     "fixed of": 151,
+     "new": 20,
+     "new of": 131,
+     "held solved": 68,
+     "held of": 188,
+     "lost held": 9,
+     "lost train pool": 6,
+     "qwen held": 57,
+     "qwen train pool": 148
+    },
+    "sft_self_s_l03": {
+     "fixed": 112,
+     "fixed of": 151,
+     "new": 18,
+     "new of": 131,
+     "held solved": 70,
+     "held of": 188,
+     "lost held": 5,
+     "lost train pool": 8,
+     "qwen held": 57,
+     "qwen train pool": 148
+    },
+    "sft_self_s_l3": {
+     "fixed": 54,
+     "fixed of": 151,
+     "new": 13,
+     "new of": 131,
+     "held solved": 62,
+     "held of": 188,
+     "lost held": 8,
+     "lost train pool": 13,
+     "qwen held": 57,
+     "qwen train pool": 148
+    }
+   }
+  },
+  "offtask": {
+   "1": {
+    "held agent | cross-entropy": {
+     "qwen": 0.6849,
+     "sft": 0.7499,
+     "sft_self_s_l03": 0.674,
+     "sft_self_s_l3": 0.6721
+    },
+    "held question_fresh | cross-entropy": {
+     "qwen": 0.9386,
+     "sft": 1.0621,
+     "sft_self_s_l03": 0.959,
+     "sft_self_s_l3": 0.927
+    },
+    "held question_fresh | p(true)": {
+     "qwen": 0.5822,
+     "sft": 0.5952,
+     "sft_self_s_l03": 0.5819,
+     "sft_self_s_l3": 0.5741
+    },
+    "held prose (untaught) | cross-entropy": {
+     "qwen": 4.4729,
+     "sft": 5.1732,
+     "sft_self_s_l03": 4.4586,
+     "sft_self_s_l3": 4.4154
+    }
+   },
+   "2": {
+    "held agent | cross-entropy": {
+     "qwen": 0.6849,
+     "sft": 0.7458,
+     "sft_self_s_l03": 0.6707,
+     "sft_self_s_l3": 0.6713
+    },
+    "held question_fresh | cross-entropy": {
+     "qwen": 0.9386,
+     "sft": 1.1239,
+     "sft_self_s_l03": 0.9387,
+     "sft_self_s_l3": 0.9683
+    },
+    "held question_fresh | p(true)": {
+     "qwen": 0.5822,
+     "sft": 0.5749,
+     "sft_self_s_l03": 0.5941,
+     "sft_self_s_l3": 0.5667
+    },
+    "held prose (untaught) | cross-entropy": {
+     "qwen": 4.4729,
+     "sft": 5.1902,
+     "sft_self_s_l03": 4.4975,
+     "sft_self_s_l3": 4.4312
+    }
+   },
+   "3": {
+    "held agent | cross-entropy": {
+     "qwen": 0.6849,
+     "sft": 0.751,
+     "sft_self_s_l03": 0.6718,
+     "sft_self_s_l3": 0.6723
+    },
+    "held question_fresh | cross-entropy": {
+     "qwen": 0.9386,
+     "sft": 1.1327,
+     "sft_self_s_l03": 0.9884,
+     "sft_self_s_l3": 0.9629
+    },
+    "held question_fresh | p(true)": {
+     "qwen": 0.5822,
+     "sft": 0.5918,
+     "sft_self_s_l03": 0.581,
+     "sft_self_s_l3": 0.5693
+    },
+    "held prose (untaught) | cross-entropy": {
+     "qwen": 4.4729,
+     "sft": 5.1813,
+     "sft_self_s_l03": 4.4823,
+     "sft_self_s_l3": 4.4324
+    }
+   }
+  },
+  "e4b held CE": {
+   "1": {
+    "qwen": 0.2428,
+    "sft": 0.2572,
+    "sft_self_s_l03": 0.2241,
+    "sft_self_s_l3": 0.2253
+   },
+   "2": {
+    "qwen": 0.2428,
+    "sft": 0.2523,
+    "sft_self_s_l03": 0.2221,
+    "sft_self_s_l3": 0.2247
+   },
+   "3": {
+    "qwen": 0.2428,
+    "sft": 0.2543,
+    "sft_self_s_l03": 0.2232,
+    "sft_self_s_l3": 0.2263
+   }
+  },
+  "pooled": {
+   "sft": {
+    "fixed": 359,
+    "fixed of": 453,
+    "new": 62,
+    "new of": 393,
+    "held solved": 204,
+    "held of": 564,
+    "lost held": 29,
+    "lost train pool": 18,
+    "qwen held": 171,
+    "qwen train pool": 444,
+    "seeds": 3
+   },
+   "sft_self_s_l03": {
+    "fixed": 324,
+    "fixed of": 453,
+    "new": 59,
+    "new of": 393,
+    "held solved": 210,
+    "held of": 564,
+    "lost held": 20,
+    "lost train pool": 25,
+    "qwen held": 171,
+    "qwen train pool": 444,
+    "seeds": 3
+   },
+   "sft_self_s_l3": {
+    "fixed": 179,
+    "fixed of": 453,
+    "new": 41,
+    "new of": 393,
+    "held solved": 182,
+    "held of": 564,
+    "lost held": 30,
+    "lost train pool": 43,
+    "qwen held": 171,
+    "qwen train pool": 444,
+    "seeds": 3
+   }
+  }
+ },
+ "kl e2b drift": {
+  "sft_self_s_l03|1|prose": {
+   "kl": 0.03219,
+   "dce": -0.01303,
+   "ce": 4.38245,
+   "ce base": 4.39549,
+   "entropy": 2.0761,
+   "entropy base": 2.16261,
+   "rows": 43
+  },
+  "sft_self_s_l3|1|prose": {
+   "kl": 0.01571,
+   "dce": -0.05553,
+   "ce": 4.33996,
+   "ce base": 4.39549,
+   "entropy": 2.19227,
+   "entropy base": 2.16261,
+   "rows": 43
+  },
+  "sft_self_s_l03|1|story": {
+   "kl": 0.02727,
+   "dce": 0.04128,
+   "ce": 3.91865,
+   "ce base": 3.87737,
+   "entropy": 1.51972,
+   "entropy base": 1.58796,
+   "rows": 24
+  },
+  "sft_self_s_l3|1|story": {
+   "kl": 0.01628,
+   "dce": -0.07035,
+   "ce": 3.80702,
+   "ce base": 3.87737,
+   "entropy": 1.66028,
+   "entropy base": 1.58796,
+   "rows": 24
+  },
+  "sft_self_s_l03|1|code": {
+   "kl": 0.04138,
+   "dce": 0.00581,
+   "ce": 2.0267,
+   "ce base": 2.02089,
+   "entropy": 0.83369,
+   "entropy base": 0.89321,
+   "rows": 57
+  },
+  "sft_self_s_l3|1|code": {
+   "kl": 0.02353,
+   "dce": -0.05361,
+   "ce": 1.96728,
+   "ce base": 2.02089,
+   "entropy": 0.94825,
+   "entropy base": 0.89321,
+   "rows": 57
+  },
+  "sft_self_s_l03|2|prose": {
+   "kl": 0.03235,
+   "dce": 0.02291,
+   "ce": 4.4184,
+   "ce base": 4.39549,
+   "entropy": 2.06283,
+   "entropy base": 2.16261,
+   "rows": 43
+  },
+  "sft_self_s_l3|2|prose": {
+   "kl": 0.01414,
+   "dce": -0.04106,
+   "ce": 4.35443,
+   "ce base": 4.39549,
+   "entropy": 2.20528,
+   "entropy base": 2.16261,
+   "rows": 43
+  },
+  "sft_self_s_l03|2|story": {
+   "kl": 0.0263,
+   "dce": 0.06395,
+   "ce": 3.94133,
+   "ce base": 3.87737,
+   "entropy": 1.5121,
+   "entropy base": 1.58796,
+   "rows": 24
+  },
+  "sft_self_s_l3|2|story": {
+   "kl": 0.01666,
+   "dce": -0.05895,
+   "ce": 3.81842,
+   "ce base": 3.87737,
+   "entropy": 1.66473,
+   "entropy base": 1.58796,
+   "rows": 24
+  },
+  "sft_self_s_l03|2|code": {
+   "kl": 0.04129,
+   "dce": 0.01647,
+   "ce": 2.03736,
+   "ce base": 2.02089,
+   "entropy": 0.83054,
+   "entropy base": 0.89321,
+   "rows": 57
+  },
+  "sft_self_s_l3|2|code": {
+   "kl": 0.02132,
+   "dce": -0.05687,
+   "ce": 1.96402,
+   "ce base": 2.02089,
+   "entropy": 0.95859,
+   "entropy base": 0.89321,
+   "rows": 57
+  },
+  "sft_self_s_l03|3|prose": {
+   "kl": 0.02824,
+   "dce": 0.00741,
+   "ce": 4.40289,
+   "ce base": 4.39549,
+   "entropy": 2.08278,
+   "entropy base": 2.16261,
+   "rows": 43
+  },
+  "sft_self_s_l3|3|prose": {
+   "kl": 0.01289,
+   "dce": -0.03968,
+   "ce": 4.35581,
+   "ce base": 4.39549,
+   "entropy": 2.19584,
+   "entropy base": 2.16261,
+   "rows": 43
+  },
+  "sft_self_s_l03|3|story": {
+   "kl": 0.0259,
+   "dce": 0.04625,
+   "ce": 3.92362,
+   "ce base": 3.87737,
+   "entropy": 1.51055,
+   "entropy base": 1.58796,
+   "rows": 24
+  },
+  "sft_self_s_l3|3|story": {
+   "kl": 0.01479,
+   "dce": -0.06378,
+   "ce": 3.81359,
+   "ce base": 3.87737,
+   "entropy": 1.65965,
+   "entropy base": 1.58796,
+   "rows": 24
+  },
+  "sft_self_s_l03|3|code": {
+   "kl": 0.03891,
+   "dce": 0.00961,
+   "ce": 2.0305,
+   "ce base": 2.02089,
+   "entropy": 0.83114,
+   "entropy base": 0.89321,
+   "rows": 57
+  },
+  "sft_self_s_l3|3|code": {
+   "kl": 0.02117,
+   "dce": -0.05797,
+   "ce": 1.96292,
+   "ce base": 2.02089,
+   "entropy": 0.95766,
+   "entropy base": 0.89321,
+   "rows": 57
+  }
+ },
+ "regrade": {
+  "sft": {
+   "lost": 58,
+   "capped": 29,
+   "closed": 15,
+   "recovered": 8
+  },
+  "sft_s": {
+   "lost": 48,
+   "capped": 12,
+   "closed": 9,
+   "recovered": 3
+  },
+  "sft_c_s": {
+   "lost": 52,
+   "capped": 12,
+   "closed": 6,
+   "recovered": 3
+  },
+  "opd_c": {
+   "lost": 94,
+   "capped": 10,
+   "closed": 2,
+   "recovered": 2
+  },
+  "mix_c": {
+   "lost": 115,
+   "capped": 21,
+   "closed": 7,
+   "recovered": 4
+  },
+  "opd_cf": {
+   "lost": 75,
+   "capped": 34,
+   "closed": 24,
+   "recovered": 14
+  },
+  "rw_cf": {
+   "lost": 55,
+   "capped": 19,
+   "closed": 16,
+   "recovered": 10
+  },
+  "mix_cf": {
+   "lost": 52,
+   "capped": 26,
+   "closed": 21,
+   "recovered": 13
+  },
+  "rb": {
+   "lost": 39,
+   "capped": 1,
+   "closed": 0,
+   "recovered": 0
+  },
+  "rb_c": {
+   "lost": 37,
+   "capped": 1,
+   "closed": 0,
+   "recovered": 0
+  },
+  "sft_self_s": {
+   "lost": 40,
+   "capped": 11,
+   "closed": 4,
+   "recovered": 2
+  }
+ },
  "wide": {
   "1": {
    "problems": 705,
