@@ -1046,6 +1046,21 @@ Predictions 189b 1-3 and the revised success bar are unchanged. One added predic
 
 **Amendment 189d (2026-11-08, 20:47, before the run; user: "added 100 more cu").** D seed 3 moves from the 4090 to a Colab A100 session (xqoD3: colab/xq_online.sh TEACH=bridge ON_SEED=3; the same code7, inputs, correctors, models and settings as 189c, now with the teacher as a parameter). The 4090's 189 runner was replaced during the blend arm by online_rep1b_4090.sh, which finishes the blend exactly as arm() would (waits for the running training, logs its lines, runs the gate) and then writes ONLINE_REP_DONE without bridge seed 3. So 196 (D live) starts on the 4090 right after the blend gate, about 21:45 instead of about 01:00. D seed 3 now runs on different hardware from seeds 1-2, as C seeds 2-3 do. The same analysis rule applies (the 4090's gate partition; hardware noise reported). Predictions unchanged.
 
+**189, interim 4 (2026-11-08, 21:31 gate; read 21:40): the blend teacher, seed 1.** Same code7, settings, stream and gate as D seed 1, with the target log_softmax(w × E4B + (1 − w) × base E2B). Calibration on 24 points outside the stream (10,987 tokens): KL(base ‖ E4B) 0.323, KL(base ‖ corrector teacher) 0.064, so the blend was run, with w = 0.433.
+
+| Setup (keep + replay) | Fixed (of 52) | Broken (of 168) | Net | Gate CE | Held CE (item 600) | Untaught drift | Held-question drift |
+|---|---|---|---|---|---|---|---|
+| D, corrector, seed 1 | 23 | 4 | +19 | 0.758 | 0.751 | 0.017 | 0.041 |
+| Blend, w = 0.433, seed 1 | 14 | 4 | +10 | 0.787 | 0.781 | 0.014 | 0.022 |
+| C, teacher's distribution, seed 1 | 14 | 6 | +8 | 0.783 | 0.775 | 0.014 | 0.034 |
+| Control, self-corrector, seed 1 | 13 | 5 | +8 | 0.762 | 0.755 | 0.025 | 0.073 |
+
+Paired over all 220 decisions: D seed 1 vs blend 11 vs 2 (p = 0.022; on the 52 differing, 10 vs 1, p = 0.012); D seed 2 vs blend 11 vs 4 (p = 0.12).
+
+Prediction 5 held (w = 0.433, inside 0.2-0.8). Prediction 6 held (the blend fixes fewer than D seed 1, 14 vs 23; untaught drift 0.014, within 0.01 of D's 0.017). Success-bar part "D seed 1 beats both control and blend by at least 4 fixed": met (by 10 and 9). Still open: D's three-seed mean (seed 3 on Colab) and D's drift against C's three seeds.
+
+Reading: a softer target alone does not explain D. Matched to the corrector's pull from base E2B (a fifth of E4B's), the blend behaves like setup C: close drift, few breaks, but it fixes no more decisions than C and sits further from the teacher on held text (CE 0.781 vs D's 0.751). D's target is as close to E2B as the blend's but points elsewhere; the self-corrector control shows that the direction needs E4B's states. One blend seed; hardware as D seed 1 (the 4090).
+
 
 ## Addendum 190 (2026-11-08, 12:05; built, in review, not yet run): the multi-task control for the corrector anchor (user: "run the k on prose also and see what happens... in that case both prose and agentic work/solved should be similar to the correctors")
 

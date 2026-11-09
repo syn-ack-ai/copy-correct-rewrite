@@ -8171,6 +8171,301 @@
     },
     "adapter": "lora_onl_control_keep_replay"
    }
+  },
+  "blend_keep_replay": {
+   "run": {
+    "teacher": "blend",
+    "blend weight": 0.4330211912203443,
+    "blend calibration": {
+     "points": 24,
+     "tokens": 10987,
+     "KL(base || E4B)": 0.32291,
+     "KL(base || corrector teacher)": 0.06374,
+     "weight": 0.433,
+     "KL(base || blend) on the grid": [
+      0.0,
+      0.00092,
+      0.00365,
+      0.0081,
+      0.01423,
+      0.022,
+      0.03135,
+      0.04226,
+      0.0547,
+      0.06866,
+      0.08412,
+      0.10107,
+      0.11953,
+      0.1395,
+      0.16098,
+      0.184,
+      0.20858,
+      0.23472,
+      0.26247,
+      0.29185,
+      0.32291
+     ]
+    },
+    "seed offset": 0,
+    "keep": 1.0,
+    "replay every": 4,
+    "items": 600,
+    "LoRA layers": [
+     4,
+     6,
+     8,
+     10,
+     12,
+     16,
+     20,
+     24,
+     28
+    ],
+    "prequential windows (before learning each item)": [
+     {
+      "items": [
+       0,
+       100
+      ],
+      "ce student": 0.8145,
+      "ce base": 0.833,
+      "gain over base": 0.0185,
+      "first-visit-run items": 84,
+      "gain over base, first-visit-run items": 0.0188
+     },
+     {
+      "items": [
+       100,
+       200
+      ],
+      "ce student": 0.8256,
+      "ce base": 0.8578,
+      "gain over base": 0.0322,
+      "first-visit-run items": 55,
+      "gain over base, first-visit-run items": 0.0351
+     },
+     {
+      "items": [
+       200,
+       300
+      ],
+      "ce student": 0.8082,
+      "ce base": 0.8443,
+      "gain over base": 0.0361,
+      "first-visit-run items": 36,
+      "gain over base, first-visit-run items": 0.0326
+     },
+     {
+      "items": [
+       300,
+       400
+      ],
+      "ce student": 0.7866,
+      "ce base": 0.8261,
+      "gain over base": 0.0395,
+      "first-visit-run items": 23,
+      "gain over base, first-visit-run items": 0.0397
+     },
+     {
+      "items": [
+       400,
+       500
+      ],
+      "ce student": 0.7295,
+      "ce base": 0.7655,
+      "gain over base": 0.036,
+      "first-visit-run items": 18,
+      "gain over base, first-visit-run items": 0.0357
+     },
+     {
+      "items": [
+       500,
+       600
+      ],
+      "ce student": 0.8288,
+      "ce base": 0.8691,
+      "gain over base": 0.0403,
+      "first-visit-run items": 6,
+      "gain over base, first-visit-run items": 0.0495
+     }
+    ],
+    "prequential decisions match, first / last half (student, base)": [
+     [
+      0.7508,
+      0.6801
+     ],
+     [
+      0.755,
+      0.7081
+     ]
+    ],
+    "held curve (bridge down)": [
+     {
+      "item": 0,
+      "held ce (on)": 0.8245,
+      "held decisions match (on)": 0.8182,
+      "KL from base on untaught prose / code / story": 0.0,
+      "KL from base on held questions (never kept)": 0.0,
+      "seconds": 352,
+      "held ce (base)": 0.8245,
+      "held decisions match (base)": 0.8182
+     },
+     {
+      "item": 50,
+      "held ce (on)": 0.8052,
+      "held decisions match (on)": 0.8727,
+      "KL from base on untaught prose / code / story": 0.00259,
+      "KL from base on held questions (never kept)": 0.00476,
+      "seconds": 1305
+     },
+     {
+      "item": 100,
+      "held ce (on)": 0.7963,
+      "held decisions match (on)": 0.8545,
+      "KL from base on untaught prose / code / story": 0.0036,
+      "KL from base on held questions (never kept)": 0.00489,
+      "seconds": 2351
+     },
+     {
+      "item": 150,
+      "held ce (on)": 0.7933,
+      "held decisions match (on)": 0.8545,
+      "KL from base on untaught prose / code / story": 0.00452,
+      "KL from base on held questions (never kept)": 0.01083,
+      "seconds": 3433
+     },
+     {
+      "item": 200,
+      "held ce (on)": 0.7887,
+      "held decisions match (on)": 0.8727,
+      "KL from base on untaught prose / code / story": 0.00769,
+      "KL from base on held questions (never kept)": 0.01189,
+      "seconds": 4440
+     },
+     {
+      "item": 250,
+      "held ce (on)": 0.79,
+      "held decisions match (on)": 0.8727,
+      "KL from base on untaught prose / code / story": 0.01369,
+      "KL from base on held questions (never kept)": 0.01011,
+      "seconds": 5410
+     },
+     {
+      "item": 300,
+      "held ce (on)": 0.7856,
+      "held decisions match (on)": 0.8545,
+      "KL from base on untaught prose / code / story": 0.01692,
+      "KL from base on held questions (never kept)": 0.00899,
+      "seconds": 6384
+     },
+     {
+      "item": 350,
+      "held ce (on)": 0.7872,
+      "held decisions match (on)": 0.8727,
+      "KL from base on untaught prose / code / story": 0.01282,
+      "KL from base on held questions (never kept)": 0.00771,
+      "seconds": 7285
+     },
+     {
+      "item": 400,
+      "held ce (on)": 0.7855,
+      "held decisions match (on)": 0.8727,
+      "KL from base on untaught prose / code / story": 0.01878,
+      "KL from base on held questions (never kept)": 0.02749,
+      "seconds": 8272
+     },
+     {
+      "item": 450,
+      "held ce (on)": 0.7835,
+      "held decisions match (on)": 0.8545,
+      "KL from base on untaught prose / code / story": 0.01318,
+      "KL from base on held questions (never kept)": 0.0318,
+      "seconds": 9265
+     },
+     {
+      "item": 500,
+      "held ce (on)": 0.7834,
+      "held decisions match (on)": 0.8727,
+      "KL from base on untaught prose / code / story": 0.03575,
+      "KL from base on held questions (never kept)": 0.03123,
+      "seconds": 10231
+     },
+     {
+      "item": 550,
+      "held ce (on)": 0.7812,
+      "held decisions match (on)": 0.8545,
+      "KL from base on untaught prose / code / story": 0.02088,
+      "KL from base on held questions (never kept)": 0.03175,
+      "seconds": 11226
+     },
+     {
+      "item": 600,
+      "held ce (on)": 0.781,
+      "held decisions match (on)": 0.8727,
+      "KL from base on untaught prose / code / story": 0.01393,
+      "KL from base on held questions (never kept)": 0.02212,
+      "seconds": 12187
+     }
+    ]
+   },
+   "gate": {
+    "arch": "lora",
+    "decision points": 240,
+    "cross-entropy to the 31B along E4B's reply (lower is closer)": {
+     "E4B alone": 0.8257,
+     "LoRA": 0.7866
+    },
+    "tool choice: top token matches the 31B's (share)": {
+     "E4B alone": 0.935,
+     "LoRA": 0.945
+    },
+    "tool tokens found": 200,
+    "at E4B's own submits: probability of submit_patch": {
+     "E4B alone": 0.993,
+     "LoRA": 0.9937,
+     "31B": 0.9985
+    },
+    "E4B submits in the sample": 21,
+    "decision without thinking (context, then the tool-call opening), at E4B's tool calls": {
+     "points": 220,
+     "where E4B alone's choice differs from the 31B's": 52,
+     "top token matches the 31B's (share)": {
+      "E4B alone": 0.7636,
+      "LoRA": 0.8091
+     },
+     "probability of the 31B's choice": {
+      "E4B alone": 0.6547,
+      "LoRA": 0.7397
+     },
+     "where E4B alone differs: share now on the 31B's choice": {
+      "E4B alone": 0.0,
+      "LoRA": 0.2692
+     }
+    },
+    "lora": {
+     "arm": "online blend_keep_replay",
+     "teacher": "blend",
+     "blend weight": 0.4330211912203443,
+     "seed offset": 0,
+     "layers": [
+      4,
+      6,
+      8,
+      10,
+      12,
+      16,
+      20,
+      24,
+      28
+     ],
+     "rank": 16,
+     "lr": 0.0003,
+     "steps": 600,
+     "samples": 2,
+     "max_new": 256
+    },
+    "adapter": "lora_onl_blend_keep_replay"
+   }
   }
  },
  "online gate points": {
@@ -8313,6 +8608,34 @@
      12,
      3,
      0.0352
+    ]
+   }
+  },
+  "blend_keep_replay": {
+   "fixed": 14,
+   "of differing": 52,
+   "broken": 4,
+   "of agreeing": 168,
+   "matches": 178,
+   "points": 220,
+   "net": 10,
+   "D vs this": {
+    "differing: D only, this only, p": [
+     10,
+     1,
+     0.0117
+    ],
+    "all: D only, this only, p": [
+     11,
+     2,
+     0.0225
+    ]
+   },
+   "D seed 2 vs this": {
+    "all: D only, this only, p": [
+     11,
+     4,
+     0.1185
     ]
    }
   }

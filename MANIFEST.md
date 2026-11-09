@@ -1,13 +1,13 @@
 # Manifest
 
-349 files, 36.6 MB in total (MANIFEST.md not counted). Sizes are on-disk sizes; `.gz` files are gzip-compressed JSON Lines.
+352 files, 36.6 MB in total (MANIFEST.md not counted). Sizes are on-disk sizes; `.gz` files are gzip-compressed JSON Lines.
 Run labels give the addendum and seed (see README.md, "Run folders").
 
 | File | Size | Purpose |
 |---|---|---|
 | `LICENSE` | 11.1 KB | Apache License 2.0 |
 | `MANIFEST.md` | (this file) | This file: every file with its size and purpose |
-| `PREREGISTRATION.md` | 203.7 KB | Pre-registration log, addenda 165-197, verbatim (one phrase redacted) |
+| `PREREGISTRATION.md` | 205.4 KB | Pre-registration log, addenda 165-197, verbatim (one phrase redacted) |
 | `README.md` | 14.3 KB | Overview: the study, findings, layout, how the runs worked, what is excluded, rebuild steps, licence |
 | `SCORECARD.md` | 1.9 KB | Which pre-registered predictions held, per addendum (moved out of the paper) |
 | `code/colab/xq_bridge.sh` | 3.0 KB | Colab session: fit the bridge and control correctors and run the suite (166) |
@@ -216,6 +216,8 @@ Run labels give the addendum and seed (see README.md, "Run folders").
 | `data/generations/xqlTW4b3/xl_gens_sft_b.jsonl.gz` | 129.9 KB | Greedy answers per problem with pass flag (187, E2B teaches E4B, seed 3): SFT + cross-model anchor |
 | `data/generations/xqlTW4b3/xl_gens_sft_c.jsonl.gz` | 128.9 KB | Greedy answers per problem with pass flag (187, E2B teaches E4B, seed 3): SFT + self-anchor |
 | `data/generations/xqlTW4b3/xl_gens_sft_self.jsonl.gz` | 129.0 KB | Greedy answers per problem with pass flag (187, E2B teaches E4B, seed 3): SFT + KL to the original student |
+| `data/online/gate_lora_onl_blend_keep_replay.json` | 1.2 KB | Online test gate on 240 held decision points, the pull-matched blend control (189) |
+| `data/online/gate_lora_onl_blend_keep_replay_points.json` | 23.2 KB | Per-decision gate output, the pull-matched blend control (189) |
 | `data/online/gate_lora_onl_bridge.json` | 1.1 KB | Online test gate on 240 held decision points, setup 'corrector as teacher' |
 | `data/online/gate_lora_onl_bridge_keep_replay.json` | 1.1 KB | Online test gate on 240 held decision points, setup 'corrector + keep + replay (D)' |
 | `data/online/gate_lora_onl_bridge_keep_replay_points.json` | 23.2 KB | Online test gate, per decision point (re-gated, identical totals), setup 'corrector + keep + replay (D)' |
@@ -228,13 +230,14 @@ Run labels give the addendum and seed (see README.md, "Run folders").
 | `data/online/gate_lora_onl_direct_keep_replay.json` | 1.1 KB | Online test gate on 240 held decision points, setup 'teacher + keep + replay' |
 | `data/online/gate_lora_onl_direct_keep_replay_points.json` | 23.2 KB | Online test gate, per decision point (re-gated, identical totals), setup 'teacher + keep + replay (C)' |
 | `data/online/gate_lora_onl_direct_points.json` | 23.2 KB | Online test gate, per decision point (re-gated, identical totals), setup 'teacher distribution (A)' |
+| `data/online/online_blend_keep_replay.json` | 5.0 KB | Online test, the teacher blended with the original E2B to the corrector's pull (w 0.433) + keep + replay, seed 1 (189 control): calibration, prequential windows and held curve |
 | `data/online/online_bridge.json` | 4.5 KB | Online test, setup 'corrector as teacher': prequential windows and held curve |
 | `data/online/online_bridge_keep_replay.json` | 4.5 KB | Online test, setup 'corrector + keep + replay (D)': prequential windows and held curve |
 | `data/online/online_bridge_keep_replay_s2.json` | 4.6 KB | Online test, setup D (corrector + keep + replay), seed 2 (189): prequential windows and held curve |
 | `data/online/online_control_keep_replay.json` | 4.6 KB | Online test, the self-corrector teacher (reads E2B's own states) + keep + replay, seed 1 (189 control): prequential windows and held curve |
 | `data/online/online_direct.json` | 4.5 KB | Online test, setup 'teacher distribution': prequential windows and held curve |
 | `data/online/online_direct_keep_replay.json` | 4.5 KB | Online test, setup 'teacher + keep + replay': prequential windows and held curve |
-| `data/results.json` | 171.7 KB | Every number the paper uses (output of scripts/collect.py) |
+| `data/results.json` | 179.2 KB | Every number the paper uses (output of scripts/collect.py) |
 | `data/rows/xqlB/xl_rows.jsonl` | 480.5 KB | Training rows: E4B's verified solutions, 299 problems (no problem statements) |
 | `data/rows/xqlE2B1/xl_rows_rb.jsonl` | 460.1 KB | Training rows: the student's runbook-guided solutions, 280 problems (no problem statements) |
 | `data/rows/xqlE2B2/xl_rows_rb.jsonl` | 460.1 KB | Training rows: the student's runbook-guided solutions, 280 problems (no problem statements) |
@@ -346,11 +349,11 @@ Run labels give the addendum and seed (see README.md, "Run folders").
 | `figures/fig4_untaught_prose.png` | 154.2 KB | Figure D2: drift on untaught human prose per recipe and seed |
 | `figures/fig5_teacher_cap.png` | 86.9 KB | Figure D3: each corrector teacher run live beside the on-policy student it trained |
 | `figures/fig6_losses.png` | 169.9 KB | Extra figure (cut from the paper): how often each solved problem was lost, and answer length per recipe |
-| `figures/fig7_online.png` | 245.2 KB | Figure 4: online learning, E4B to E2B, the setups and the self-corrector control, held cross-entropy and drift |
+| `figures/fig7_online.png` | 264.6 KB | Figure 4: online learning, E4B to E2B, the setups and the self-corrector control, held cross-entropy and drift |
 | `figures/fig8_agent_turns.png` | 103.7 KB | Extra figure (cut from the paper): agent replies, E4B to Qwen3-1.7B (169d) |
 | `figures/fig9_e2b.png` | 160.0 KB | Figure 2: Gemma 4 E2B as the coding student against Qwen3-1.7B, with the anchors and the fitting-text control (186, 187, 190) |
-| `paper.md` | 31.0 KB | The paper: Copy, Correct, or Rewrite? |
-| `scripts/collect.py` | 13.9 KB | Collects every number the paper uses from the run folders into data/results.json (standard library) |
+| `paper.md` | 31.2 KB | The paper: Copy, Correct, or Rewrite? |
+| `scripts/collect.py` | 14.0 KB | Collects every number the paper uses from the run folders into data/results.json (standard library) |
 | `scripts/drift.py` | 3.7 KB | Measures drift from the original student on untaught text (needs adapters and text rows not included) |
-| `scripts/figures.py` | 30.7 KB | Draws the nine figures from data/results.json (matplotlib) |
+| `scripts/figures.py` | 31.3 KB | Draws the nine figures from data/results.json (matplotlib) |
 | `scripts/to_html.py` | 9.8 KB | Renders paper.md into one self-contained HTML page |

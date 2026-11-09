@@ -37,8 +37,8 @@ The paper's limitations (Section 5) and the pre-registration scorecard (Appendix
 
 **Status (2026-11-08, evening).** In the paper and in this repository: 185 (`data/runs/xqlSS*`), 186 (`xqlE2B*`), 187 (`xqlTW2b*`: E4B
 teaches E2B; `xqlTW4b*`: E2B teaches E4B), 188 (`xqlML*`: the matched-loss test), 193 (`xqlKL*`: the KL strength sweep), 194a (`xqlRG*`: the longer-cap re-grade), 190 (`xqlMT*`: the multi-task control for the corrector anchor) and the online test's setup D,
-seeds 1-2 with the self-corrector control (183, 189; `data/online/`; seed 2 reproduced seed 1, differing on 6 of 220 gate decisions). Running or queued at the time of
-this snapshot, with designs and predictions in `PREREGISTRATION.md`: online D seed 3, the blend control and setup C seeds 2-3 (189), D's LoRA live on 80
+seeds 1-2 with the self-corrector and pull-matched blend controls (183, 189; `data/online/`; seed 2 reproduced seed 1, differing on 6 of 220 gate decisions). Running or queued at the time of
+this snapshot, with designs and predictions in `PREREGISTRATION.md`: online D seed 3 and setup C seeds 2-3 (189), D's LoRA live on 80
 held-out agent tasks (196), a disagreement-gated teacher (197) and online against offline SFT teachers (192).
 Addenda 191 and 195 (per-user and lottery-ticket grafts) are planned for a separate paper.
 

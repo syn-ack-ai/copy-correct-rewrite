@@ -18,7 +18,7 @@ Predictions that held, per pre-registered addendum.
 | 186 (Gemma 4 E2B as the coding student) | 5 of 7 | — |
 | 187 (two-way, fresh Gemma correctors) | 5 of 7 | not met; cross-model = self |
 | 188 (matched-loss run, E2B) | 5 of 7 | not met: stopping early cut the damage but kept no held gain |
-| 189 (online setup D: replication, controls) | 4 of 4 so far (seed 2, self-corrector control) | running |
+| 189 (online setup D: replication, controls) | 6 of 6 so far (seed 2, both controls) | running |
 | 190 (multi-task control for the corrector anchor) | 4 of 5 | met: the anchor's gain is its fitting text |
 | 191 (per-user grafts) | — | separate paper |
 | 192 (online vs offline SFT teachers) | — | queued (4090) |
