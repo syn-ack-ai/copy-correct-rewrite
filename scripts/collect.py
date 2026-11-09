@@ -185,7 +185,7 @@ res["agent169d"] = A
 res["teachers live"] = {s: dict(zip(("refit", "old", "alone"), json.load(open(R / f"xqlCF{s}/xl_rw.json"))["teacher greedy, held (refit, old, Qwen alone)"])) for s in (1, 2, 3) if (R / f"xqlCF{s}/xl_rw.json").exists()}
 
 # online test (170)
-ONLA = [a for a in ("direct", "bridge", "direct_keep_replay", "bridge_keep_replay", "bridge_keep_replay_s2") if (ONL / f"online_{a}.json").exists()]   # 183: D = bridge_keep_replay; 189: D seed 2
+ONLA = [a for a in ("direct", "bridge", "direct_keep_replay", "bridge_keep_replay", "bridge_keep_replay_s2", "control_keep_replay") if (ONL / f"online_{a}.json").exists()]   # 183: D = bridge_keep_replay; 189: D seed 2, the self-corrector control
 res["online"] = {a: {"run": json.load(open(ONL / f"online_{a}.json")), "gate": json.load(open(ONL / f"gate_lora_onl_{a}.json"))} for a in ONLA}
 # 189: per-decision gate output (re-gated, identical totals): fixed / broken / net per setup, exact sign tests of D against each
 PK = "decision points (matches the teacher, probability of its choice, student alone differs)"
@@ -207,6 +207,12 @@ if PTS:
                 X_ = v["LoRA"]; w52 = sum(1 for i in dif if Dl[i][0] and not X_[i][0]); l52 = sum(1 for i in dif if X_[i][0] and not Dl[i][0])
                 w = sum(1 for i in range(len(Dl)) if Dl[i][0] and not X_[i][0]); l = sum(1 for i in range(len(Dl)) if X_[i][0] and not Dl[i][0])
                 G[a]["D vs this"] = {"differing: D only, this only, p": [w52, l52, round(_sign(w52, l52), 4)], "all: D only, this only, p": [w, l, round(_sign(w, l), 4)]}
+    if "bridge_keep_replay_s2" in PTS:   # 189: D seed 2 against the other setups too
+        D2 = PTS["bridge_keep_replay_s2"]["LoRA"]
+        for a, v in PTS.items():
+            if a not in ("bridge_keep_replay", "bridge_keep_replay_s2"):
+                X_ = v["LoRA"]; w = sum(1 for i in range(len(D2)) if D2[i][0] and not X_[i][0]); l = sum(1 for i in range(len(D2)) if X_[i][0] and not D2[i][0])
+                G[a]["D seed 2 vs this"] = {"all: D only, this only, p": [w, l, round(_sign(w, l), 4)]}
     res["online gate points"] = G
 for f in sorted(OUT.parent.glob("drift*.json")):   # review D1: drift from the original student (scripts/drift.py); every drift file of the paper
     if f.exists():

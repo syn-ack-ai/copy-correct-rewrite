@@ -243,13 +243,16 @@ def fig_online():
     col = {"direct": S2, "bridge": S3, "direct_keep_replay": S2, "bridge_keep_replay": S3}   # as figures 1 and 4: the teacher orange, the corrector green
     dash = {"direct": "-", "bridge": "-", "direct_keep_replay": (0, (4, 2.2)), "bridge_keep_replay": (0, (4, 2.2))}
     fig, axs = plt.subplots(1, 2, figsize=(10.2, 3.9)); fig.subplots_adjust(top=0.80, bottom=0.27, left=0.08, right=0.98, wspace=0.3)
-    for ax, k, yl, t in ((axs[0], "held ce (on)", "Cross-entropy to the teacher, held repos\n(lower is better)", "Learning: the corrector teachers (B, D) get closer"),
+    for ax, k, yl, t in ((axs[0], "held ce (on)", "Cross-entropy to the teacher, held repos\n(lower is better)", "Learning: every corrector teacher (B, D, control) gets closer"),
                          (axs[1], "KL from base on untaught prose / code / story", "KL from the original student, untaught text\n(lower is better)", "Drift: keep + replay (C, D) cuts it and ends lowest")):
         style(ax, "y")
         ends = []
         for a in [a for a in ("direct", "bridge", "direct_keep_replay", "bridge_keep_replay") if a in O]:
             c = O[a]["run"]["held curve (bridge down)"]; x = [e["item"] for e in c]; y = [e[k] for e in c]
             ax.plot(x, y, color=col[a], lw=2, ls=dash[a], label=lab[a], solid_capstyle="round", dash_capstyle="round"); ends.append([y[-1], y[-1], x[-1], lab[a][0]])
+        if "control_keep_replay" in O:   # 189: the self-corrector teacher (reads E2B's own states) + keep + replay, gray dashed
+            c = O["control_keep_replay"]["run"]["held curve (bridge down)"]; x = [e["item"] for e in c]; y = [e[k] for e in c]
+            ax.plot(x, y, color="#8a8a86", lw=1.6, ls=(0, (4, 2.2)), label="Control: self-corrector + keep + replay", dash_capstyle="round"); ends.append([y[-1], y[-1], x[-1], "Ctl"])
         if "bridge_keep_replay_s2" in O:   # 189: D's second seed, same hue, thin dotted, so the replication is visible without a fifth colour
             c = O["bridge_keep_replay_s2"]["run"]["held curve (bridge down)"]; x = [e["item"] for e in c]; y = [e[k] for e in c]
             ax.plot(x, y, color=S3, lw=1.3, ls=(0, (1, 1.6)), label="D, seed 2", dash_capstyle="round"); ends.append([y[-1], y[-1], x[-1], "D2"])
@@ -262,7 +265,7 @@ def fig_online():
     axs[0].set_xticks(range(0, 601, 100)); axs[1].set_xticks(range(0, 601, 100))
     hs, ls_ = axs[0].get_legend_handles_labels()
     fig.legend(hs, ls_, loc="lower center", ncol=len(hs), bbox_to_anchor=(0.5, 0.0), fontsize=8.4 if len(hs) < 5 else 7.9, labelcolor=INK2, columnspacing=1.8 if len(hs) < 5 else 1.2, handlelength=2.4)
-    fig.suptitle("Online learning on agent decisions, E4B teaching E2B (one seed each, D two): the corrector teacher gets closest; keep + replay cuts the drift", x=0.04, y=0.985, ha="left", fontsize=10.5, weight="bold")
+    fig.suptitle("Online learning on agent decisions, E4B teaching E2B (one seed each, D two): corrector teachers get closest; keep + replay cuts the drift", x=0.04, y=0.985, ha="left", fontsize=10.5, weight="bold")
     save(fig, "fig7_online.png")
 
 

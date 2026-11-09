@@ -10,7 +10,8 @@ ARMS=${ARMS:-S:U1,S:U5,T:U1,T:U5}; ROUNDS=${ROUNDS:-3}; export XB_SEED=${XB_SEED
 log "waiting for the inputs and online arm D (after resdec; addendum 183)"
 until grep -q PREP_DONE $D/prep.log 2>/dev/null; do grep -q "FAILED\|stopping" $D/prep.log 2>/dev/null && { log "prep failed: stop"; exit 1; }; sleep 60; done
 until grep -q ONLINE_BKR_DONE ~/toyq/behave/logs/online_bkr.log 2>/dev/null; do sleep 120; done; log "resdec and online arm D done"
-until grep -q ONLINE_REP3_DONE ~/toyq/behave/logs/online_rep.log 2>/dev/null; do sleep 120; done; log "online D seeds 2-3, controls, C seeds 2-3 and the SFT arms done (addenda 189, 189b, 192)"   # user 11-08: "queue D seeds 2-3 and the controls after the gate"; "queue C seeds 2-3 after D seed 3"
+until grep -qE '^[0-9]{2}:[0-9]{2} ONLINE_REP3_DONE$' ~/toyq/behave/logs/online_rep.log 2>/dev/null; do sleep 120; done; log "online D seeds 2-3, controls and the SFT arms done (addenda 189, 189c, 192)"   # 189c: the exact end line
+until grep -qE '^[0-9]{2}:[0-9]{2} X195_(DONE|HALTED)$' ~/x195/logs/x195.log 2>/dev/null; do sleep 120; done; log "195 stage 1 ended: $(tail -n 1 ~/x195/logs/x195.log)"   # user 11-08: "queue it after 192" (195 before the RSI pilot)   # user 11-08: "queue D seeds 2-3 and the controls after the gate"; "queue C seeds 2-3 after D seed 3"
 wait_gpu() { until [ "$(nvidia-smi --query-gpu=memory.used --format=csv,noheader,nounits | head -1)" -lt 2000 ]; do sleep 120; done; }
 GT=$(ls -d ~/.cache/huggingface/hub/models--google--gemma-4-E4B-it-qat-w4a16-ct/snapshots/6cd26aa*/ | head -1); [ -f $GT/tokenizer.json ] || { log "no Gemma tokenizer"; exit 1; }
 export XB_STUDENT=$D/mqwen XB_TEACHER=$GT XC_DATA=$D/lcb XB_SIZE=0.03 XB_HARM=0.5 RSI_NAME=qwen RSI_BATCH=${RSI_BATCH:-64} RSI_TROWS=$D/inx/xq/learn/xl_rows.jsonl \

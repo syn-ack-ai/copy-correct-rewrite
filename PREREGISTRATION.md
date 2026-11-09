@@ -1,7 +1,7 @@
-# Pre-registration log: addenda 165-194
+# Pre-registration log: addenda 165-196
 
 This file is an excerpt of the project's running pre-registration log. It holds the addenda from "Addendum 165" through the end of
-"Addendum 194", copied verbatim and in their original order (addendum 180 sits between 177 and 178 in the source). Each addendum states its
+"Addendum 196", copied verbatim and in their original order (addendum 180 sits between 177 and 178 in the source). Each addendum states its
 design and its predictions before the run; results and readings were appended after the run. Addenda without a result were still
 running when this excerpt was taken.
 
@@ -1012,6 +1012,38 @@ Reading: A fixes about as many decisions as D but breaks almost three times as m
 
 Reading: the online result is not one lucky run; a second seed reproduced it nearly decision for decision. The success bar still needs D seed 3, C seeds 2-3 and both controls.
 
+**189, interim 3 (2026-11-08, 17:54 gate; read 18:15): the self-corrector teacher (control), seed 1.** Same code7, settings and gate as D, with the target from the corrector that reads E2B's own states (gall_e2b) instead of E4B's. At item 600: held CE 0.755 (D: 0.751 and 0.749), untaught drift 0.025 (D: 0.017 both seeds), held-question drift 0.073 (D: 0.041 and 0.021). Gate CE 0.762 (D: 0.758 and 0.757). The gate partition (E2B alone) is identical to every earlier gate.
+
+| Setup (keep + replay) | Fixed (of 52) | Broken (of 168) | Net |
+|---|---|---|---|
+| D, cross-model corrector, seed 1 | 23 | 4 | +19 |
+| D, cross-model corrector, seed 2 | 23 | 6 | +17 |
+| Control, self-corrector, seed 1 | 13 | 5 | +8 |
+| C, teacher's distribution, seed 1 | 14 | 6 | +8 |
+
+Paired over all 220 decisions: D seed 1 vs control 12 vs 1 (p = 0.003); D seed 2 vs control 12 vs 3 (p = 0.035); C vs control 6 vs 6 (p = 1.0).
+
+Prediction 4 held (the control fixes fewer than D seed 1, 13 vs 23; its gate CE is higher, 0.762 vs 0.758). Success-bar part "D seed 1 beats the control by at least 4 fixed": met (10). The blend teacher is running.
+
+Reading: on agent decisions the corrector's gain needs E4B's states. The self-corrector reaches nearly the same held CE but fixes no more decisions than the plain teacher with keep + replay. This differs from coding, where the cross-model and self anchors tied. One control seed. The blend control decides whether a softer target alone, matched to the corrector's pull, does as well.
+
+**Amendment 189c (2026-11-08, 17:38, before either run; user: "yes, move C seeds 2-3 to Colab").** Setup C seeds 2 and 3 move from the 4090 queue (online_rep2_4090.sh) to two Colab G4 sessions (colab/xq_online.sh, sessions xqoC2 and xqoC3, launcher dreamer/xq_onl_launch.sh), so they run in parallel with the 4090's control, blend and D seed 3. Nothing else changes:
+- Code: online.py, translator.py, pair.py, store.py, mix_merge.py and dequant.py are the committed repo files, md5-equal to the 4090's code7. Libraries: torch 2.15.0, transformers 5.22.2, peft 0.21.2, accelerate 1.15.0 on both machines.
+- Inputs: the s3 rows merged with the 165 mix by mix_merge.py, sha256-equal to the 4090's data2 files (checked in the session before training). The correctors gall_e4b.pt and gall_e2b.pt are sha256-equal to the 4090's data3/out.
+- Models: the same QAT revisions, dequantized by dequant.py. The session compares the sha256 of each model file with the 4090's copy and logs the result.
+- Settings: online_rep2_4090.sh's environment (TR_PLE_CPU=1 kept), the same small pass, 600-item run and 240-point gate.
+
+What does change is the GPU (RTX PRO 6000 instead of RTX 4090), so bf16 arithmetic can differ. The gate re-runs E2B alone and E4B live in the same session, so near-tie decisions may flip. Analysis rule, set now: fixed / broken / net for the Colab seeds are scored on the 4090's partition (the 52 decisions where E2B alone differs from E4B and the 168 where it agrees, from the stored seed-1 gates). The number of the 220 decisions where the Colab session's E2B-alone or E4B choice differs from the 4090's is reported as the hardware noise level, and so is C seed 1's gate against the Colab seeds. The 4090's online_rep2 runner is replaced by one that only passes ONLINE_REP2_DONE on to 192 once the 189 queue ends.
+
+Predictions 189b 1-3 and the revised success bar are unchanged. One added prediction: at most 6 of the 220 gate decisions differ between the Colab and 4090 runs of E2B alone (70%).
+
+**Amendment 189c, review changes (2026-11-08, 17:52, before either run).** The code review found three problems and two smaller points:
+- GPU: Colab G4 was running at about 9.5 CU/h today, and one C run takes about 3.5-4 h with setup and gate (C seed 1 trained for 11,186 s on the 4090), so two G4 sessions would need 70-75 CU against a 72.6 CU balance. The sessions run on A100 40 GB instead (5.3 CU/h; the job fits the 4090's 24 GB). The hardware note above now reads A100, not RTX PRO 6000.
+- Models: the 4090's dequantized E4B and E2B were made with an older library stack (compressed-tensors 0.15.0.1, torch 2.10, transformers 5.13.1), so a fresh dequant on Colab may not give the same weights. The sessions instead download the Mac's copies, which are sha256-equal to the 4090's (on/models/ in the private job repo), and a mismatch stops the session.
+- Outputs: the adapter and the learning curve are copied out as soon as training ends, and the partial curve is copied if any step fails.
+- The correctors are not loaded for teacher = direct (only for bridge, blend and control); they are still copied and checked.
+- The per-point gate files store agreement with E4B and P(E4B's choice), not token ids. So the hardware-noise count is the number of the 220 decisions whose E2B-alone agreement bit flips; a change in E4B's own choice is counted in it too.
+
 ## Addendum 190 (2026-11-08, 12:05; built, in review, not yet run): the multi-task control for the corrector anchor (user: "run the k on prose also and see what happens... in that case both prose and agentic work/solved should be similar to the correctors")
 
 Why: in 187 (E2B student, seeds 1-2) the self-corrector anchor (sft_c_s) solved the most held problems and turned SFT's damage to untaught prose (ΔCE +0.69) into a gain (−0.61), with softer predictions (entropy +0.85). The corrector was fitted on a text mix: agent replies 0.5, prose 0.15, code 0.15, questions 0.1, stories 0.1, split "train", with the untaught drift rows held out from the same sources. So the anchor's benefit may only be that text arriving by another route. The paper lists the missing multi-task baseline as a limitation, and the Fable review named the confound.
@@ -1351,3 +1383,51 @@ Reading rule: if at least 10% of the 665 are recovered, the paper reports lost c
 Predictions: 1 held (59% closed). 2 held (34% passed). 3 held (2 of 31). 4 held (8.9%). 5 held (mix_cf, 25%). 6 held (rb + rb_c: 0). 6 of 6.
 
 Reading (pre-registered rule: between 5% and 10%, the paper gives the number): most losses are real failures, not verbosity. Verbosity matters for the refit-teacher recipes (mix_cf, opd_cf, rw_cf: 18-25% of their losses) and plain SFT (14%). Rankings move only for mix_cf, whose losses fall from 52 to 39, level with runbook rows (39, 37) and KL to the original (38). The other orderings in the paper hold within the stated noise.
+
+## Addendum 195 (2026-11-08, 18:16; designed, not yet built; for the per-user graft paper, not the Kaggle one): lottery-ticket grafts of a fine-tuning change (user: "what if we find a small network and extract it into a graft? https://arxiv.org/pdf/1803.03635"; "yes, pre-register 195 and queue it after 192")
+
+Why: copying E4B's answers taught E2B but damaged untaught text (186: prose ΔCE +0.69), and a KL pull fixed it (187, 193). The lottery ticket hypothesis (Frankle and Carbin, 2018, arXiv 1803.03635) says a dense network holds sparse subnetworks that carry its function. Panigrahi et al. (2023, arXiv 2302.06600) found that about 0.01% of a fine-tuned language model's weights carry over 95% of the fine-tuning gain, and that grafting only those onto the pretrained model kept the skill with better calibration and less interference between tasks. Ansell et al. (2022, arXiv 2110.07560) retrain only such a ticket (LT-SFT) and add the sparse diffs together. If the coding skill sits in a small part of the change, a sparse graft could keep the gain while leaving the rest of the model, and so untaught text, alone. It would also give small, stackable per-user grafts. A sparse diff is not a LoRA, so this is for the graft paper (191), not the Kaggle submission.
+
+Design, stage 1 (no training; the 4090 after 192, before the RSI pilot):
+- Sources, per seed 1-3: 186's E2B sft adapter (the damaging one) and 187's E2B sft_self_s (shortest rows + KL to the original, λ 1).
+- The change: ΔW = (alpha / r) · B·A for every LoRA target matrix, merged in fp32 and cast to bf16 (W = W0 + M ⊙ ΔW).
+- The ticket: the top k of |ΔW| entries over all target matrices together (global magnitude, as in the lottery-ticket papers), k ∈ {100%, 10%, 1%, 0.1%} for both sources, plus 0.01% for sft.
+- Each graft, the 100% merge (the reference) and E2B alone are scored in the same run: greedy, 768 tokens, the 299 trained and 188 held problems as in 186. Problems where an arm and E2B alone disagree are re-scored one at a time. Drift (KL, ΔCE, entropy over the reply tokens) is measured on the same held untaught rows as drift.py.
+- Also recorded: the share of the change's squared norm carried by each ticket, and how the ticket spreads over layers and matrices.
+- Code: transfer/sparse_graft.py (new; reviewed and given a CPU test before the run). Runner: dreamer/x195_4090.sh. It waits for the exact ONLINE_REP3_DONE line, then the GPU free twice. The RSI runner is relaunched to wait for 195's end line, and x184 is relaunched unchanged, so nothing competes for the GPU.
+- Comparisons are within the run (the 100% merge is the reference), because the 4090's dequantized E2B may differ slightly from the Colab copy the adapters were trained on.
+
+Predictions (pooled over seeds; gain = held solved minus E2B alone):
+1. The top 1% carries at least 30% of the sft change's squared norm (70%).
+2. The sft 1% graft keeps at least 70% of the 100% merge's held gain (55%).
+3. The sft 1% graft's prose ΔCE is at most half of the 100% merge's (60%).
+4. The sft 0.01% graft keeps at most 30% of the held gain (65%).
+5. The KL-anchored change can be sparsified more safely: its 1% graft keeps at least 70% of its own held gain (60%).
+6. Fixed training problems fall faster with sparsity than held gain: at 1%, sft keeps a smaller share of its fixes than of its held gain (55%).
+
+Success bar for "a lottery-ticket graft is a forgetting fix": some k ≤ 1% keeps at least 80% of sft's held gain with prose ΔCE at most a third of the 100% merge's, pooled over the three seeds. If met, stage 2 retrains only the ticket from the original E2B (LT-SFT), with and without the KL pull, against LoRA at the same dose. If not met, the reading is that coding skill learned by copying is spread through the change, which is also worth reporting for per-user grafts.
+
+## Addendum 196 (2026-11-08, 19:24; designed, not yet built): online setup D live on held agent tasks (user: "does D also work for other models we have? as a lora, etc?"; "yes, set up D's live test ahead of 195")
+
+Why: D (the cross-model corrector as online teacher, with keep + replay) gave the best net result on the 220-decision gate in two seeds (+19, +17; C +8; the self-corrector control +8). The gate scores single next-token decisions. Twice before, a LoRA that looked better on such offline gates did worse in live episodes by copying the teacher's habits: S4b looped (addendum 131), and the 31B-bridged C arm resolved 14/40 against the direct teacher's 17/40 (addendum 158). D's output is a plain rank-16 LoRA on E2B, the Kaggle format, so the question is whether its gain survives full agent episodes.
+
+Design (the 4090 after 192's exact ONLINE_REP3_DONE line, with the GPU free twice; before 195, whose runner is relaunched to wait for this one):
+- Model: QAT E2B as Kaggle serves it (google/gemma-4-E2B-it-qat-w4a16-ct, revision 971342c) on the 4090's vLLM (port 8000, never 8080), under the competition alias, through dreamer/s4_plain.sh (now taking the model repo and revision as parameters; E4B by default).
+- Arms, full strength as trained and gated: plain E2B (submissions/s1t1024); C's LoRA, seed 1 (lora_onl_direct_keep_replay); D's LoRA, seed 1 (lora_onl_bridge_keep_replay). The LoRA arms use submissions/s1t1024_s4b with the adapter served as s4b.
+- Tasks: live40 + conf40, 80 held-out-repo tasks of train_s1 from 12 repositories. All 12 are in the online test's held split, none in its training stream or the corrector's fitting data. G4_TIME_SCALE=3 as in every earlier live arm.
+- Two attempts per arm, run in the order plain, D, C, plain, D, C, so time-of-day effects spread over the arms.
+- Measures: resolved, and the loop gate of addendum 156 (dreamer/live_loops.py: replies cut at the token cap, episodes with more than one submit_patch, episodes ending in an error).
+- Context: plain QAT E4B (the teacher) resolved 5-10 of live40 per attempt and 5 of conf40, so E2B's rate will be low and differences of a few tasks are noise.
+
+Predictions (160 task-attempts per arm):
+1. Plain E2B resolves at most 20 of 160 (70%).
+2. D passes the loop gate: replies cut at the cap, multi-submit episodes and error endings each at most plain's count + 6 (65%).
+3. D resolves at least as many as C (60%).
+4. D resolves at least as many as plain E2B (55%).
+5. C resolves within ±8 of plain E2B (60%).
+
+Success bar for "D's online gain carries to live episodes": D resolves at least plain + 8 and at least C + 8 over the 160 attempts (paired per task with an exact sign test reported), and passes the loop gate. If not met, the paper calls D's gain decision-level and untested or not shown in episodes.
+
+Order afterwards: 195 (its runner waits for this runner's end line, exactly "HH:MM X196_DONE" or "HH:MM X196_HALTED", in ~/x195/logs/x196.log on the 4090), then the RSI pilot, then x184.
+
+**Amendment 196a (2026-11-08, 20:02, before any run; user: "can we move this up so we can test it asap, because this seems like a novel way to do training now of smaller models").** 196 now runs right after the 189 queue (after D seed 3, about 00:30), ahead of 192. The runner waits for the exact ONLINE_REP_DONE line instead of ONLINE_REP3_DONE. The 4090 pass-through (online_rep2b_4090.sh) also waits for 196's end line before it writes ONLINE_REP2_DONE, so 192 starts only after 196. 195 still waits for 192 and 196, and the RSI pilot and x184 follow as before. No other change. Expected: the blend gate about 21:15, C seeds 2-3 on Colab about 23:00, D seed 3 about 00:30, 196 about 06:00-10:00.

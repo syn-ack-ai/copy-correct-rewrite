@@ -7905,6 +7905,272 @@
     },
     "adapter": "lora_onl_bridge_keep_replay_s2"
    }
+  },
+  "control_keep_replay": {
+   "run": {
+    "teacher": "control",
+    "blend weight": null,
+    "blend calibration": null,
+    "seed offset": 0,
+    "keep": 1.0,
+    "replay every": 4,
+    "items": 600,
+    "LoRA layers": [
+     4,
+     6,
+     8,
+     10,
+     12,
+     16,
+     20,
+     24,
+     28
+    ],
+    "prequential windows (before learning each item)": [
+     {
+      "items": [
+       0,
+       100
+      ],
+      "ce student": 0.7855,
+      "ce base": 0.833,
+      "gain over base": 0.0474,
+      "first-visit-run items": 84,
+      "gain over base, first-visit-run items": 0.049
+     },
+     {
+      "items": [
+       100,
+       200
+      ],
+      "ce student": 0.7942,
+      "ce base": 0.8578,
+      "gain over base": 0.0636,
+      "first-visit-run items": 55,
+      "gain over base, first-visit-run items": 0.0658
+     },
+     {
+      "items": [
+       200,
+       300
+      ],
+      "ce student": 0.7736,
+      "ce base": 0.8443,
+      "gain over base": 0.0707,
+      "first-visit-run items": 36,
+      "gain over base, first-visit-run items": 0.0656
+     },
+     {
+      "items": [
+       300,
+       400
+      ],
+      "ce student": 0.7546,
+      "ce base": 0.8261,
+      "gain over base": 0.0714,
+      "first-visit-run items": 23,
+      "gain over base, first-visit-run items": 0.0765
+     },
+     {
+      "items": [
+       400,
+       500
+      ],
+      "ce student": 0.7074,
+      "ce base": 0.7655,
+      "gain over base": 0.0581,
+      "first-visit-run items": 18,
+      "gain over base, first-visit-run items": 0.0553
+     },
+     {
+      "items": [
+       500,
+       600
+      ],
+      "ce student": 0.8028,
+      "ce base": 0.8691,
+      "gain over base": 0.0663,
+      "first-visit-run items": 6,
+      "gain over base, first-visit-run items": 0.0858
+     }
+    ],
+    "prequential decisions match, first / last half (student, base)": [
+     [
+      0.771,
+      0.6801
+     ],
+     [
+      0.7517,
+      0.7081
+     ]
+    ],
+    "held curve (bridge down)": [
+     {
+      "item": 0,
+      "held ce (on)": 0.8245,
+      "held decisions match (on)": 0.8182,
+      "KL from base on untaught prose / code / story": 0.0,
+      "KL from base on held questions (never kept)": 0.0,
+      "seconds": 165,
+      "held ce (base)": 0.8245,
+      "held decisions match (base)": 0.8182
+     },
+     {
+      "item": 50,
+      "held ce (on)": 0.7689,
+      "held decisions match (on)": 0.8909,
+      "KL from base on untaught prose / code / story": 0.00268,
+      "KL from base on held questions (never kept)": 0.01224,
+      "seconds": 1095
+     },
+     {
+      "item": 100,
+      "held ce (on)": 0.7635,
+      "held decisions match (on)": 0.8727,
+      "KL from base on untaught prose / code / story": 0.00382,
+      "KL from base on held questions (never kept)": 0.00957,
+      "seconds": 2030
+     },
+     {
+      "item": 150,
+      "held ce (on)": 0.763,
+      "held decisions match (on)": 0.8727,
+      "KL from base on untaught prose / code / story": 0.00607,
+      "KL from base on held questions (never kept)": 0.0108,
+      "seconds": 2978
+     },
+     {
+      "item": 200,
+      "held ce (on)": 0.7584,
+      "held decisions match (on)": 0.8364,
+      "KL from base on untaught prose / code / story": 0.01079,
+      "KL from base on held questions (never kept)": 0.01607,
+      "seconds": 3917
+     },
+     {
+      "item": 250,
+      "held ce (on)": 0.7581,
+      "held decisions match (on)": 0.8364,
+      "KL from base on untaught prose / code / story": 0.02591,
+      "KL from base on held questions (never kept)": 0.02765,
+      "seconds": 4867
+     },
+     {
+      "item": 300,
+      "held ce (on)": 0.7595,
+      "held decisions match (on)": 0.8545,
+      "KL from base on untaught prose / code / story": 0.02915,
+      "KL from base on held questions (never kept)": 0.01941,
+      "seconds": 5815
+     },
+     {
+      "item": 350,
+      "held ce (on)": 0.7583,
+      "held decisions match (on)": 0.8545,
+      "KL from base on untaught prose / code / story": 0.02486,
+      "KL from base on held questions (never kept)": 0.0185,
+      "seconds": 6714
+     },
+     {
+      "item": 400,
+      "held ce (on)": 0.7603,
+      "held decisions match (on)": 0.8545,
+      "KL from base on untaught prose / code / story": 0.0263,
+      "KL from base on held questions (never kept)": 0.02082,
+      "seconds": 7674
+     },
+     {
+      "item": 450,
+      "held ce (on)": 0.7565,
+      "held decisions match (on)": 0.8545,
+      "KL from base on untaught prose / code / story": 0.04195,
+      "KL from base on held questions (never kept)": 0.02286,
+      "seconds": 8639
+     },
+     {
+      "item": 500,
+      "held ce (on)": 0.7595,
+      "held decisions match (on)": 0.8545,
+      "KL from base on untaught prose / code / story": 0.03071,
+      "KL from base on held questions (never kept)": 0.03739,
+      "seconds": 9576
+     },
+     {
+      "item": 550,
+      "held ce (on)": 0.7568,
+      "held decisions match (on)": 0.8545,
+      "KL from base on untaught prose / code / story": 0.02571,
+      "KL from base on held questions (never kept)": 0.05578,
+      "seconds": 10542
+     },
+     {
+      "item": 600,
+      "held ce (on)": 0.7553,
+      "held decisions match (on)": 0.8545,
+      "KL from base on untaught prose / code / story": 0.02534,
+      "KL from base on held questions (never kept)": 0.07322,
+      "seconds": 11483
+     }
+    ]
+   },
+   "gate": {
+    "arch": "lora",
+    "decision points": 240,
+    "cross-entropy to the 31B along E4B's reply (lower is closer)": {
+     "E4B alone": 0.8257,
+     "LoRA": 0.7619
+    },
+    "tool choice: top token matches the 31B's (share)": {
+     "E4B alone": 0.935,
+     "LoRA": 0.945
+    },
+    "tool tokens found": 200,
+    "at E4B's own submits: probability of submit_patch": {
+     "E4B alone": 0.993,
+     "LoRA": 0.992,
+     "31B": 0.9985
+    },
+    "E4B submits in the sample": 21,
+    "decision without thinking (context, then the tool-call opening), at E4B's tool calls": {
+     "points": 220,
+     "where E4B alone's choice differs from the 31B's": 52,
+     "top token matches the 31B's (share)": {
+      "E4B alone": 0.7636,
+      "LoRA": 0.8
+     },
+     "probability of the 31B's choice": {
+      "E4B alone": 0.6547,
+      "LoRA": 0.6916
+     },
+     "where E4B alone differs: share now on the 31B's choice": {
+      "E4B alone": 0.0,
+      "LoRA": 0.25
+     }
+    },
+    "lora": {
+     "arm": "online control_keep_replay",
+     "teacher": "control",
+     "blend weight": null,
+     "seed offset": 0,
+     "layers": [
+      4,
+      6,
+      8,
+      10,
+      12,
+      16,
+      20,
+      24,
+      28
+     ],
+     "rank": 16,
+     "lr": 0.0003,
+     "steps": 600,
+     "samples": 2,
+     "max_new": 256
+    },
+    "adapter": "lora_onl_control_keep_replay"
+   }
   }
  },
  "online gate points": {
@@ -7927,6 +8193,13 @@
      9,
      0.4049
     ]
+   },
+   "D seed 2 vs this": {
+    "all: D only, this only, p": [
+     14,
+     11,
+     0.69
+    ]
    }
   },
   "bridge": {
@@ -7948,6 +8221,13 @@
      6,
      0.1671
     ]
+   },
+   "D seed 2 vs this": {
+    "all: D only, this only, p": [
+     13,
+     8,
+     0.3833
+    ]
    }
   },
   "direct_keep_replay": {
@@ -7968,6 +8248,13 @@
      17,
      6,
      0.0347
+    ]
+   },
+   "D seed 2 vs this": {
+    "all: D only, this only, p": [
+     17,
+     8,
+     0.1078
     ]
    }
   },
@@ -7998,6 +8285,34 @@
      4,
      2,
      0.6875
+    ]
+   }
+  },
+  "control_keep_replay": {
+   "fixed": 13,
+   "of differing": 52,
+   "broken": 5,
+   "of agreeing": 168,
+   "matches": 176,
+   "points": 220,
+   "net": 8,
+   "D vs this": {
+    "differing: D only, this only, p": [
+     11,
+     1,
+     0.0063
+    ],
+    "all: D only, this only, p": [
+     12,
+     1,
+     0.0034
+    ]
+   },
+   "D seed 2 vs this": {
+    "all: D only, this only, p": [
+     12,
+     3,
+     0.0352
     ]
    }
   }
