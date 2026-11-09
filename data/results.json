@@ -3658,6 +3658,429 @@
    "rows": 57
   }
  },
+ "ml e2b": {
+  "per seed": {
+   "1": {
+    "sft": {
+     "fixed": 119,
+     "fixed of": 151,
+     "new": 20,
+     "new of": 131,
+     "held solved": 67,
+     "held of": 188,
+     "lost held": 10,
+     "lost train pool": 7,
+     "qwen held": 57,
+     "qwen train pool": 148
+    },
+    "sft_es": {
+     "fixed": 67,
+     "fixed of": 151,
+     "new": 13,
+     "new of": 131,
+     "held solved": 54,
+     "held of": 188,
+     "lost held": 16,
+     "lost train pool": 31,
+     "qwen held": 57,
+     "qwen train pool": 148
+    },
+    "sft_lr": {
+     "fixed": 80,
+     "fixed of": 151,
+     "new": 19,
+     "new of": 131,
+     "held solved": 71,
+     "held of": 188,
+     "lost held": 5,
+     "lost train pool": 17,
+     "qwen held": 57,
+     "qwen train pool": 148
+    }
+   },
+   "2": {
+    "sft": {
+     "fixed": 120,
+     "fixed of": 151,
+     "new": 22,
+     "new of": 131,
+     "held solved": 69,
+     "held of": 188,
+     "lost held": 10,
+     "lost train pool": 5,
+     "qwen held": 57,
+     "qwen train pool": 148
+    },
+    "sft_es": {
+     "fixed": 78,
+     "fixed of": 151,
+     "new": 16,
+     "new of": 131,
+     "held solved": 56,
+     "held of": 188,
+     "lost held": 17,
+     "lost train pool": 23,
+     "qwen held": 57,
+     "qwen train pool": 148
+    },
+    "sft_lr": {
+     "fixed": 76,
+     "fixed of": 151,
+     "new": 22,
+     "new of": 131,
+     "held solved": 72,
+     "held of": 188,
+     "lost held": 7,
+     "lost train pool": 18,
+     "qwen held": 57,
+     "qwen train pool": 148
+    }
+   },
+   "3": {
+    "sft": {
+     "fixed": 120,
+     "fixed of": 151,
+     "new": 20,
+     "new of": 131,
+     "held solved": 68,
+     "held of": 188,
+     "lost held": 9,
+     "lost train pool": 6,
+     "qwen held": 57,
+     "qwen train pool": 148
+    },
+    "sft_es": {
+     "fixed": 92,
+     "fixed of": 151,
+     "new": 17,
+     "new of": 131,
+     "held solved": 60,
+     "held of": 188,
+     "lost held": 14,
+     "lost train pool": 21,
+     "qwen held": 57,
+     "qwen train pool": 148
+    },
+    "sft_lr": {
+     "fixed": 77,
+     "fixed of": 151,
+     "new": 16,
+     "new of": 131,
+     "held solved": 63,
+     "held of": 188,
+     "lost held": 10,
+     "lost train pool": 14,
+     "qwen held": 57,
+     "qwen train pool": 148
+    }
+   }
+  },
+  "offtask": {
+   "1": {
+    "held agent | cross-entropy": {
+     "qwen": 0.6849,
+     "sft": 0.7499,
+     "sft_es": 0.6658,
+     "sft_lr": 0.683
+    },
+    "held question_fresh | cross-entropy": {
+     "qwen": 0.9386,
+     "sft": 1.0621,
+     "sft_es": 0.9375,
+     "sft_lr": 0.9693
+    },
+    "held question_fresh | p(true)": {
+     "qwen": 0.5822,
+     "sft": 0.5952,
+     "sft_es": 0.561,
+     "sft_lr": 0.5791
+    },
+    "held prose (untaught) | cross-entropy": {
+     "qwen": 4.4729,
+     "sft": 5.1732,
+     "sft_es": 4.514,
+     "sft_lr": 4.6567
+    }
+   },
+   "2": {
+    "held agent | cross-entropy": {
+     "qwen": 0.6849,
+     "sft": 0.7458,
+     "sft_es": 0.676,
+     "sft_lr": 0.6825
+    },
+    "held question_fresh | cross-entropy": {
+     "qwen": 0.9386,
+     "sft": 1.1239,
+     "sft_es": 1.029,
+     "sft_lr": 0.9784
+    },
+    "held question_fresh | p(true)": {
+     "qwen": 0.5822,
+     "sft": 0.5749,
+     "sft_es": 0.5476,
+     "sft_lr": 0.5773
+    },
+    "held prose (untaught) | cross-entropy": {
+     "qwen": 4.4729,
+     "sft": 5.1902,
+     "sft_es": 4.5785,
+     "sft_lr": 4.6653
+    }
+   },
+   "3": {
+    "held agent | cross-entropy": {
+     "qwen": 0.6849,
+     "sft": 0.751,
+     "sft_es": 0.6764,
+     "sft_lr": 0.683
+    },
+    "held question_fresh | cross-entropy": {
+     "qwen": 0.9386,
+     "sft": 1.1327,
+     "sft_es": 1.0129,
+     "sft_lr": 0.9797
+    },
+    "held question_fresh | p(true)": {
+     "qwen": 0.5822,
+     "sft": 0.5918,
+     "sft_es": 0.5727,
+     "sft_lr": 0.5791
+    },
+    "held prose (untaught) | cross-entropy": {
+     "qwen": 4.4729,
+     "sft": 5.1813,
+     "sft_es": 4.6208,
+     "sft_lr": 4.6669
+    }
+   }
+  },
+  "e4b held CE": {
+   "1": {
+    "qwen": 0.2428,
+    "sft": 0.2572,
+    "sft_es": 0.2308,
+    "sft_lr": 0.2005
+   },
+   "2": {
+    "qwen": 0.2428,
+    "sft": 0.2523,
+    "sft_es": 0.2369,
+    "sft_lr": 0.1997
+   },
+   "3": {
+    "qwen": 0.2428,
+    "sft": 0.2543,
+    "sft_es": 0.237,
+    "sft_lr": 0.1999
+   }
+  },
+  "pooled": {
+   "sft": {
+    "fixed": 359,
+    "fixed of": 453,
+    "new": 62,
+    "new of": 393,
+    "held solved": 204,
+    "held of": 564,
+    "lost held": 29,
+    "lost train pool": 18,
+    "qwen held": 171,
+    "qwen train pool": 444,
+    "seeds": 3
+   },
+   "sft_es": {
+    "fixed": 237,
+    "fixed of": 453,
+    "new": 46,
+    "new of": 393,
+    "held solved": 170,
+    "held of": 564,
+    "lost held": 47,
+    "lost train pool": 75,
+    "qwen held": 171,
+    "qwen train pool": 444,
+    "seeds": 3
+   },
+   "sft_lr": {
+    "fixed": 233,
+    "fixed of": 453,
+    "new": 57,
+    "new of": 393,
+    "held solved": 206,
+    "held of": 564,
+    "lost held": 22,
+    "lost train pool": 49,
+    "qwen held": 171,
+    "qwen train pool": 444,
+    "seeds": 3
+   }
+  }
+ },
+ "ml e2b drift": {
+  "sft_es|1|prose": {
+   "kl": 0.13341,
+   "dce": 0.03557,
+   "ce": 4.43106,
+   "ce base": 4.39549,
+   "entropy": 1.91025,
+   "entropy base": 2.16261,
+   "rows": 43
+  },
+  "sft_lr|1|prose": {
+   "kl": 0.11507,
+   "dce": 0.17405,
+   "ce": 4.56954,
+   "ce base": 4.39549,
+   "entropy": 1.80866,
+   "entropy base": 2.16261,
+   "rows": 43
+  },
+  "sft_es|1|story": {
+   "kl": 0.09526,
+   "dce": 0.04353,
+   "ce": 3.9209,
+   "ce base": 3.87737,
+   "entropy": 1.43971,
+   "entropy base": 1.58796,
+   "rows": 24
+  },
+  "sft_lr|1|story": {
+   "kl": 0.07995,
+   "dce": 0.19254,
+   "ce": 4.06991,
+   "ce base": 3.87737,
+   "entropy": 1.32051,
+   "entropy base": 1.58796,
+   "rows": 24
+  },
+  "sft_es|1|code": {
+   "kl": 0.11077,
+   "dce": -0.00128,
+   "ce": 2.01961,
+   "ce base": 2.02089,
+   "entropy": 0.80121,
+   "entropy base": 0.89321,
+   "rows": 57
+  },
+  "sft_lr|1|code": {
+   "kl": 0.09267,
+   "dce": 0.09913,
+   "ce": 2.12002,
+   "ce base": 2.02089,
+   "entropy": 0.703,
+   "entropy base": 0.89321,
+   "rows": 57
+  },
+  "sft_es|2|prose": {
+   "kl": 0.18297,
+   "dce": 0.09331,
+   "ce": 4.4888,
+   "ce base": 4.39549,
+   "entropy": 1.85038,
+   "entropy base": 2.16261,
+   "rows": 43
+  },
+  "sft_lr|2|prose": {
+   "kl": 0.12176,
+   "dce": 0.18089,
+   "ce": 4.57638,
+   "ce base": 4.39549,
+   "entropy": 1.79616,
+   "entropy base": 2.16261,
+   "rows": 43
+  },
+  "sft_es|2|story": {
+   "kl": 0.12958,
+   "dce": 0.11105,
+   "ce": 3.98842,
+   "ce base": 3.87737,
+   "entropy": 1.3806,
+   "entropy base": 1.58796,
+   "rows": 24
+  },
+  "sft_lr|2|story": {
+   "kl": 0.08299,
+   "dce": 0.18277,
+   "ce": 4.06014,
+   "ce base": 3.87737,
+   "entropy": 1.32167,
+   "entropy base": 1.58796,
+   "rows": 24
+  },
+  "sft_es|2|code": {
+   "kl": 0.1273,
+   "dce": 0.05225,
+   "ce": 2.07314,
+   "ce base": 2.02089,
+   "entropy": 0.74652,
+   "entropy base": 0.89321,
+   "rows": 57
+  },
+  "sft_lr|2|code": {
+   "kl": 0.09261,
+   "dce": 0.09264,
+   "ce": 2.11353,
+   "ce base": 2.02089,
+   "entropy": 0.70621,
+   "entropy base": 0.89321,
+   "rows": 57
+  },
+  "sft_es|3|prose": {
+   "kl": 0.17592,
+   "dce": 0.13831,
+   "ce": 4.5338,
+   "ce base": 4.39549,
+   "entropy": 1.8471,
+   "entropy base": 2.16261,
+   "rows": 43
+  },
+  "sft_lr|3|prose": {
+   "kl": 0.11589,
+   "dce": 0.18475,
+   "ce": 4.58024,
+   "ce base": 4.39549,
+   "entropy": 1.80403,
+   "entropy base": 2.16261,
+   "rows": 43
+  },
+  "sft_es|3|story": {
+   "kl": 0.11784,
+   "dce": 0.14933,
+   "ce": 4.0267,
+   "ce base": 3.87737,
+   "entropy": 1.3566,
+   "entropy base": 1.58796,
+   "rows": 24
+  },
+  "sft_lr|3|story": {
+   "kl": 0.08127,
+   "dce": 0.1933,
+   "ce": 4.07067,
+   "ce base": 3.87737,
+   "entropy": 1.32516,
+   "entropy base": 1.58796,
+   "rows": 24
+  },
+  "sft_es|3|code": {
+   "kl": 0.12851,
+   "dce": 0.06816,
+   "ce": 2.08904,
+   "ce base": 2.02089,
+   "entropy": 0.73225,
+   "entropy base": 0.89321,
+   "rows": 57
+  },
+  "sft_lr|3|code": {
+   "kl": 0.09304,
+   "dce": 0.0994,
+   "ce": 2.12029,
+   "ce base": 2.02089,
+   "entropy": 0.70493,
+   "entropy base": 0.89321,
+   "rows": 57
+  }
+ },
  "wide": {
   "1": {
    "problems": 705,

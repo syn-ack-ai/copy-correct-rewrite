@@ -10,7 +10,7 @@ A small agent model trained by a stronger one must gain the teacher's skill with
 
 ## 1 Introduction
 
-Submissions to the Gemma 4 Developer Agent competition (Kaggle, 2026) are Gemma 4 E2B or E4B (Google, 2026) plus LoRA adapters (Hu et al., 2021) of rank at most 128, so any gain from a stronger teacher must survive being stored in an adapter. Distillation (Hinton et al., 2015) is the main lever, but every route risks erasing what the small model already does well, such as reading, instruction following and decision making. We ask which route teaches the most and forgets the least.
+Submissions to the Gemma 4 Developer Agent competition (Kaggle, 2026) are Gemma 4 E2B or E4B (Google, 2026) plus LoRA adapters (Hu et al., 2021) of rank at most 128, so any gain from a stronger teacher must survive being stored in an adapter. Distillation (Hinton et al., 2015) is the main lever, but every route risks erasing what the small model already does well. We ask which route teaches the most and forgets the least.
 
 To test whether a teacher's internal states can be stored, we built a *state corrector*, inspired by Swarm Telepathy (Alabdulkareem et al., 2026), which moves one model's KV cache into a frozen receiver of another family. Ours writes a correction into the student's hidden states; it also served as an anchor and online teacher. Our contributions:
 
@@ -79,7 +79,7 @@ In a separate coding run the anchors did not lose to SFT (held solved: SFT 143, 
 
 ### 4.3 Copying within the family forgets, and an anchor fixes it
 
-E2B replaced Qwen, all else equal; it starts stronger (57 held problems solved alone, against 25) and finds E4B's solutions nearly its own (0.27 nats per token, against 1.05). Gains were smaller, about 11 held problems per seed against 19-30 for Qwen. Runbook rows lost their advantage (fixed 61 vs 111 for SFT, p = 0.0002): E2B's rewrites were no closer to it than E4B's text (0.38 vs 0.27 nats). Every copying recipe damaged untaught text (Table 2, Figure 3): 4-13× Qwen's KL, sharper predictions (entropy −0.3 to −0.8) and higher loss on prose, code and stories, though a smaller share of solved coding problems was lost.
+E2B replaced Qwen, all else equal; it starts stronger (57 held problems solved alone, against 25) and finds E4B's solutions nearly its own (0.27 nats per token, against 1.05). Gains were smaller, about 11 held problems per seed against 19-30 for Qwen. Runbook rows lost their advantage (fixed 61 vs 111 for SFT, p = 0.0002): E2B's rewrites were no closer to it than E4B's text (0.38 vs 0.27 nats). Every copying recipe damaged untaught text (Table 2, Figure 3): 1.6-13× Qwen's KL, sharper predictions (entropy −0.3 to −0.8) and higher loss on prose, code and stories.
 
 Table 2. Gemma 4 E2B as the student, per-seed means over three seeds (alone: 57 held solved).
 
@@ -88,15 +88,17 @@ Table 2. Gemma 4 E2B as the student, per-seed means over three seeds (alone: 57 
 | SFT | 68.0 | 119.7 | 15.7 | 0.29 | +0.69 |
 | Shortest rows | 68.0 | 123.0 | 15.7 | 0.29 | +0.57 |
 | Runbook rows | 67.0 | 106.0 | 19.3 | 0.29 | +0.85 |
+| SFT, stopped at loss 0.24 | 56.7 | 79.0 | 40.7 | 0.16 | +0.09 |
+| SFT, a tenth of the learning rate | 68.7 | 77.7 | 23.7 | 0.12 | +0.18 |
 | Shortest + KL to the original | 69.0 | 90.7 | **13.3** | **0.016** | −0.04 |
 | Shortest + self-corrector anchor | **72.0** | 95.3 | 16.0 | 0.33 | −0.60 |
 | Shortest + cross-model anchor | 69.7 | 99.3 | 15.3 | 0.32 | −0.58 |
 | Shortest + the corrector's fitting text | 71.3 | 105.0 | 16.3 | 0.83 | −0.75 |
 | Shortest + fitting text + KL to the original | 68.7 | 83.3 | 17.3 | 0.81 | −0.76 |
 
-The likely cause is over-fitting familiar text. E2B's training loss on E4B's rows started low (0.28 nats), barely fell in the first epoch and reached 0.07 in the second. Qwen went from 0.62 to 0.24 and softened; its one sharpening recipe, runbook rows, also started familiar (0.25 to 0.03). Yet E2B moved about 13× more than that arm at a similar final loss, so part of the effect is the student; a matched-loss run was still running.
+The likely cause is over-fitting familiar text. E2B's training loss on E4B's rows started low (0.28 nats), barely fell in the first epoch and reached 0.07 in the second; Qwen's ended at 0.24. Stopped there after one epoch, E2B's prose damage fell from +0.69 to +0.09, yet it moved twice as far as Qwen (KL 0.16 against 0.074), so part of the effect is the student. Stopping early is no fix: it kept no held gain and lost 122 solved problems (SFT 47). A tenth of the learning rate kept the gain with +0.18 damage; KL to the original kept it without damage.
 
-Every anchor removed the damage in every seed and held E2B's training loss at 0.11-0.12, not 0.08. KL to the original kept E2B in place (prose KL 0.016, Δ loss −0.04) without costing held solves (207 vs 204). Anchors to fresh Gemma correctors moved it as far as SFT, toward lower loss and softer predictions (Δ loss −0.58 to −0.60); held solves rose by at most 12 (216 vs 204, p = 0.22), at about 25 fewer fixes per seed. Training directly on the corrector's fitting text matched that anchor (held 214 vs 216, p = 0.90; prose Δ loss −0.75) and came closer on agent replies (0.50 vs 0.65), but moved E2B much further (prose KL 0.83 vs 0.33): the anchor's gain is its fitting text, delivered with less change. The KL pull did not reduce that (0.81): it covers only the coding replies. Each Gemma corrector cut loss on its own fitting mix by 27-29% (Qwen's 34-37%) but left E2B's loss on E4B's coding rows unchanged.
+Every anchor removed the damage in every seed and held E2B's training loss at 0.11-0.12, not 0.08. KL to the original kept E2B in place (prose KL 0.016, Δ loss −0.04) without costing held solves (207 vs 204). Anchors to fresh Gemma correctors moved it as far as SFT, toward lower loss and softer predictions (Δ loss −0.58 to −0.60); held solves rose by at most 12 (216 vs 204, p = 0.22), at about 25 fewer fixes per seed. Training directly on the corrector's fitting text matched that anchor (held 214 vs 216, p = 0.90; prose Δ loss −0.75) and came closer on agent replies (0.50 vs 0.65), but moved E2B much further (prose KL 0.83 vs 0.33): the anchor's gain is its fitting text, delivered with less change. The KL pull did not reduce that (0.81): it covers only the coding replies. Gemma correctors fit their mix less well (27-29% loss cut; Qwen's 34-37%) and left E2B's coding loss unchanged.
 
 ![E2B per recipe](figures/fig9_e2b.png)
 
@@ -150,7 +152,7 @@ Runbook rows generalised less (83 new, against 90-95) but fixed the most trainin
 
 ![Teaching and forgetting](figures/fig3_teach_vs_forget.png)
 
-Figure 5. Every coding recipe, three seeds, numbered by held-out rank; best is bottom right. The leaders are within noise.
+Figure 5. Every coding recipe, three seeds, numbered by held-out rank; best is bottom right.
 
 ### 4.7 On-policy distillation stops at its teacher
 
@@ -296,7 +298,7 @@ Table 8. Predictions that held, per pre-registered addendum.
 | 185 (SFT + KL to the original) | 5 of 6 | — |
 | 186 (Gemma 4 E2B as the coding student) | 5 of 7 | — |
 | 187 (two-way, fresh Gemma correctors) | 5 of 7 | not met; cross-model = self |
-| 188 (matched-loss run, E2B) | — | running |
+| 188 (matched-loss run, E2B) | 5 of 7 | not met: stopping early cut the damage but kept no held gain |
 | 189 (online setup D: replication, controls) | 3 of 3 so far (seed 2) | running |
 | 190 (multi-task control for the corrector anchor) | 4 of 5 | met: the anchor's gain is its fitting text |
 | 191 (per-user grafts) | — | separate paper |

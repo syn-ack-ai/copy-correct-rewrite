@@ -1,14 +1,14 @@
 # Manifest
 
-305 files, 31.0 MB in total (MANIFEST.md not counted). Sizes are on-disk sizes; `.gz` files are gzip-compressed JSON Lines.
+323 files, 33.8 MB in total (MANIFEST.md not counted). Sizes are on-disk sizes; `.gz` files are gzip-compressed JSON Lines.
 Run labels give the addendum and seed (see README.md, "Run folders").
 
 | File | Size | Purpose |
 |---|---|---|
 | `LICENSE` | 11.1 KB | Apache License 2.0 |
 | `MANIFEST.md` | (this file) | This file: every file with its size and purpose |
-| `PREREGISTRATION.md` | 177.4 KB | Pre-registration log, addenda 165-193, verbatim (one phrase redacted) |
-| `README.md` | 13.5 KB | Overview: the study, findings, layout, how the runs worked, what is excluded, rebuild steps, licence |
+| `PREREGISTRATION.md` | 179.9 KB | Pre-registration log, addenda 165-193, verbatim (one phrase redacted) |
+| `README.md` | 13.7 KB | Overview: the study, findings, layout, how the runs worked, what is excluded, rebuild steps, licence |
 | `code/colab/xq_bridge.sh` | 3.0 KB | Colab session: fit the bridge and control correctors and run the suite (166) |
 | `code/colab/xq_curve.sh` | 5.2 KB | Colab session: corrector training-length curve (176) |
 | `code/colab/xq_dosebase.sh` | 3.2 KB | Colab session: dose-matched SFT baselines and their evaluation (169d) |
@@ -84,6 +84,18 @@ Run labels give the addendum and seed (see README.md, "Run folders").
 | `data/generations/xqlE2B3/xl_gens_sft.jsonl.gz` | 202.4 KB | Greedy answers per problem with pass flag (186, Gemma 4 E2B student, seed 3): SFT on teacher text |
 | `data/generations/xqlE2B3/xl_gens_sft_s.jsonl.gz` | 183.9 KB | Greedy answers per problem with pass flag (186, Gemma 4 E2B student, seed 3): SFT, shortest correct |
 | `data/generations/xqlE2B3/xl_rb_gens.jsonl.gz` | 347.9 KB | Runbook build generations: E4B's plans with screen results, the student's solutions with pass flags (no prompts) |
+| `data/generations/xqlML1/xl_gens_qwen.jsonl.gz` | 211.2 KB | Greedy answers per problem with pass flag (188, matched-loss test (E2B), seed 1): the untrained student |
+| `data/generations/xqlML1/xl_gens_sft.jsonl.gz` | 206.7 KB | Greedy answers per problem with pass flag (188, matched-loss test (E2B), seed 1): SFT on teacher text |
+| `data/generations/xqlML1/xl_gens_sft_es.jsonl.gz` | 220.3 KB | Greedy answers per problem with pass flag (188, matched-loss test (E2B), seed 1): SFT stopped at training loss 0.24 |
+| `data/generations/xqlML1/xl_gens_sft_lr.jsonl.gz` | 201.3 KB | Greedy answers per problem with pass flag (188, matched-loss test (E2B), seed 1): SFT at a tenth of the learning rate |
+| `data/generations/xqlML2/xl_gens_qwen.jsonl.gz` | 211.2 KB | Greedy answers per problem with pass flag (188, matched-loss test (E2B), seed 2): the untrained student |
+| `data/generations/xqlML2/xl_gens_sft.jsonl.gz` | 204.1 KB | Greedy answers per problem with pass flag (188, matched-loss test (E2B), seed 2): SFT on teacher text |
+| `data/generations/xqlML2/xl_gens_sft_es.jsonl.gz` | 213.0 KB | Greedy answers per problem with pass flag (188, matched-loss test (E2B), seed 2): SFT stopped at training loss 0.24 |
+| `data/generations/xqlML2/xl_gens_sft_lr.jsonl.gz` | 202.6 KB | Greedy answers per problem with pass flag (188, matched-loss test (E2B), seed 2): SFT at a tenth of the learning rate |
+| `data/generations/xqlML3/xl_gens_qwen.jsonl.gz` | 211.2 KB | Greedy answers per problem with pass flag (188, matched-loss test (E2B), seed 3): the untrained student |
+| `data/generations/xqlML3/xl_gens_sft.jsonl.gz` | 202.4 KB | Greedy answers per problem with pass flag (188, matched-loss test (E2B), seed 3): SFT on teacher text |
+| `data/generations/xqlML3/xl_gens_sft_es.jsonl.gz` | 190.5 KB | Greedy answers per problem with pass flag (188, matched-loss test (E2B), seed 3): SFT stopped at training loss 0.24 |
+| `data/generations/xqlML3/xl_gens_sft_lr.jsonl.gz` | 206.3 KB | Greedy answers per problem with pass flag (188, matched-loss test (E2B), seed 3): SFT at a tenth of the learning rate |
 | `data/generations/xqlMT1/xl_gens_qwen.jsonl.gz` | 211.2 KB | Greedy answers per problem with pass flag (190, multi-task control (E2B), seed 1): the untrained student |
 | `data/generations/xqlMT1/xl_gens_sft.jsonl.gz` | 206.7 KB | Greedy answers per problem with pass flag (190, multi-task control (E2B), seed 1): SFT on teacher text |
 | `data/generations/xqlMT1/xl_gens_sft_mt_s.jsonl.gz` | 183.0 KB | Greedy answers per problem with pass flag (190, multi-task control (E2B), seed 1): SFT, shortest + the corrector's fitting text |
@@ -205,7 +217,7 @@ Run labels give the addendum and seed (see README.md, "Run folders").
 | `data/online/online_bridge_keep_replay_s2.json` | 4.6 KB | Online test, setup D (corrector + keep + replay), seed 2 (189): prequential windows and held curve |
 | `data/online/online_direct.json` | 4.5 KB | Online test, setup 'teacher distribution': prequential windows and held curve |
 | `data/online/online_direct_keep_replay.json` | 4.5 KB | Online test, setup 'teacher + keep + replay': prequential windows and held curve |
-| `data/results.json` | 147.2 KB | Every number the paper uses (output of scripts/collect.py) |
+| `data/results.json` | 155.1 KB | Every number the paper uses (output of scripts/collect.py) |
 | `data/rows/xqlB/xl_rows.jsonl` | 480.5 KB | Training rows: E4B's verified solutions, 299 problems (no problem statements) |
 | `data/rows/xqlE2B1/xl_rows_rb.jsonl` | 460.1 KB | Training rows: the student's runbook-guided solutions, 280 problems (no problem statements) |
 | `data/rows/xqlE2B2/xl_rows_rb.jsonl` | 460.1 KB | Training rows: the student's runbook-guided solutions, 280 problems (no problem statements) |
@@ -236,6 +248,12 @@ Run labels give the addendum and seed (see README.md, "Run folders").
 | `data/runs/xqlE2B3/drift_e2b_s3.json` | 45.2 KB | Drift from the original student (186, Gemma 4 E2B student, seed 3): KL, CE change and entropy on untaught prose, code and stories, per arm and row |
 | `data/runs/xqlE2B3/xl_eval_e2b_s3.json` | 67.9 KB | Evaluation (186, Gemma 4 E2B student, seed 3): fixed / new / kept counts, per-problem pass, held CE, off-task CE, paired tests |
 | `data/runs/xqlE2B3/xl_rb.json` | 1.1 KB | Runbook-row build summary (186, Gemma 4 E2B student, seed 3) |
+| `data/runs/xqlML1/drift_e2b_s1.json` | 45.6 KB | Drift from the original student (188, matched-loss test (E2B), seed 1): KL, CE change and entropy on untaught prose, code and stories, per arm and row |
+| `data/runs/xqlML1/xl_eval_e2b_s1.json` | 67.7 KB | Evaluation (188, matched-loss test (E2B), seed 1): fixed / new / kept counts, per-problem pass, held CE, off-task CE, paired tests |
+| `data/runs/xqlML2/drift_e2b_s2.json` | 45.5 KB | Drift from the original student (188, matched-loss test (E2B), seed 2): KL, CE change and entropy on untaught prose, code and stories, per arm and row |
+| `data/runs/xqlML2/xl_eval_e2b_s2.json` | 67.7 KB | Evaluation (188, matched-loss test (E2B), seed 2): fixed / new / kept counts, per-problem pass, held CE, off-task CE, paired tests |
+| `data/runs/xqlML3/drift_e2b_s3.json` | 45.5 KB | Drift from the original student (188, matched-loss test (E2B), seed 3): KL, CE change and entropy on untaught prose, code and stories, per arm and row |
+| `data/runs/xqlML3/xl_eval_e2b_s3.json` | 67.7 KB | Evaluation (188, matched-loss test (E2B), seed 3): fixed / new / kept counts, per-problem pass, held CE, off-task CE, paired tests |
 | `data/runs/xqlMT1/drift_e2b_s1.json` | 45.4 KB | Drift from the original student (190, multi-task control (E2B), seed 1): KL, CE change and entropy on untaught prose, code and stories, per arm and row |
 | `data/runs/xqlMT1/xl_eval_e2b_s1.json` | 68.4 KB | Evaluation (190, multi-task control (E2B), seed 1): fixed / new / kept counts, per-problem pass, held CE, off-task CE, paired tests |
 | `data/runs/xqlMT2/drift_e2b_s2.json` | 45.4 KB | Drift from the original student (190, multi-task control (E2B), seed 2): KL, CE change and entropy on untaught prose, code and stories, per arm and row |
@@ -305,8 +323,8 @@ Run labels give the addendum and seed (see README.md, "Run folders").
 | `figures/fig7_online.png` | 225.2 KB | Figure 7: online learning, E4B to E2B, four setups, held cross-entropy and drift |
 | `figures/fig8_agent_turns.png` | 103.7 KB | Extra figure (cut from the paper): agent replies, E4B to Qwen3-1.7B (169d) |
 | `figures/fig9_e2b.png` | 160.0 KB | Figure 3: Gemma 4 E2B as the coding student against Qwen3-1.7B, with the anchors and the multi-task control (186, 187, 190) |
-| `paper.md` | 26.2 KB | The paper: Copy, Correct, or Rewrite? |
-| `scripts/collect.py` | 12.0 KB | Collects every number the paper uses from the run folders into data/results.json (standard library) |
+| `paper.md` | 26.4 KB | The paper: Copy, Correct, or Rewrite? |
+| `scripts/collect.py` | 12.5 KB | Collects every number the paper uses from the run folders into data/results.json (standard library) |
 | `scripts/drift.py` | 3.7 KB | Measures drift from the original student on untaught text (needs adapters and text rows not included) |
 | `scripts/figures.py` | 30.3 KB | Draws the nine figures from data/results.json (matplotlib) |
 | `scripts/to_html.py` | 9.7 KB | Renders paper.md into one self-contained HTML page |

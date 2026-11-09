@@ -914,6 +914,23 @@ Success bar for the over-fit explanation: sft_es keeps at least 70% of sft's poo
 
 Budget: about 12 CU per session, about 40 CU. The sessions start after 187's six sessions have all started, under the same slot counter and the 25 CU guard.
 
+**188 result (2026-11-08, 16:10; xqlML1-3, all exit 0).** sft_es stopped at steps 154, 156 and 159 (running CE 0.239-0.240). The re-scored 186 sft adapter reproduced 186 exactly (487 of 487 problems, every seed), so all arms pair with 186. Pooled over seeds (E2B alone: 171 held solved):
+
+| Arm | Held solved (of 564) | Fixed (of 453) | Lost (of 615 solved alone) | Prose KL | Prose ΔCE | Prose entropy change |
+|---|---|---|---|---|---|---|
+| sft (186, re-scored) | 204 | 359 | 47 | 0.29 | +0.69 | −0.77 |
+| sft_es (stop at CE 0.24) | 170 | 237 | 122 | 0.16 | +0.09 | −0.29 |
+| sft_lr (lr 3e-5) | 206 | 233 | 71 | 0.12 | +0.18 | −0.36 |
+| sft_self_s (187, KL to the original), for reference | 207 | 272 | 40 | 0.016 | −0.04 | — |
+
+Paired (pooled, exact sign test): sft_es vs sft, held 27 vs 61 (p = 0.0004); sft_es vs E2B alone, held 46 vs 47 (p = 1.0). sft_lr vs sft, held 47 vs 45 (p = 0.92); trained 30 vs 187. Every seed agrees: sft_es held 54-60 (alone 57) and lost 35-47 (sft 15-17); prose ΔCE 0.04-0.14 (sft 0.68-0.69). Code and stories move the same way (ΔCE: sft +0.38 / +0.84, sft_es +0.04 / +0.10, sft_lr +0.10 / +0.19).
+
+Predictions: 1 held (stops at 154-159). 2 held (ΔCE 0.09, 13% of sft's). 3 held narrowly (pooled entropy fall 0.29; seeds 0.25, 0.31, 0.32). 4 failed: sft_es kept none of sft's held gain (−1 against +33). 5 failed on both parts: sft_lr's ΔCE was +0.18 (bar 0.15) and it kept all of sft's held gain (+35). 6 held (487 of 487). 7 held: at Qwen's final loss, sft_es moved E2B further than Qwen's sft moved Qwen (prose KL 0.16 vs 0.074; ΔCE +0.09 vs −0.06). 5 of 7.
+
+Success bar for the over-fit explanation (sft_es keeps at least 70% of the held gain and halves ΔCE): not met. ΔCE fell by 87%, but the held gain fell to zero. The failure condition (sft_es keeps at least 70% of the damage) is also not met: it kept 13%.
+
+Reading: most of the damage to untaught text comes from the second epoch, as the over-fit account says, but stopping there is no fix. After one epoch E2B has lost the most solved problems (122) and gained nothing on held problems; the second epoch recovers the gain and does the damage. Part of the move is the student: at the same final loss E2B moved twice as far as Qwen. A tenth of the learning rate keeps the gain with a quarter of the damage, and KL to the original does better on held, fixed, lost and drift at once, so the recipe stays shortest rows + KL to the original. "Stop at the matched loss" does not go into the recipe.
+
 ## Addendum 189 (2026-11-08, 10:15; built, in review, not yet run): online setup D replicated, and two controls for it (user: "so the corrector does seem useful in this model"; "yes, queue D seeds 2-3 and the controls after the gate")
 
 Why: setup D (183: the corrector teacher + keep + replay, E4B → E2B) is the first place where the corrector beat the plain teacher on several measures at once. Seed 1:

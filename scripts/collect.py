@@ -113,6 +113,15 @@ if MT["per seed"]:
         if f.exists():
             res["mt e2b drift"].update({k: v for k, v in json.load(open(f))["summary"].items() if k.split("|")[0] in ("sft_mt_s", "sft_self_mt_s")})
 
+# 188: the matched-loss test (E2B; sft_es stops at the running CE 0.24, sft_lr at a tenth of the lr; each session re-scores 186's sft)
+ML = family({s: [R / f"xqlML{s}/xl_eval_e2b_s{s}.json"] for s in (1, 2, 3)})
+if ML["per seed"]:
+    res["ml e2b"] = ML; res["ml e2b drift"] = {}
+    for s in (1, 2, 3):
+        f = R / f"xqlML{s}/drift_e2b_s{s}.json"
+        if f.exists():
+            res["ml e2b drift"].update({k: v for k, v in json.load(open(f))["summary"].items() if k.split("|")[0] in ("sft_es", "sft_lr")})
+
 # 178: wide LiveCodeBench, the agent-row LoRAs
 W = {}
 for s in (1, 2, 3):

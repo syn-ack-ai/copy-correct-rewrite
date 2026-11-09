@@ -35,10 +35,10 @@ From the paper's abstract and results:
 The paper's limitations (Section 5) and the pre-registration scorecard (Appendix C) apply to all of these.
 
 **Status (2026-11-08, evening).** In the paper and in this repository: 185 (`data/runs/xqlSS*`), 186 (`xqlE2B*`), 187 (`xqlTW2b*`: E4B
-teaches E2B; `xqlTW4b*`: E2B teaches E4B), 190 (`xqlMT*`: the multi-task control for the corrector anchor) and the online test's setup D,
+teaches E2B; `xqlTW4b*`: E2B teaches E4B), 188 (`xqlML*`: the matched-loss test), 190 (`xqlMT*`: the multi-task control for the corrector anchor) and the online test's setup D,
 seeds 1-2 (183, 189; `data/online/`; seed 2 reproduced seed 1, differing on 6 of 220 gate decisions). Running at the time of this snapshot, with designs and predictions in `PREREGISTRATION.md`: online D seed
-3 with self-corrector and blend controls and setup C seeds 2-3 (189), online against offline SFT teachers (192), a matched-loss test
-(188) and a KL strength sweep (193). A longer-cap re-grade of the lost coding problems (194) is being revised and will be added when final.
+3 with self-corrector and blend controls and setup C seeds 2-3 (189), online against offline SFT teachers (192), and a KL strength
+sweep (193). A longer-cap re-grade of the lost coding problems (194) is being revised and will be added when final.
 Addendum 191 (per-user grafts) is planned for a separate paper.
 
 ## Repository layout
@@ -123,6 +123,7 @@ The code is a snapshot of 2026-11-08. It also holds paths that the paper does no
 | `xqlTW2b1`-`xqlTW2b3` | E4B teaches E2B with freshly fitted Gemma correctors: shortest rows + KL to the original, + self-anchor, + cross-model anchor (187) |
 | `xqlTW4b1`-`xqlTW4b3` | E2B teaches E4B on E2B's 148 passing answers: SFT, KL to the original, self-anchor, cross-model anchor (187) |
 | `xqr2`, `xqr3` | Fit logs of Qwen's per-seed correctors (the paper's recipe), read by `collect.py` |
+| `xqlML1`-`xqlML3` | The matched-loss test on E2B: SFT stopped at training loss 0.24, and SFT at a tenth of the learning rate (188) |
 | `xqlMT1`-`xqlMT3` | The multi-task control on E2B: shortest rows + the corrector's fitting text, with and without KL to the original (190) |
 | `xqlE2B1`-`xqlE2B3` | Gemma 4 E2B as the student: SFT, shortest rows, runbook rows (E2B re-solves with the plans from `xqlRB0`), drift (186) |
 | `xqw1`-`xqw3` | LoRAs trained on agent turns, tested on all easy and medium LiveCodeBench problems (178) |
@@ -137,6 +138,7 @@ Arm keys in the data and their names in the figures (`scripts/figures.py`):
 | `sft_s` | SFT, shortest correct |
 | `sft_c_s` | SFT, shortest + self-anchor |
 | `sft_self_s` | SFT, shortest + KL to the original student (185) |
+| `sft_es` / `sft_lr` | SFT stopped at training loss 0.24 / at a tenth of the learning rate (188) |
 | `sft_mt_s` / `sft_self_mt_s` | SFT, shortest + the corrector's fitting text / + KL to the original student (190) |
 | `opd_c` / `opd_cf` | On-policy (weak teacher) / (refit teacher) |
 | `mix_c` / `mix_cf` | SFT + on-policy (weak teacher) / (refit teacher) |
