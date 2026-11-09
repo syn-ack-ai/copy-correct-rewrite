@@ -6,7 +6,7 @@ Benjamin Babeshkin
 
 ## Abstract
 
-A small agent model trained by a stronger one must gain the teacher's skill without losing its own. Under one pre-registered protocol, Gemma 4 E4B teaches Qwen3-1.7B and Gemma 4 E2B on contest coding, and E2B on a stream of agent decisions. We compare copying the teacher's verified answers (SFT), SFT with a pull toward a reference model (anchoring), on-policy distillation and retraining on the student's own solutions. Copying taught as much as any route, best with the shortest answers. With E2B as the student, copying also caused forgetting: E4B's text is familiar to E2B, and training on it made E2B more confident but worse at predicting text it never trained on. A KL pull toward the original student removed that damage without costing held-out solves. The student's own solutions did the same harm, and on-policy distillation stopped at its teacher's level. A state corrector, a small network that corrects the student's hidden states, did not store the teacher's coding knowledge in an adapter: fed E4B's states, it taught no better than fed the student's own. As an anchor, its gain came from the text it was fitted on; as an online teacher with keep and replay, it fixed the most decisions net of those it broke, in two seeds, and only when it read the teacher's states.
+A small agent model trained by a stronger one must gain the teacher's skill without losing its own. Under one pre-registered protocol, Gemma 4 E4B teaches Qwen3-1.7B and Gemma 4 E2B on contest coding, and E2B on a stream of agent decisions. We compare copying the teacher's verified answers (SFT), SFT with a pull toward a reference model (anchoring), on-policy distillation and retraining on the student's own solutions. Copying taught as much as any route, best with the shortest answers. With E2B as the student, copying also caused forgetting: E4B's text is familiar to E2B, and training on it made E2B more confident but worse at predicting text it never trained on. A KL pull toward the original student removed that damage without costing held-out solves. The student's own solutions did the same harm, and on-policy distillation stopped at its teacher's level. A state corrector, a small network that corrects the student's hidden states, did not store the teacher's coding knowledge in an adapter: fed E4B's states, it taught no better than fed the student's own. As an anchor, its gain came from the text it was fitted on; as an online teacher with keep and replay, it fixed nearly as many held decisions as the plain teacher (23 vs 25) and broke fewer (4-6 vs 11), in two seeds; a corrector reading the student's own states did not.
 
 ## 1 Introduction
 
@@ -17,7 +17,7 @@ To test whether a teacher's internal states can be stored, we built a *state cor
 - Copying verified answers teaches as much as any route, best with the shortest.
 - Same-family copying causes forgetting; a KL pull toward the original student removes it at no cost.
 - Self-written solutions move the student least yet make it overconfident; on-policy distillation stops at its teacher.
-- Teacher states helped only online: in coding, the corrector fed E4B's states taught no better than fed the student's own; on agent decisions it did.
+- Teacher states did not help in coding: the corrector fed E4B's states taught no better than fed the student's own. Online, on agent decisions with keep + replay, they did (one control seed).
 - Code, results, 40,000+ graded answers and pre-registrations (Appendix A).
 
 ## 2 Background
@@ -42,28 +42,28 @@ Figure 1. How the corrector connects teacher and student, and how its output tra
 
 L_fit = CE_corrected + 0.03 · ‖Δ‖ + 0.5 · H,  (3)
 
-with ‖Δ‖ the size of the change and H a do-no-harm term that keeps the student's own top-32 distribution wherever it already ranks the true token first. Rows: E4B's agent replies (50%), human prose (15%), Python code (15%), multiple-choice questions (10%) and stories (10%). The online correctors drew 20% of rows from E2B's own samples, without the size term.
+with ‖Δ‖ the size of the change and H a do-no-harm term that keeps the student's own top-32 distribution wherever it already ranks the true token first. Fitting rows are in Table 1; the online correctors had no size term.
 
-Table 1. Corrector parameters by student.
+Table 1. Corrector parameters and fitting rows by student.
 
-| Student | Self-corrector | Cross-model corrector (reads) |
-|---|---|---|
-| Qwen3-1.7B, coding | 78M | 83M (E4B) |
-| Gemma 4 E2B, coding | 65M | 75M (E4B) |
-| Gemma 4 E4B, coding (Section 4.4) | 121M | 110M (E2B) |
-| Gemma 4 E2B, online (Section 4.8) | 69M | 83M (E4B) |
+| Student | Self-corrector | Cross-model corrector (reads) | Fitting rows |
+|---|---|---|---|
+| Qwen3-1.7B, coding | 78M | 83M (E4B) | agent replies 50%, human prose 15%, Python code 15%, multiple-choice questions 10%, stories 10% |
+| Gemma 4 E2B, coding | 65M | 75M (E4B) | as above |
+| Gemma 4 E4B, coding (Section 4.4) | 121M | 110M (E2B) | as above |
+| Gemma 4 E2B, online (Section 4.8) | 69M | 83M (E4B) | agent replies 40%, E2B's own samples 20%, prose 15%, code 10%, questions 10%, stories 5% |
 
-**Use.** Run live, the corrected Qwen is far closer to the teacher on agent replies (0.67 nats against 1.39 alone; self-corrector 0.73). We test it as an anchor (eq. 1), an on-policy teacher (eq. 2), a rewriter, a distilled LoRA and an online teacher.
+**Use.** We test it as an anchor (eq. 1), an on-policy teacher (eq. 2), a rewriter, a distilled LoRA and an online teacher.
 
 ## 4 Experiments
 
 ### 4.1 Setup
 
-**Models.** The teacher is Gemma 4 E4B (4-bit QAT, dequantised to bf16). The coding students are Qwen3-1.7B (Yang et al., 2025), whose different tokenizer tests transfer across vocabularies, and Gemma 4 E2B.
+**Models.** The teacher is Gemma 4 E4B (4-bit QAT, dequantised to bf16). The coding students are Qwen3-1.7B (Yang et al., 2025), with a different tokenizer, and Gemma 4 E2B.
 
 **Training data.** 299 older LiveCodeBench problems (Jain et al., 2024; May 2023 to Sep 2024), each with E4B's own solution passing every hidden test.
 
-**Optimization.** A rank-64 LoRA (alpha 128) on the MLPs of layers 9-27, lr 3e-4 with warm-up and cosine decay, 299 steps of two rows, the same rows and order for every recipe.
+**Optimization.** A rank-64 LoRA (alpha 128) on the MLPs of layers 9-27 (Qwen; E2B 12-34), lr 3e-4 with warm-up and cosine decay, 299 steps of two rows, the same rows and order for every recipe.
 
 **Evaluation.** Greedy answers with a 768-token cap. *Fixed*: of the 200 training problems the untrained student fails, how many it now solves. *New*: the same for the 163 of 188 newer held-out problems (Sep 2024 to Apr 2025, easy and medium) it fails. *Held solved*: all 188. *Lost*: previously solved problems (25 held-out, 103 in the training pool) now failed. *Drift*: KL(original ‖ trained) and the change in cross-entropy on held-out human prose, Python code and stories, every seventh text of the corrector's sources, never trained on. *Fresh-question p(true)*: mean probability of the true answer on held-out multiple-choice questions. Counts are pooled over three seeds with exact sign tests on discordant problems; every comparison was pre-registered (Appendix C). Re-evaluation reproduced per-problem results exactly (0 of 495 differed), so arms pair across sessions; retraining is not exact (two plain-SFT runs differed by 6 held solves).
 
@@ -75,7 +75,7 @@ Figure 2. LoRAs trained on E4B's agent turns, on LiveCodeBench (1,739 problem-ru
 
 Every trained form beats the untrained student (p < 1e-6), and plain SFT leads the corrector's distilled self and cross-model forms (161 vs 125 problems solved by one form only, p = 0.04; 181 vs 114, p = 0.0001) while losing fewer solved problems (76, against 82-89). E4B's states added nothing a stored adapter kept (cross-model vs self, 113 vs 144); their live advantage was only 0.05-0.06 nats on agent replies. SFT with a KL pull toward the original lost the fewest (66) but gained the least (vs SFT 90 vs 195, p = 5e-10); on coding rows it did well (Section 4.5).
 
-In a separate coding run the anchors did not lose to SFT (held solved: SFT 143, anchors 146-152), and SDFT, in-context self-distillation (Shenfeld et al., 2026), lost clearly (vs SFT 25 vs 57, p = 0.0005). The shortest passing solutions (median 295 tokens, not 355) raised held solved from 149 to 160 and cut losses from 58 to 48 (clear in one seed).
+In a separate coding run the anchors did not lose to SFT (held solved: SFT 143, anchors 146-152). The shortest passing solutions (median 295 tokens, not 355) raised held solved from 149 to 160 and cut losses from 58 to 48 (clear in one seed).
 
 ### 4.3 Copying within the family forgets, and an anchor fixes it
 
@@ -85,22 +85,27 @@ Table 2. Gemma 4 E2B as the student, per-seed means over three seeds (alone: 57 
 
 | Recipe | Held solved | Fixed (of 151) | Lost (of 205) | Prose KL | Prose Δ loss |
 |---|---|---|---|---|---|
+| *Copying* | | | | | |
 | SFT | 68.0 | 119.7 | 15.7 | 0.29 | +0.69 |
 | Shortest rows | 68.0 | 123.0 | 15.7 | 0.29 | +0.57 |
 | Runbook rows | 67.0 | 106.0 | 19.3 | 0.29 | +0.85 |
+| *Less training (188)* | | | | | |
 | SFT, stopped at loss 0.24 | 56.7 | 79.0 | 40.7 | 0.16 | +0.09 |
 | SFT, a tenth of the learning rate | 68.7 | 77.7 | 23.7 | 0.12 | +0.18 |
+| *KL to the original (185, 193)* | | | | | |
 | Shortest + KL to the original, λ 0.3 | 70.0 | 108.0 | 15.0 | 0.031 | +0.01 |
 | Shortest + KL to the original, λ 1 | 69.0 | 90.7 | **13.3** | 0.016 | −0.04 |
 | Shortest + KL to the original, λ 3 | 60.7 | 59.7 | 24.3 | **0.014** | −0.05 |
+| *Corrector anchors (187)* | | | | | |
 | Shortest + self-corrector anchor | **72.0** | 95.3 | 16.0 | 0.33 | −0.60 |
 | Shortest + cross-model anchor | 69.7 | 99.3 | 15.3 | 0.32 | −0.58 |
+| *The corrector's fitting text (190)* | | | | | |
 | Shortest + the corrector's fitting text | 71.3 | 105.0 | 16.3 | 0.83 | −0.75 |
 | Shortest + fitting text + KL to the original | 68.7 | 83.3 | 17.3 | 0.81 | −0.76 |
 
-The likely cause is over-fitting familiar text. E2B's training loss on E4B's rows started low (0.28 nats), barely fell in the first epoch and reached 0.07 in the second; Qwen's ended at 0.24. Stopped there after one epoch, E2B's prose damage fell from +0.69 to +0.09, yet it moved twice as far as Qwen (KL 0.16 against 0.074), so part of the effect is the student. Stopping early is no fix: it kept no held gain and lost 122 solved problems (SFT 47).
+The likely cause is over-fitting familiar text. E2B's training loss on E4B's rows started low (0.28 nats), barely fell in the first epoch and reached 0.07 in the second; Qwen's ended at 0.24. Stopped there after one epoch, E2B's prose damage fell from +0.69 to +0.09, yet it moved twice as far as Qwen (KL 0.16 against 0.074), so part of the effect is the student. Stopping early is no fix: it kept no held gain and lost 122 solved problems (SFT 47). Both partly trained arms lost mostly trained problems (75 and 49, against 18), which SFT's second epoch turns into E4B's verified answers.
 
-Every anchor removed the damage in every seed. KL to the original kept E2B in place (prose KL 0.016, Δ loss −0.04) without costing held solves (207 vs 204). A lighter pull (λ = 0.3) also removed the damage and fixed 52 more (p = 0.0001); λ = 3 cost 25 held solves. Anchors to fresh Gemma correctors moved it as far as SFT, toward lower loss and softer predictions (Δ loss −0.58 to −0.60); held solves rose by at most 12 (216 vs 204, p = 0.22), at about 25 fewer fixes per seed. Training directly on the corrector's fitting text matched that anchor (held 214 vs 216, p = 0.90; prose Δ loss −0.75) and came closer on agent replies (0.50 vs 0.65), but moved E2B much further (prose KL 0.83 vs 0.33): the anchor's gain is its fitting text, delivered with less change. The KL pull did not reduce that (0.81): it covers only the coding replies. The Gemma correctors left E2B's coding loss unchanged.
+Every anchor removed the damage in every seed. KL to the original kept E2B in place (prose KL 0.016, Δ loss −0.04) without costing held solves (207 vs 204). A lighter pull (λ = 0.3) also removed the damage and fixed 52 more (p = 0.0001); λ = 3 cost 25 held solves. Anchors to fresh Gemma correctors moved it as far as SFT, toward lower loss and softer predictions (Δ loss −0.58 to −0.60); held solves rose by at most 12 (216 vs 204, p = 0.22), at about 25 fewer fixes per seed. Training directly on the corrector's fitting text matched that anchor (held 214 vs 216, p = 0.90; prose Δ loss −0.75) but moved E2B much further (prose KL 0.83 vs 0.33): the anchor's gain is its fitting text, delivered with less change. The KL pull did not reduce that (0.81): it covers only the coding replies. The Gemma correctors left E2B's coding loss unchanged.
 
 ![E2B per recipe](figures/fig9_e2b.png)
 
@@ -112,7 +117,7 @@ With E2B's 148 passing answers teaching E4B (weak-to-strong; Burns et al., 2023)
 
 ### 4.5 What keeps the student where it was
 
-Back on Qwen, where copying left untaught text unharmed, the anchors show their own effect (Table 3, Figure 4). On the shortest rows, KL to the original moved the student 6-9× less than the other copying recipes and left prose loss unchanged. The corrector anchor moved it as far as SFT, toward much lower loss and softer predictions (entropy +0.66 nats on prose, against +0.29 for SFT). It never sees prose; the gain comes from the corrector's prose fit.
+Back on Qwen, where copying left untaught text unharmed, the anchors show their own effect (Table 3, Figure 4). On the shortest rows, KL to the original moved the student 6-9× less than the other copying recipes; the corrector anchor moved it as far as SFT, toward lower loss and softer predictions (prose entropy +0.66, SFT +0.29), from the corrector's prose fit.
 
 Table 3. Drift from the original Qwen on untaught text, three-seed means.
 
@@ -158,7 +163,7 @@ Figure 5. Every coding recipe, three seeds, numbered by held-out rank; best is b
 
 ### 4.7 On-policy distillation stops at its teacher
 
-On-policy distillation through the self-corrector reached 116 held solves, its teacher's own live level (117; that teacher put 0.70 nats per token on E4B's solutions, the student alone 1.00). Refit on the 299 solutions (0.49 nats), the teacher solves 151 live and the student 148 (Table 6, Figure 6), beating the weak-teacher version in every seed but only tying SFT (38 vs 39) and losing more training problems (59 vs 42). As a rewriter it copied E4B's text (similarity 0.98).
+On-policy distillation through the self-corrector reached 116 held solves, its teacher's own live level (117; it fit E4B's solutions at 0.70 nats, the student 1.00). Refit on the 299 solutions (0.49 nats), the teacher solves 151 live and the student 148 (Table 6, Figure 6), beating the weak-teacher version in every seed but only tying SFT (38 vs 39) and losing more training problems (59 vs 42). As a rewriter it copied E4B's text (similarity 0.98).
 
 Table 6. Held solved, three seeds pooled.
 
@@ -186,7 +191,7 @@ Table 7. Online learning, one seed per setup (D: two). Gate (220 held decisions)
 | D, seed 2 | 0.749 | 0.017 | 0.021 | 23 / 6 |
 | Self-corrector + keep + replay (control) | 0.755 | 0.025 | 0.073 | 13 / 5 |
 
-Keep + replay hurt the plain teacher (A to C: 11 fewer fixed) but helped the corrector teacher (B to D: 7 more). D had the best net gate result (+19, against +14 for A) and beat C on paired decisions (17 vs 6, p = 0.035). D's second seed reproduced it, differing on 6 of 220 decisions. The gain needs E4B's states: the same setup with the self-corrector, which reads E2B's own states, came as close to the teacher (0.755) but fixed no more than C (net +8; D beat it 12 vs 1 and 12 vs 3, p = 0.003 and 0.035). Seed 3 of D, seeds 2-3 of C, a blend matched to the corrector's pull (akin to a teacher assistant; Mirzadeh et al., 2019) and a live test of D's LoRA were still running.
+Keep + replay hurt the plain teacher (A to C: 11 fewer fixed; C sits closer yet flips fewer top choices) but helped the corrector teacher (B to D: 7 more), and D matched B's closeness at a third of its drift. D had the best net gate result (+19; A +14, within noise, p = 0.40) and beat C on paired decisions (17 vs 6 and 17 vs 8 for its two seeds, p = 0.035 and 0.11). D's second seed reproduced it, differing on 6 of 220 decisions. Without E4B's states it fell away: the same setup with the self-corrector, which reads E2B's own states, came as close to the teacher (0.755), moved held-question answers most (0.073) and fixed no more than C (net +8; D beat it 12 vs 1 and 12 vs 3, p = 0.003 and 0.035). Seed 3 of D, seeds 2-3 of C, a blend matched to the corrector's pull (akin to a teacher assistant; Mirzadeh et al., 2019), a teacher gated by E2B's disagreement and a live test of D's LoRA were still running.
 
 ![Online curves](figures/fig7_online.png)
 
@@ -196,9 +201,9 @@ Figure 7. Held cross-entropy to the teacher and drift on untaught text over the 
 
 **For training small agents.** Train on the teacher's shortest verified answers with a light KL pull toward the original student, which within the family removed copying's damage at no cost; check the teacher's fit before on-policy distillation; and measure forgetting on held-out human text, with entropy, since loss on teacher text rewards imitation.
 
-**Where the corrector helps.** As an anchor it delivers its fitting text with less change; as an online teacher with keep + replay it gave the best net result, but only with the teacher's states.
+**Where the corrector helps.** As an anchor it delivers its fitting text with less change; as an online teacher with keep + replay it broke few decisions while fixing nearly as many as the plain teacher, but not when it read the student's own states.
 
-**Limitations.** Two coding students and one teacher; the online test has one seed per setup (D two). Pooled p-values are descriptive; differences under about 10 held solves are within noise. The KL strength sweep and the multi-task control ran only for E2B. Given 768 more tokens, 59 of the 176 lost answers cut at the cap passed (9% of all losses; 18-25% for refit-teacher recipes). Correctors had 600 fitting steps; longer ones gave mostly worse LoRAs (one seed).
+**Limitations.** Two coding students; the online test has one seed per setup (D two). Pooled p-values are descriptive; differences under about 10 held solves are within noise. The KL strength sweep and the multi-task control ran only for E2B. Given 768 more tokens, 59 of the 176 lost answers cut at the cap passed (9% of all losses; 18-25% for refit-teacher recipes). Correctors had 600 fitting steps; longer ones gave mostly worse LoRAs (one seed). Unlike the coding correctors, the online ones had no size term and saw some of E2B's own samples, confounding the coding-online contrast.
 
 **Ethical considerations.** Fitting and drift prose and stories come from locally held books, not released. Model-written code ran only in sandboxed interpreters.
 
@@ -206,9 +211,9 @@ Figure 7. Held cross-entropy to the teacher and drift on untaught text over the 
 
 **Distillation.** GKD (Agarwal et al., 2023), MiniLLM (Gu et al., 2023) and DistiLLM (Ko et al., 2024) distil on the student's own samples with reverse or skewed KL; our on-policy teacher is built from the corrector, whose fit bounds the gain.
 
-**Training on own solutions.** ReST (Gulcehre et al., 2023), ReST-EM (Singh et al., 2023), rejection-sampling fine-tuning (Yuan et al., 2023) and STaR (Zelikman et al., 2022) retrain on verified own samples; Terminal-RSI (Yang et al., 2026) adds plan-guided self-rewriting. The damage to untaught text we report is rarely measured; it resembles entropy collapse in reasoning RL (Cui et al., 2025).
+**Training on own solutions.** ReST (Gulcehre et al., 2023), ReST-EM (Singh et al., 2023), rejection-sampling fine-tuning (Yuan et al., 2023) and STaR (Zelikman et al., 2022) retrain on verified own samples; Terminal-RSI (Yang et al., 2026) adds plan-guided self-rewriting. The damage to untaught text we report resembles entropy collapse in reasoning RL (Cui et al., 2025).
 
-**Forgetting.** Learning without forgetting (Li and Hoiem, 2016) and EWC (Kirkpatrick et al., 2016) protect old skills with output and weight penalties, and LoRA learns less and forgets less (Biderman et al., 2024); RL's Razor (Shenfeld et al., 2025) ties forgetting to KL from the original. Self-distillation fine-tuning (Yang et al., 2024) rewrites targets in the model's own words; in-context self-distillation (Shenfeld et al., 2026) is our SDFT arm.
+**Forgetting.** Learning without forgetting (Li and Hoiem, 2016) and EWC (Kirkpatrick et al., 2016) protect old skills with output and weight penalties, and LoRA learns less and forgets less (Biderman et al., 2024); RL's Razor (Shenfeld et al., 2025) ties forgetting to KL from the original.
 
 **Cross-model transfer.** Logit-space methods align vocabularies (Boizard et al., 2024; Zhang et al., 2024), model fusion merges distributions (Wan et al., 2024), and model stitching joins representations (Lenc and Vedaldi, 2014; Bansal et al., 2021). The corrector descends from Swarm Telepathy (Alabdulkareem et al., 2026).
 
@@ -258,13 +263,9 @@ S.-I. Mirzadeh, M. Farajtabar, A. Li, N. Levine, A. Matsukawa, and H. Ghasemzade
 
 I. Shenfeld, J. Pari, and P. Agrawal (2025). RL's Razor: Why Online Reinforcement Learning Forgets Less. arXiv:2509.04259. https://arxiv.org/abs/2509.04259
 
-I. Shenfeld, M. Damani, J. Hübotter, and P. Agrawal (2026). Self-Distillation Enables Continual Learning. arXiv:2601.19897. https://arxiv.org/abs/2601.19897
-
 A. Singh, J. D. Co-Reyes, R. Agarwal, A. Anand, P. Patil, et al. (2023). Beyond Human Data: Scaling Self-Training for Problem-Solving with Language Models. arXiv:2312.06585. https://arxiv.org/abs/2312.06585
 
 F. Wan, X. Huang, D. Cai, X. Quan, W. Bi, and S. Shi (2024). Knowledge Fusion of Large Language Models. arXiv:2401.10491. https://arxiv.org/abs/2401.10491
-
-Z. Yang, T. Pang, H. Feng, H. Wang, W. Chen, et al. (2024). Self-Distillation Bridges Distribution Gap in Language Model Fine-Tuning. arXiv:2402.13669. https://arxiv.org/abs/2402.13669
 
 A. Yang, A. Li, B. Yang, B. Zhang, B. Hui, et al. (2025). Qwen3 Technical Report. arXiv:2505.09388. https://arxiv.org/abs/2505.09388
 
@@ -278,7 +279,7 @@ S. Zhang, X. Zhang, Z. Sun, Y. Chen, and J. Xu (2024). Dual-Space Knowledge Dist
 
 ## Appendix A Code
 
-Code, per-problem results, over 40,000 graded answers and the pre-registration log (addenda 165-194) are public at https://github.com/syn-ack-ai/copy-correct-rewrite (Apache-2.0); the corrector is `code/transfer/xbridge.py`. Not included: text corpora, competition data, problem statements and weights.
+Code, per-problem results, over 40,000 graded answers and the pre-registration log (addenda 165-194) are public at https://github.com/syn-ack-ai/copy-correct-rewrite (Apache-2.0). Not included: text corpora, competition data, problem statements and weights.
 
 ## Appendix B AI use
 
