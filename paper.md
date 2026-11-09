@@ -79,7 +79,7 @@ In a separate coding run the anchors did not lose to SFT (held solved: SFT 143, 
 
 ### 4.3 Copying within the family forgets, and an anchor fixes it
 
-E2B replaced Qwen, all else equal; it starts stronger (57 held problems solved alone, against 25) and finds E4B's solutions nearly its own (0.27 nats per token, against 1.05). Gains were smaller, about 11 held problems per seed against 19-30 for Qwen. Runbook rows lost their advantage (fixed 61 vs 111 for SFT, p = 0.0002): E2B's rewrites were no closer to it than E4B's text (0.38 vs 0.27 nats). Every copying recipe damaged untaught text (Table 2, Figure 3): 1.6-13× Qwen's KL, sharper predictions (entropy −0.3 to −0.8) and higher loss on prose, code and stories.
+E2B replaced Qwen, all else equal; it starts stronger (57 held problems solved alone, against 25) and finds E4B's solutions nearly its own (0.27 nats per token, against 1.05). Gains were smaller, about 11 held problems per seed against 19-30 for Qwen. Runbook rows lost their advantage (fixed 61 vs 111 for SFT, p = 0.0002): E2B's rewrites were no closer to it than E4B's text (0.38 vs 0.27 nats). Every copying recipe damaged untaught text (Table 2, Figure 3): 1.6-13× Qwen's KL, sharper predictions (entropy −0.3 to −0.8) and higher loss on prose, code and stories. Low-perplexity training is reported to forget less (Wu et al., 2025), measured on tasks; E2B too lost a smaller share of solved problems (8% vs Qwen's 15%), its damage showing in untaught-text loss and entropy.
 
 Table 2. Gemma 4 E2B as the student, per-seed means over three seeds (alone: 57 held solved).
 
@@ -209,13 +209,13 @@ Figure 7. Held cross-entropy to the teacher and drift on untaught text over the 
 
 ## 6 Related Work
 
-**Distillation.** GKD (Agarwal et al., 2023), MiniLLM (Gu et al., 2023) and DistiLLM (Ko et al., 2024) distil on the student's own samples with reverse or skewed KL; our on-policy teacher is built from the corrector, whose fit bounds the gain.
+**Distillation.** GKD (Agarwal et al., 2023), MiniLLM (Gu et al., 2023) and DistiLLM (Ko et al., 2024) distil on the student's own samples with reverse or skewed KL; our on-policy teacher is built from the corrector, whose fit bounds the gain. Reachable targets also drive ProKT (Shi et al., 2021), DIST (Huang et al., 2022) and PACED (Xu et al., 2026), which makes expert solutions attainable, like our runbook rows.
 
 **Training on own solutions.** ReST (Gulcehre et al., 2023), ReST-EM (Singh et al., 2023), rejection-sampling fine-tuning (Yuan et al., 2023) and STaR (Zelikman et al., 2022) retrain on verified own samples; Terminal-RSI (Yang et al., 2026) adds plan-guided self-rewriting. The damage to untaught text we report resembles entropy collapse in reasoning RL (Cui et al., 2025).
 
-**Forgetting.** Learning without forgetting (Li and Hoiem, 2016) and EWC (Kirkpatrick et al., 2016) protect old skills with output and weight penalties, and LoRA learns less and forgets less (Biderman et al., 2024); RL's Razor (Shenfeld et al., 2025) ties forgetting to KL from the original.
+**Forgetting.** Learning without forgetting (Li and Hoiem, 2016) and EWC (Kirkpatrick et al., 2016) protect old skills with output and weight penalties, and LoRA learns less and forgets less (Biderman et al., 2024); RL's Razor (Shenfeld et al., 2025) ties forgetting to KL from the original. On-policy distillation from the original model restores lost skills (Lu, 2025), continual variants add replay (Chen et al., 2026), and EAFT gates loss by entropy (Diao et al., 2026).
 
-**Cross-model transfer.** Logit-space methods align vocabularies (Boizard et al., 2024; Zhang et al., 2024), model fusion merges distributions (Wan et al., 2024), and model stitching joins representations (Lenc and Vedaldi, 2014; Bansal et al., 2021). The corrector descends from Swarm Telepathy (Alabdulkareem et al., 2026).
+**Cross-model transfer.** Logit-space methods align vocabularies (Boizard et al., 2024; Zhang et al., 2024), model fusion merges distributions (Wan et al., 2024), and model stitching joins representations (Lenc and Vedaldi, 2014; Bansal et al., 2021). The corrector descends from Swarm Telepathy (Alabdulkareem et al., 2026). Residual-learning distillation projects teacher states for the student (On et al., 2026); steering-vector distillation stores a training-time intervention in a LoRA (Blank et al., 2026).
 
 ## 7 Conclusion
 
@@ -229,13 +229,19 @@ A. Alabdulkareem, I. Tenison, Y. Zhang, Y. Zhu, B. Katz, and D. Gutfreund (2026)
 
 Y. Bansal, P. Nakkiran, and B. Barak (2021). Revisiting Model Stitching to Compare Neural Representations. arXiv:2106.07682. https://arxiv.org/abs/2106.07682
 
-N. Boizard, K. El Haddad, C. Hudelot, and P. Colombo (2024). Towards Cross-Tokenizer Distillation: the Universal Logit Distillation Loss for LLMs. arXiv:2402.12030. https://arxiv.org/abs/2402.12030
-
 D. Biderman, J. Portes, J. J. Gonzalez Ortiz, M. Paul, P. Greengard, et al. (2024). LoRA Learns Less and Forgets Less. arXiv:2405.09673. https://arxiv.org/abs/2405.09673
+
+C. Blank, A. Bhatia, S. Rajamanoharan, A. Conmy, and N. Nanda (2026). Subliminal Learning Is Steering Vector Distillation. arXiv:2606.00995. https://arxiv.org/abs/2606.00995
+
+N. Boizard, K. El Haddad, C. Hudelot, and P. Colombo (2024). Towards Cross-Tokenizer Distillation: the Universal Logit Distillation Loss for LLMs. arXiv:2402.12030. https://arxiv.org/abs/2402.12030
 
 C. Burns, P. Izmailov, J. H. Kirchner, B. Baker, L. Gao, et al. (2023). Weak-to-Strong Generalization: Eliciting Strong Capabilities With Weak Supervision. arXiv:2312.09390. https://arxiv.org/abs/2312.09390
 
+Y. Chen, T. Zhu, M. Zhang, X. Chen, J. Huang, et al. (2026). On-Policy Replay for Continual Supervised Fine-Tuning. arXiv:2605.29495. https://arxiv.org/abs/2605.29495
+
 G. Cui, Y. Zhang, J. Chen, L. Yuan, Z. Wang, et al. (2025). The Entropy Mechanism of Reinforcement Learning for Reasoning Language Models. arXiv:2505.22617. https://arxiv.org/abs/2505.22617
+
+M. Diao, L. Yang, W. Gong, Y. Zhang, Z. Yan, et al. (2026). Entropy-Adaptive Fine-Tuning: Resolving Confident Conflicts to Mitigate Forgetting. arXiv:2601.02151. https://arxiv.org/abs/2601.02151
 
 Google (2026). Gemma 4 E2B and E4B, instruction-tuned QAT checkpoints (w4a16). Hugging Face model cards google/gemma-4-E2B-it-qat-w4a16-ct (revision 971342c) and google/gemma-4-E4B-it-qat-w4a16-ct (revision 6cd26aa).
 
@@ -246,6 +252,8 @@ C. Gulcehre, T. L. Paine, S. Srinivasan, K. Konyushkova, L. Weerts, et al. (2023
 G. Hinton, O. Vinyals, and J. Dean (2015). Distilling the Knowledge in a Neural Network. arXiv:1503.02531. https://arxiv.org/abs/1503.02531
 
 E. J. Hu, Y. Shen, P. Wallis, Z. Allen-Zhu, Y. Li, et al. (2021). LoRA: Low-Rank Adaptation of Large Language Models. arXiv:2106.09685. https://arxiv.org/abs/2106.09685
+
+T. Huang, S. You, F. Wang, C. Qian, and C. Xu (2022). Knowledge Distillation from A Stronger Teacher. NeurIPS 2022. arXiv:2205.10536. https://arxiv.org/abs/2205.10536
 
 N. Jain, K. Han, A. Gu, W.-D. Li, F. Yan, et al. (2024). LiveCodeBench: Holistic and Contamination Free Evaluation of Large Language Models for Code. arXiv:2403.07974. https://arxiv.org/abs/2403.07974
 
@@ -259,13 +267,23 @@ K. Lenc and A. Vedaldi (2014). Understanding image representations by measuring 
 
 Z. Li and D. Hoiem (2016). Learning without Forgetting. arXiv:1606.09282. https://arxiv.org/abs/1606.09282
 
+K. Lu and Thinking Machines Lab (2025). On-Policy Distillation. Connectionism (Thinking Machines Lab blog). https://thinkingmachines.ai/blog/on-policy-distillation/
+
 S.-I. Mirzadeh, M. Farajtabar, A. Li, N. Levine, A. Matsukawa, and H. Ghasemzadeh (2019). Improved Knowledge Distillation via Teacher Assistant. arXiv:1902.03393. https://arxiv.org/abs/1902.03393
 
+T. On, H. Pei, L. Lausen, and G. Karypis (2026). Knowledge Distillation for Large Language Models through Residual Learning. ICLR 2026. https://openreview.net/forum?id=Dh6KxUxG20
+
 I. Shenfeld, J. Pari, and P. Agrawal (2025). RL's Razor: Why Online Reinforcement Learning Forgets Less. arXiv:2509.04259. https://arxiv.org/abs/2509.04259
+
+W. Shi, Y. Song, H. Zhou, B. Li, and L. Li (2021). Follow Your Path: a Progressive Method for Knowledge Distillation. ECML-PKDD 2021. arXiv:2107.09305. https://arxiv.org/abs/2107.09305
 
 A. Singh, J. D. Co-Reyes, R. Agarwal, A. Anand, P. Patil, et al. (2023). Beyond Human Data: Scaling Self-Training for Problem-Solving with Language Models. arXiv:2312.06585. https://arxiv.org/abs/2312.06585
 
 F. Wan, X. Huang, D. Cai, X. Quan, W. Bi, and S. Shi (2024). Knowledge Fusion of Large Language Models. arXiv:2401.10491. https://arxiv.org/abs/2401.10491
+
+C.-C. Wu, Z. R. Tam, C.-Y. Lin, Y.-N. Chen, S.-H. Sun, et al. (2025). Mitigating Forgetting in LLM Fine-Tuning via Low-Perplexity Token Learning. NeurIPS 2025. arXiv:2501.14315. https://arxiv.org/abs/2501.14315
+
+Y. Xu, H. Sang, Z. Zhou, R. He, and Z. Wang (2026). PACED: Distillation and On-Policy Self-Distillation at the Frontier of Student Competence. arXiv:2603.11178. https://arxiv.org/abs/2603.11178
 
 A. Yang, A. Li, B. Yang, B. Zhang, B. Hui, et al. (2025). Qwen3 Technical Report. arXiv:2505.09388. https://arxiv.org/abs/2505.09388
 
