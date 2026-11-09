@@ -34,7 +34,7 @@ L = Σ_i KL(p_θ ‖ t) over the positions i of ŷ.  (2)
 
 ![The corrector](figures/fig1_corrector.png)
 
-Figure 1. How the corrector connects teacher and student, and how its output trains the student.
+Figure 1. How the corrector connects teacher and student.
 
 **Structure.** A gated MLP reads hidden states at 50% and 65% depth in a first pass. In a second pass it writes a gated, additive correction into the student at 35% depth and above. The *self-corrector* reads the student's own states; the *cross-model corrector* reads the teacher's, aligned token by token across tokenizers (Table 1).
 
@@ -53,7 +53,7 @@ Table 1. Corrector parameters and fitting rows by student.
 | Gemma 4 E4B, coding (Section 4.4) | 121M | 110M (E2B) | as above |
 | Gemma 4 E2B, online (Section 4.8) | 69M | 83M (E4B) | agent replies 40%, E2B's own samples 20%, prose 15%, code 10%, questions 10%, stories 5% |
 
-**Use.** We test it as an anchor (eq. 1), an on-policy teacher (eq. 2), a rewriter, a distilled LoRA and an online teacher.
+**Use.** Live, the corrected Qwen is far closer to the teacher on agent replies (0.67 nats vs 1.39 alone; self-corrector 0.73). We test it as an anchor (eq. 1), an on-policy teacher (eq. 2), a rewriter, a distilled LoRA and an online teacher.
 
 ## 4 Experiments
 
@@ -65,7 +65,7 @@ Table 1. Corrector parameters and fitting rows by student.
 
 **Optimization.** A rank-64 LoRA (alpha 128) on the MLPs of layers 9-27 (Qwen; E2B 12-34), lr 3e-4 with warm-up and cosine decay, 299 steps of two rows, the same rows and order for every recipe.
 
-**Evaluation.** Greedy answers with a 768-token cap. *Fixed*: of the 200 training problems the untrained student fails, how many it now solves. *New*: the same for the 163 of 188 newer held-out problems (Sep 2024 to Apr 2025, easy and medium) it fails. *Held solved*: all 188. *Lost*: previously solved problems (25 held-out, 103 in the training pool) now failed. *Drift*: KL(original ‖ trained) and the change in cross-entropy on held-out human prose, Python code and stories, every seventh text of the corrector's sources, never trained on. *Fresh-question p(true)*: mean probability of the true answer on held-out multiple-choice questions. Counts are pooled over three seeds with exact sign tests on discordant problems; every comparison was pre-registered (Appendix C). Re-evaluation reproduced per-problem results exactly (0 of 495 differed), so arms pair across sessions; retraining is not exact (two plain-SFT runs differed by 6 held solves).
+**Evaluation.** Greedy answers with a 768-token cap. *Fixed*: of the 200 training problems the untrained student fails, how many it now solves. *New*: the same for the 163 of 188 newer held-out problems (Sep 2024 to Apr 2025, easy and medium) it fails. *Held solved*: all 188. *Lost*: previously solved problems (25 held-out, 103 in the training pool) now failed. *Drift*: KL(original ‖ trained) and the change in cross-entropy on held-out human prose, Python code and stories, every seventh text of the corrector's sources, never trained on. *Fresh-question p(true)*: mean probability of the true answer on held-out multiple-choice questions. Counts are pooled over three seeds with exact sign tests on discordant problems; every comparison was pre-registered (Appendix A). Re-evaluation reproduced per-problem results exactly (0 of 495 differed), so arms pair across sessions; retraining is not exact (two plain-SFT runs differed by 6 held solves).
 
 ### 4.2 Copying the teacher's verified text teaches the most
 
@@ -117,7 +117,7 @@ With E2B's 148 passing answers teaching E4B (weak-to-strong; Burns et al., 2023)
 
 ### 4.5 What keeps the student where it was
 
-Back on Qwen, where copying left untaught text unharmed, the anchors show their own effect (Table 3, Figure 4). On the shortest rows, KL to the original moved the student 6-9× less than the other copying recipes; the corrector anchor moved it as far as SFT, toward lower loss and softer predictions (prose entropy +0.66, SFT +0.29), from the corrector's prose fit.
+Back on Qwen, where copying left untaught text unharmed, the anchors show their own effect (Table 3, Figure 4). On the shortest rows, KL to the original moved the student 6-9× less than the other copying recipes; the corrector anchor moved it as far as SFT, toward lower loss and softer predictions, from the corrector's prose fit.
 
 Table 3. Drift from the original Qwen on untaught text, three-seed means.
 
@@ -279,33 +279,8 @@ S. Zhang, X. Zhang, Z. Sun, Y. Chen, and J. Xu (2024). Dual-Space Knowledge Dist
 
 ## Appendix A Code
 
-Code, per-problem results, over 40,000 graded answers and the pre-registration log (addenda 165-194) are public at https://github.com/syn-ack-ai/copy-correct-rewrite (Apache-2.0). Not included: text corpora, competition data, problem statements and weights.
+Code, per-problem results, over 40,000 graded answers, the pre-registration log (addenda 165-197) and a scorecard of which predictions held are public at https://github.com/syn-ack-ai/copy-correct-rewrite (Apache-2.0). Not included: text corpora, competition data, problem statements and weights.
 
 ## Appendix B AI use
 
 The author carried out this study with Claude Opus 5.5 (Anthropic) as an AI research assistant. The author set the research direction, chose the questions and approved each pre-registered experiment; Claude Opus 5.5 designed and ran the experiments, wrote the code and drafted the text. Separate Claude instances reviewed new code and drafts, and verified the numbers.
-
-## Appendix C Pre-registration scorecard
-
-Table 8. Predictions that held, per pre-registered addendum.
-
-| Addendum (question) | Predictions held | Pre-set bar |
-|---|---|---|
-| 169d (corrector forms vs dose-matched SFT, agent replies) | 0 of 4 | failed |
-| 170 (online learning) | 3 of 5 | — |
-| 174 (SFT with anchors, SDFT) | 3 of 5 | not met; states added nothing on held |
-| 178 (wide coding) | 0 of 1 (reversed) | — |
-| 179 (on-policy, shortest rows) | 2 of 3 | — |
-| 181 (refit teacher, rewrites) | 9 of 12 | not met |
-| 182 (runbook rows) | 8 of 11 | missed by one |
-| 184c (runbook rows + self-anchor) | 4 of 6 | not met |
-| 185 (SFT + KL to the original) | 5 of 6 | — |
-| 186 (Gemma 4 E2B as the coding student) | 5 of 7 | — |
-| 187 (two-way, fresh Gemma correctors) | 5 of 7 | not met; cross-model = self |
-| 188 (matched-loss run, E2B) | 5 of 7 | not met: stopping early cut the damage but kept no held gain |
-| 189 (online setup D: replication, controls) | 4 of 4 so far (seed 2, self-corrector control) | running |
-| 190 (multi-task control for the corrector anchor) | 4 of 5 | met: the anchor's gain is its fitting text |
-| 191 (per-user grafts) | — | separate paper |
-| 192 (online vs offline SFT teachers) | — | running |
-| 193 (KL strength sweep) | 2 of 4 | not met: λ 0.3 holds, λ 3 costs held solves |
-| 194a (longer-cap re-grade of capped losses) | 6 of 6 | — (9% of losses recovered) |

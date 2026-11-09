@@ -1,7 +1,7 @@
-# Pre-registration log: addenda 165-196
+# Pre-registration log: addenda 165-197
 
 This file is an excerpt of the project's running pre-registration log. It holds the addenda from "Addendum 165" through the end of
-"Addendum 196", copied verbatim and in their original order (addendum 180 sits between 177 and 178 in the source). Each addendum states its
+"Addendum 197", copied verbatim and in their original order (addendum 180 sits between 177 and 178 in the source). Each addendum states its
 design and its predictions before the run; results and readings were appended after the run. Addenda without a result were still
 running when this excerpt was taken.
 
@@ -1431,3 +1431,17 @@ Success bar for "D's online gain carries to live episodes": D resolves at least 
 Order afterwards: 195 (its runner waits for this runner's end line, exactly "HH:MM X196_DONE" or "HH:MM X196_HALTED", in ~/x195/logs/x196.log on the 4090), then the RSI pilot, then x184.
 
 **Amendment 196a (2026-11-08, 20:02, before any run; user: "can we move this up so we can test it asap, because this seems like a novel way to do training now of smaller models").** 196 now runs right after the 189 queue (after D seed 3, about 00:30), ahead of 192. The runner waits for the exact ONLINE_REP_DONE line instead of ONLINE_REP3_DONE. The 4090 pass-through (online_rep2b_4090.sh) also waits for 196's end line before it writes ONLINE_REP2_DONE, so 192 starts only after 196. 195 still waits for 192 and 196, and the RSI pilot and x184 follow as before. No other change. Expected: the blend gate about 21:15, C seeds 2-3 on Colab about 23:00, D seed 3 about 00:30, 196 about 06:00-10:00.
+
+## Addendum 197 (2026-11-08, 20:25; built, in review, not yet run): a disagreement-gated teacher, the control Fable 5.1 asked for (user: "yes, fix it", answering "Add the confidence-gated teacher control? ... on the 4090 after the live test")
+
+Why (Fable 5.1's review of draft 10j): the corrector's fit includes a do-no-harm term that keeps E2B's own distribution wherever E2B already ranks the true token first. So D's target may be "E2B where E2B is right, E4B-informed where it is wrong", which by construction breaks fewer agreeing decisions and does not fight keep + replay. The self-corrector control shares that term and fixed only 13, so the term alone does not give the fixes. But nothing yet separates "E4B's states" from "E4B's own output, used only where E2B disagrees". The blend control mixes uniformly, so it cannot separate them either.
+
+Design: setup D with a different target, everything else identical (code8 = code7 plus this teacher; seed 1; keep 1.0, replay every 4; small pass, 600 items, the 240-point gate; 4090). Teacher "gated": at every reply position, E4B's next-token distribution where base E2B's top token differs from E4B's, and base E2B's own distribution elsewhere (online.py ON_ONL_TEACH=gated; the share of positions taken from E4B is recorded). Queue: after 196's end line, before 192 (the 4090 pass-through now waits for 197's end line, exactly "HH:MM X197_DONE" or "HH:MM X197_HALTED" in ~/toyq/behave/logs/x197.log), then 195, the RSI pilot and x184.
+
+Predictions (gate on the same 220 decisions; D seed 1: 23 fixed, 4 broken, +19; seed 2: 23, 6, +17):
+1. The gated teacher breaks at most 6 of the 168 agreeing decisions (70%).
+2. It fixes at least 4 fewer than D's two-seed mean of 23 (55%).
+3. Its net is at most +15 (55%).
+4. Its held CE at item 600 is between D's (0.75) and C's (0.775) (55%).
+
+Reading rule: if the gated teacher nets at least +16 (within D's seed range minus 1), the paper says D's gain is explained by gating on E2B's disagreement, a simpler recipe needing no corrector, and the "teacher states" claim is withdrawn. If it nets at most +12, E4B's states through the corrector add something beyond gating, with the caveat of one seed. In between, the paper reports both and draws no mechanism claim.

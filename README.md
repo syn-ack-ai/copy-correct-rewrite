@@ -58,7 +58,8 @@ code/
   transfer/              experiment code (Python)
   colab/                 session scripts for Colab G4 runs
   dreamer/               launchers and runners for the local RTX 4090
-PREREGISTRATION.md       the pre-registration log, addenda 165-194 (designs and predictions written before each run)
+PREREGISTRATION.md       the pre-registration log, addenda 165-197
+SCORECARD.md             which pre-registered predictions held, per addendum (designs and predictions written before each run)
 MANIFEST.md              every file, its size and its purpose
 LICENSE                  Apache License 2.0
 ```

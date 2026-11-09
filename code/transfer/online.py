@@ -1444,7 +1444,7 @@ def blend_alpha(mT, mS, gT, br, ids, items, tok, eos):
 
 def train_online():
     from peft import LoraConfig, get_peft_model
-    assert ONL_TEACH in ("direct", "bridge", "control", "blend", "sft"); ids, tr, held = data(); mT, mS, gT, gS = load_models(); tok = X.tok_(); call, sub = call_ids(tok); eos = eos_of(mS)
+    assert ONL_TEACH in ("direct", "bridge", "control", "blend", "sft", "gated"); ids, tr, held = data(); mT, mS, gT, gS = load_models(); tok = X.tok_(); call, sub = call_ids(tok); eos = eos_of(mS)
     rng = np.random.default_rng(170 + SEEDOFF); torch.manual_seed(170 + SEEDOFF); t0 = time.time()   # 189: ON_SEED (0 = every earlier online run)
     keep = [r for r in tr if not after_submit(ids, r, call, sub)]; perm = rng.permutation(len(keep)); stream = [keep[i] for i in perm[:ONL_N]]
     calib = [keep[i] for i in perm[ONL_N:ONL_N + ONL_NCALB]] if ONL_TEACH == "blend" else []   # 189: outside the stream
@@ -1471,7 +1471,7 @@ def train_online():
     opt = torch.optim.AdamW(params, lr=3e-4, weight_decay=0.0); sched = lambda s_: min(1.0, (s_ + 1) / 15)  # noqa: E731   # review 11-07: flat after warm-up (online: no late damping)
     tag = f"{ONL_TEACH}{'_keep' if ONL_KEEP > 0 else ''}{'_replay' if ONL_REPLAY > 0 else ''}{os.environ.get('ON_BEH_TAG', '')}"
     log("online: teacher", ONL_TEACH, "| weight", alpha, "| seed offset", SEEDOFF, "| stream", len(stream), "items | keep", ONL_KEEP, "replay every", ONL_REPLAY, "| LoRA layers", lay, "| eval every", ONL_EVAL, "on", len(hpick), "held points and", len(mpick), "untaught rows")
-    preq, curve, seen, runs_seen, repos_seen = [], [], [], set(), set()
+    preq, curve, seen, runs_seen, repos_seen = [], [], [], set(), set(); gfrac = []   # 197: share of tokens where the gated teacher takes E4B's distribution
 
     def evaluate(i):
         pm.eval(); sc = [point_scores(mT, mS, pm, *seq(ids, r)[:3], r, call, ("on", "off") if i == 0 else ("on",)) for r in hpick]
@@ -1502,6 +1502,10 @@ def train_online():
                     ld = Fn.log_softmax(mT(input_ids=s_i, logits_to_keep=L + 1, use_cache=False).logits[0, :-1].float(), -1)
                     l0 = Fn.log_softmax(mS(input_ids=s_i, logits_to_keep=L + 1, use_cache=False).logits[0, :-1].float(), -1)
                     tgt = Fn.log_softmax(alpha * ld + (1 - alpha) * l0, -1); del ld, l0
+                elif ONL_TEACH == "gated":                              # 197: E4B's distribution where base E2B's top token differs from E4B's, base E2B's own elsewhere
+                    ld = Fn.log_softmax(mT(input_ids=s_i, logits_to_keep=L + 1, use_cache=False).logits[0, :-1].float(), -1)
+                    l0 = Fn.log_softmax(mS(input_ids=s_i, logits_to_keep=L + 1, use_cache=False).logits[0, :-1].float(), -1)
+                    tgt = torch.where((ld.argmax(-1) != l0.argmax(-1))[:, None], ld, l0); gfrac.append(float((ld.argmax(-1) != l0.argmax(-1)).float().mean())); del ld, l0
                 else:
                     tgt = Fn.log_softmax(mT(input_ids=s_i, logits_to_keep=L + 1, use_cache=False).logits[0, :-1].float(), -1)
             ls = Fn.log_softmax(mS(input_ids=s_i, logits_to_keep=L + 1, use_cache=False).logits[0, :-1].float(), -1); kl = (ls.exp() * (ls - tgt)).sum(-1)
@@ -1534,7 +1538,7 @@ def train_online():
         wins.append({"items": [a, a + len(seg)], "ce student": round(float(seg[:, 0].mean()), 4), "ce base": round(float(seg[:, 1].mean()), 4), "gain over base": round(float((seg[:, 1] - seg[:, 0]).mean()), 4),
                      "first-visit-run items": int(len(fseg)), "gain over base, first-visit-run items": round(float((fseg[:, 1] - fseg[:, 0]).mean()), 4) if len(fseg) else None})
     dd = np.array(dlist) if dlist else np.zeros((0, 2))
-    out = {"teacher": ONL_TEACH, "blend weight": alpha, "blend calibration": binfo, "seed offset": SEEDOFF, "keep": ONL_KEEP, "replay every": ONL_REPLAY, "items": len(preq), "LoRA layers": lay, "prequential windows (before learning each item)": wins,
+    out = {"teacher": ONL_TEACH, "blend weight": alpha, "blend calibration": binfo, "gated: mean per-sample share of positions from E4B (incl. replay)": round(float(np.mean(gfrac)), 4) if gfrac else None, "seed offset": SEEDOFF, "keep": ONL_KEEP, "replay every": ONL_REPLAY, "items": len(preq), "LoRA layers": lay, "prequential windows (before learning each item)": wins,
            "prequential decisions match, first / last half (student, base)": [[round(float(h[:, 0].mean()), 4), round(float(h[:, 1].mean()), 4)] for h in (dd[:len(dd) // 2], dd[len(dd) // 2:]) if len(h)],
            "held curve (bridge down)": curve}
     name = f"lora_onl_{tag}"; pm.save_pretrained(str(OD / name)); json.dump({"arm": f"online {tag}", "teacher": ONL_TEACH, "blend weight": alpha, "seed offset": SEEDOFF, "layers": lay, "rank": 16, "lr": 3e-4, "steps": len(preq), "samples": OPD_K, "max_new": OPD_GEN}, open(OD / name / "train.json", "w"))

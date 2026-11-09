@@ -1,14 +1,15 @@
 # Manifest
 
-348 files, 36.6 MB in total (MANIFEST.md not counted). Sizes are on-disk sizes; `.gz` files are gzip-compressed JSON Lines.
+349 files, 36.6 MB in total (MANIFEST.md not counted). Sizes are on-disk sizes; `.gz` files are gzip-compressed JSON Lines.
 Run labels give the addendum and seed (see README.md, "Run folders").
 
 | File | Size | Purpose |
 |---|---|---|
 | `LICENSE` | 11.1 KB | Apache License 2.0 |
 | `MANIFEST.md` | (this file) | This file: every file with its size and purpose |
-| `PREREGISTRATION.md` | 200.0 KB | Pre-registration log, addenda 165-194, verbatim (one phrase redacted) |
+| `PREREGISTRATION.md` | 202.2 KB | Pre-registration log, addenda 165-194, verbatim (one phrase redacted) |
 | `README.md` | 14.0 KB | Overview: the study, findings, layout, how the runs worked, what is excluded, rebuild steps, licence |
+| `SCORECARD.md` | 1.8 KB | Which pre-registered predictions held, per addendum (moved out of the paper) |
 | `code/colab/xq_bridge.sh` | 3.0 KB | Colab session: fit the bridge and control correctors and run the suite (166) |
 | `code/colab/xq_curve.sh` | 5.2 KB | Colab session: corrector training-length curve (176) |
 | `code/colab/xq_dosebase.sh` | 3.2 KB | Colab session: dose-matched SFT baselines and their evaluation (169d) |
@@ -41,7 +42,7 @@ Run labels give the addendum and seed (see README.md, "Run folders").
 | `code/transfer/dequant.py` | 3.0 KB | Dequantises the 4-bit QAT Gemma checkpoint to bf16 |
 | `code/transfer/graft_agg.py` | 1.8 KB | Per-seed summary of corrector forms against dose-matched SFT (169d) |
 | `code/transfer/mix_merge.py` | 1.2 KB | Appends the mixed rows to the agent rows in one data folder (165) |
-| `code/transfer/online.py` | 133.7 KB | Online test E4B to E2B (170, 183, 189: seeds, self-corrector and blend teachers) and earlier same-tokenizer experiments |
+| `code/transfer/online.py` | 134.5 KB | Online test E4B to E2B (170, 183, 189: seeds, self-corrector and blend teachers) and earlier same-tokenizer experiments |
 | `code/transfer/rb_pair.py` | 3.2 KB | Pairs runbook arms with stored arms across sessions (182, 184c) |
 | `code/transfer/rsi.py` | 46.8 KB | Attempt-verify-update loop pilot (177) |
 | `code/transfer/xbridge.py` | 67.1 KB | The state corrector across tokenizers (E4B to Qwen3-1.7B): alignment, fitting, suite, graft and LoRA forms |
@@ -348,7 +349,7 @@ Run labels give the addendum and seed (see README.md, "Run folders").
 | `figures/fig7_online.png` | 245.2 KB | Figure 7: online learning, E4B to E2B, four setups, held cross-entropy and drift |
 | `figures/fig8_agent_turns.png` | 103.7 KB | Extra figure (cut from the paper): agent replies, E4B to Qwen3-1.7B (169d) |
 | `figures/fig9_e2b.png` | 160.0 KB | Figure 3: Gemma 4 E2B as the coding student against Qwen3-1.7B, with the anchors and the multi-task control (186, 187, 190) |
-| `paper.md` | 26.7 KB | The paper: Copy, Correct, or Rewrite? |
+| `paper.md` | 25.4 KB | The paper: Copy, Correct, or Rewrite? |
 | `scripts/collect.py` | 13.9 KB | Collects every number the paper uses from the run folders into data/results.json (standard library) |
 | `scripts/drift.py` | 3.7 KB | Measures drift from the original student on untaught text (needs adapters and text rows not included) |
 | `scripts/figures.py` | 30.7 KB | Draws the nine figures from data/results.json (matplotlib) |
