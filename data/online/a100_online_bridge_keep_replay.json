@@ -1,0 +1,206 @@
+{
+ "teacher": "bridge",
+ "blend weight": null,
+ "blend calibration": null,
+ "seed offset": 0,
+ "keep": 1.0,
+ "replay every": 4,
+ "items": 600,
+ "LoRA layers": [
+  4,
+  6,
+  8,
+  10,
+  12,
+  16,
+  20,
+  24,
+  28
+ ],
+ "prequential windows (before learning each item)": [
+  {
+   "items": [
+    0,
+    100
+   ],
+   "ce student": 0.7857,
+   "ce base": 0.8328,
+   "gain over base": 0.047,
+   "first-visit-run items": 84,
+   "gain over base, first-visit-run items": 0.0491
+  },
+  {
+   "items": [
+    100,
+    200
+   ],
+   "ce student": 0.7944,
+   "ce base": 0.8575,
+   "gain over base": 0.0632,
+   "first-visit-run items": 55,
+   "gain over base, first-visit-run items": 0.0666
+  },
+  {
+   "items": [
+    200,
+    300
+   ],
+   "ce student": 0.7725,
+   "ce base": 0.8441,
+   "gain over base": 0.0716,
+   "first-visit-run items": 36,
+   "gain over base, first-visit-run items": 0.0677
+  },
+  {
+   "items": [
+    300,
+    400
+   ],
+   "ce student": 0.7502,
+   "ce base": 0.8259,
+   "gain over base": 0.0757,
+   "first-visit-run items": 23,
+   "gain over base, first-visit-run items": 0.078
+  },
+  {
+   "items": [
+    400,
+    500
+   ],
+   "ce student": 0.7034,
+   "ce base": 0.765,
+   "gain over base": 0.0616,
+   "first-visit-run items": 18,
+   "gain over base, first-visit-run items": 0.0619
+  },
+  {
+   "items": [
+    500,
+    600
+   ],
+   "ce student": 0.7998,
+   "ce base": 0.8692,
+   "gain over base": 0.0694,
+   "first-visit-run items": 6,
+   "gain over base, first-visit-run items": 0.0859
+  }
+ ],
+ "prequential decisions match, first / last half (student, base)": [
+  [
+   0.7744,
+   0.6835
+  ],
+  [
+   0.802,
+   0.7114
+  ]
+ ],
+ "held curve (bridge down)": [
+  {
+   "item": 0,
+   "held ce (on)": 0.8244,
+   "held decisions match (on)": 0.8364,
+   "KL from base on untaught prose / code / story": 0.0,
+   "KL from base on held questions (never kept)": 0.0,
+   "seconds": 170,
+   "held ce (base)": 0.8244,
+   "held decisions match (base)": 0.8364
+  },
+  {
+   "item": 50,
+   "held ce (on)": 0.7699,
+   "held decisions match (on)": 0.8909,
+   "KL from base on untaught prose / code / story": 0.00298,
+   "KL from base on held questions (never kept)": 0.00854,
+   "seconds": 2068
+  },
+  {
+   "item": 100,
+   "held ce (on)": 0.7602,
+   "held decisions match (on)": 0.8727,
+   "KL from base on untaught prose / code / story": 0.00362,
+   "KL from base on held questions (never kept)": 0.008,
+   "seconds": 4019
+  },
+  {
+   "item": 150,
+   "held ce (on)": 0.7631,
+   "held decisions match (on)": 0.8727,
+   "KL from base on untaught prose / code / story": 0.00511,
+   "KL from base on held questions (never kept)": 0.01015,
+   "seconds": 5954
+  },
+  {
+   "item": 200,
+   "held ce (on)": 0.755,
+   "held decisions match (on)": 0.8727,
+   "KL from base on untaught prose / code / story": 0.00892,
+   "KL from base on held questions (never kept)": 0.01647,
+   "seconds": 7896
+  },
+  {
+   "item": 250,
+   "held ce (on)": 0.755,
+   "held decisions match (on)": 0.8727,
+   "KL from base on untaught prose / code / story": 0.01036,
+   "KL from base on held questions (never kept)": 0.01208,
+   "seconds": 9869
+  },
+  {
+   "item": 300,
+   "held ce (on)": 0.7571,
+   "held decisions match (on)": 0.8727,
+   "KL from base on untaught prose / code / story": 0.01609,
+   "KL from base on held questions (never kept)": 0.01323,
+   "seconds": 11864
+  },
+  {
+   "item": 350,
+   "held ce (on)": 0.7535,
+   "held decisions match (on)": 0.8909,
+   "KL from base on untaught prose / code / story": 0.01883,
+   "KL from base on held questions (never kept)": 0.02229,
+   "seconds": 13719
+  },
+  {
+   "item": 400,
+   "held ce (on)": 0.7533,
+   "held decisions match (on)": 0.8909,
+   "KL from base on untaught prose / code / story": 0.02254,
+   "KL from base on held questions (never kept)": 0.0364,
+   "seconds": 15685
+  },
+  {
+   "item": 450,
+   "held ce (on)": 0.7513,
+   "held decisions match (on)": 0.8727,
+   "KL from base on untaught prose / code / story": 0.0201,
+   "KL from base on held questions (never kept)": 0.04636,
+   "seconds": 17702
+  },
+  {
+   "item": 500,
+   "held ce (on)": 0.7518,
+   "held decisions match (on)": 0.8727,
+   "KL from base on untaught prose / code / story": 0.02112,
+   "KL from base on held questions (never kept)": 0.05806,
+   "seconds": 19653
+  },
+  {
+   "item": 550,
+   "held ce (on)": 0.7501,
+   "held decisions match (on)": 0.8545,
+   "KL from base on untaught prose / code / story": 0.01551,
+   "KL from base on held questions (never kept)": 0.03031,
+   "seconds": 21610
+  },
+  {
+   "item": 600,
+   "held ce (on)": 0.7519,
+   "held decisions match (on)": 0.8727,
+   "KL from base on untaught prose / code / story": 0.01441,
+   "KL from base on held questions (never kept)": 0.02497,
+   "seconds": 23544
+  }
+ ]
+}

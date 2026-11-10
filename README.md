@@ -1,58 +1,73 @@
-# Copy, Correct, or Rewrite? What Teaches a Small Model and What Keeps It From Forgetting
+# Copy, Correct, or Rewrite? Telepathy-Like Teaching of a Small Agent Model and What Keeps It From Forgetting
 
 Code, results and pre-registrations for a paper-track writeup in the Kaggle "Gemma 4 Developer Agent" competition. The paper is
 [`paper.md`](paper.md).
 
-Author: Benjamin Babeshkin. The study was carried out with Claude Opus 5.5 (Anthropic) as an AI research assistant; the paper's Appendix B
-says who did what.
+Author: Benjamin Babeshkin. The study was carried out with Claude Opus 5.5 and Claude Fable 5.2 (Anthropic) as AI research assistants; the
+paper's Appendix B says who did what.
 
-The study compares ways for a small model to learn from a stronger one under one pre-registered protocol:
+## Telepathy-like teaching
 
-- supervised fine-tuning (SFT) on the teacher's verified answers;
-- a pull toward a *state corrector*, a learned network that rewrites the student's hidden states (called "translator" during development;
-  the code names it `bridge` when it reads the teacher's states and `control` when it reads the student's own states);
-- on-policy distillation;
-- retraining on solutions the student writes itself from the teacher's plan ("runbook rows").
+A *state corrector* is a small network that writes a correction into a student model's hidden states. Fed the teacher's hidden states, it
+makes the student predict what the teacher would. In *telepathy-like teaching* this corrected student, not the teacher's output, is the
+target for a LoRA on the student, online, one item at a time; afterwards only the LoRA is kept, with no teacher and no corrector. The
+teacher reaches the student as states, not as tokens. Teacher: Gemma 4 E4B. Student: Gemma 4 E2B.
 
-Teacher: Gemma 4 E4B. Students: Qwen3-1.7B and Gemma 4 E2B on LiveCodeBench contest coding (three seeds each), E4B and E2B teaching
-each other with freshly fitted Gemma correctors (three seeds each way), and Gemma 4 E2B on online agent decisions.
+Names in the code: the corrector was called "translator" during development; `bridge` is the cross-model corrector (it reads the teacher's
+states) and `control` is the self-corrector (the same network form reading only the student's own states).
+
+The study also compares, under the same pre-registered protocol, the usual routes on contest coding: supervised fine-tuning (SFT) on the
+teacher's verified answers, SFT with a KL pull toward a reference model (an anchor), on-policy distillation, and retraining on solutions the
+student writes itself from the teacher's plan ("runbook rows"). Students there: Qwen3-1.7B and Gemma 4 E2B on LiveCodeBench, three seeds.
 
 ## Key findings
 
-From the paper's abstract and results:
+As of 2026-11-10. Two more seeds of the main comparison and one more live test were running (addendum 208 in `PREREGISTRATION.md`).
 
-- **Copying the teacher's verified answers taught as much as anything tested.** The shortest correct version did best.
-- **Within the Gemma family, copying also forgot.** E4B's text is familiar to E2B; training on it sharpened E2B and raised its loss on
-  untaught text far more than Qwen's. The likely cause is over-fitting familiar text.
-- **A KL pull toward the original student removed that damage without costing held-out solves** (prose KL 0.016; held 207 vs 204 for SFT).
-  Reversed, with E2B's answers teaching E4B, SFT barely helped and every anchor did significantly better (244-250 held vs 224).
-- **Self-written solutions ("runbook rows") moved the student least yet sharpened it.** A small KL is no proof against forgetting.
-- **On-policy distillation reached its teacher's level and stopped there.**
-- **The state corrector did not store the teacher's knowledge in an adapter:** fed E4B's states, it taught no better than fed the student's
-  own. As an anchor it matched training on its own fitting text (held 214 vs 216, p = 0.90; addendum 190), delivered with less change.
-  As an online teacher with keep + replay it gave the best net result on agent decisions in two seeds; a corrector
-  reading the student's own states did not.
+- **Faster than copying.** Students taught through the corrector were, after 100 of the 600 stream items, as close to E4B on held
+  repositories as students copying E4B's output distribution were at the end, and they finished closer (held cross-entropy 0.741-0.756
+  against 0.767; untrained 0.825). On decisions the two tie.
+- **It wins live.** On 80 held-out agent tasks in the competition's harness, the LoRA solved 19 of 320 attempts; untrained E2B served the
+  same way (a null adapter) solved 2 of 160. By task: higher solve rate on 12 tasks, lower on none (p = 0.0005); against plain E2B 9 vs 1
+  (p = 0.021); against the LoRA taught by E4B's distribution 9 vs 3 (p = 0.15, not significant).
+- **Most of the gain is the corrector's form.** A corrector fed only the student's own states taught almost as well. E4B's states added a
+  small, consistent remainder: 0.0019 nats closer on 240 held rows (95% interval 0.0012-0.0026), in 4 of 4 pairs, about a ninth of the
+  lead over copying. This paired analysis was added after two seeds; the bar set in advance (0.005 in every seed) was not met.
+- **In coding, copying the teacher's verified answers taught as much as anything tested,** best with the shortest correct version, and
+  the corrector stored nothing more.
+- **Within the Gemma family, copying also forgot.** Training on E4B's text sharpened E2B and raised its loss on untaught text. A KL pull
+  toward the original student removed that damage without costing held-out solves (prose KL 0.016; held 207 vs 204 for SFT).
+- **On-policy distillation reached its teacher's level and stopped there;** self-written solutions moved the student least yet sharpened it.
 
-The paper's limitations (Section 5) and the pre-registration scorecard (Appendix C) apply to all of these.
+The paper's limitations (Section 5) and the pre-registration scorecard (`SCORECARD.md`, Appendix C) apply to all of these.
 
-**Status (2026-11-08, evening).** In the paper and in this repository: 185 (`data/runs/xqlSS*`), 186 (`xqlE2B*`), 187 (`xqlTW2b*`: E4B
-teaches E2B; `xqlTW4b*`: E2B teaches E4B), 188 (`xqlML*`: the matched-loss test), 193 (`xqlKL*`: the KL strength sweep), 194a (`xqlRG*`: the longer-cap re-grade), 190 (`xqlMT*`: the multi-task control for the corrector anchor) and the online test's setup D,
-seeds 1-2 with the self-corrector and pull-matched blend controls (183, 189; `data/online/`; seed 2 reproduced seed 1, differing on 6 of 220 gate decisions). Running or queued at the time of
-this snapshot, with designs and predictions in `PREREGISTRATION.md`: online D seed 3 and setup C seeds 2-3 (189), D's LoRA live on 80
-held-out agent tasks (196), a disagreement-gated teacher (197) and online against offline SFT teachers (192).
-Addenda 191 and 195 (per-user and lottery-ticket grafts) are planned for a separate paper.
+## Rebuild the main table, figure and live test
+
+[`notebooks/telepathy_like_teaching.ipynb`](notebooks/telepathy_like_teaching.ipynb) rebuilds Table 1, the cross-model against
+self-corrector analysis, Figure 2 and the live table from the files in `data/` (no GPU, about a minute). The same from a shell:
+
+```bash
+python scripts/g4_table.py     # Table 1: held CE, prequential gain, fixed / broken / net per run; paired sign tests on the 220 decisions
+python scripts/g4_rows.py      # the paired row-level analysis (bootstrap over repositories) and the speed measure
+python scripts/live_table.py   # the live test: solves per arm, by-task sign tests
+python scripts/figures.py data/results.json figures fig_online   # Figure 2 (needs matplotlib and numpy)
+```
 
 ## Repository layout
 
 ```
 paper.md                 the paper
-figures/                 the figures (PNG), made by scripts/figures.py: four in the body, three in Appendix D, two extra (MANIFEST.md)
-scripts/                 collect.py, figures.py, drift.py, to_html.py (paper data and rendering)
+figures/                 the figures (PNG), made by scripts/figures.py: three in the body, four in Appendix D, two extra (MANIFEST.md)
+scripts/                 collect.py, figures.py, drift.py, to_html.py (paper data and rendering); g4_table.py, g4_rows.py, live_table.py (the online table, its paired analysis, the live test)
+notebooks/               telepathy_like_teaching.ipynb: rebuilds Table 1, Figure 2 and the live table from data/
 data/
   results.json           every number the paper uses (scripts/collect.py)
   drift.json             drift from the original student on untaught text, per arm and seed (scripts/drift.py)
   drift_ss.json          the same for arm sft_self_s (185)
-  online/                online test (E4B to E2B): run curves and the 240-point gate, per setup
+  online/                online test (E4B to E2B): run curves and the 240-point gate, one file set per teacher, seed and GPU type
+                         (g4_* = the one-GPU table of the paper; a100_* and unprefixed = earlier runs on an A100 and the RTX 4090;
+                         4x_ = corrector fitted four times longer; imit1_ = the imitable corrector)
+  live/                  the live test: per attempt and task, solved or not, how the episode ended, model calls
   runs/<run>/            evaluation and build summaries, laid out as the original run folders (see "Run folders")
   rows/<run>/            training rows: id, reply, source, difficulty (problem statements removed)
   generations/<run>/     model answers per LiveCodeBench question id, gzip-compressed
@@ -60,7 +75,7 @@ code/
   transfer/              experiment code (Python)
   colab/                 session scripts for Colab G4 runs
   dreamer/               launchers and runners for the local RTX 4090
-PREREGISTRATION.md       the pre-registration log, addenda 165-197
+PREREGISTRATION.md       the pre-registration log, addenda 165-208
 SCORECARD.md             which pre-registered predictions held, per addendum (designs and predictions written before each run)
 MANIFEST.md              every file, its size and its purpose
 LICENSE                  Apache License 2.0
@@ -77,25 +92,29 @@ LICENSE                  Apache License 2.0
 | `code/transfer/xbridge.py` | The state corrector across tokenizers (E4B to Qwen3-1.7B): alignment, fitting, the suite, graft and LoRA forms (addenda 166-176) |
 | `code/transfer/xlearn.py` | The coding recipes and their evaluation: build, shortest rows, refit corrector, rewrites, runbook rows, keep rows, the E2B student, all arms (174-188) |
 | `code/transfer/xcode.py` | LiveCodeBench loading, generation and the sandboxed hidden-test scorer; the wide coding test (172, 178) |
-| `code/transfer/online.py` | The online test, E4B to E2B (170, 183), and earlier same-tokenizer experiments in the same file |
+| `code/transfer/online.py` | The online test, E4B to E2B (170, 183, 189-206): telepathy-like teaching and its controls, the 240-point gate; earlier same-tokenizer experiments in the same file |
+| `code/transfer/realize.py` | How much of the cross-model corrector's write can be predicted from the student's own states (200) |
 | `code/transfer/rsi.py` | The attempt-verify-update loop pilot (177) |
 | `code/transfer/rb_pair.py` | Pairs the runbook arms with stored arms across sessions (182, 184c) |
 | `code/transfer/graft_agg.py` | Per-seed summary of the dose-matched comparison (169d) |
 | `code/transfer/dequant.py` | Dequantises the 4-bit QAT checkpoint to bf16 |
 | `code/transfer/build_mix.py`, `mix_merge.py` | Build and merge the mixed rows (prose, code, stories, questions) the corrector was fitted on (165) |
 
-`online.py` is the current version. It adds addendum 189's seed offset (ON_SEED), the self-corrector and blend teachers, and a per-point
-gate output; with ON_SEED unset and the original teachers it trains exactly as the version that ran 170 and 183.
+`online.py` is the current version (2026-11-10). With ON_SEED unset and the original teachers it trains exactly as the version that ran
+170 and 183. Teacher names in it: `direct` (E4B's distribution), `bridge` (the cross-model corrector: telepathy-like teaching), `control`
+(the self-corrector), `blend`, `gated` and `sft` (controls).
 
-The code is a snapshot of 2026-11-08. It also holds paths that the paper does not report: arms `sft_k`, `sft_ck`, `xk` (addendum 184),
-`sft_es`, `sft_lr` (188) and `sft_mt_s`, `sft_self_mt_s` (190) in `xlearn.py`, and the online test's control teachers (189) in `online.py`;
-188, 189 and 190 were running at the time of the snapshot.
+The code also holds paths that the paper does not report, among them arms `sft_k`, `sft_ck`, `xk` (addendum 184) in `xlearn.py`.
 
 ## How the experiments ran
 
 - **Colab G4 sessions.** Each `code/colab/*.sh` script is one session. A local launcher (`colab_run.sh`, not included) started it on a
   Colab G4 GPU, and the `code/dreamer/xq_side*_launch.sh` scripts queued sessions (at most three at a time, with a compute-unit balance
   guard in the later launchers). Most sessions first run a small pass of every step, then the full run.
+- **The online table** (206, 206d): each run is one `code/colab/xq_online.sh` session on a Colab G4, queued by
+  `code/dreamer/xq_onl11_launch.sh` and `xq_onl12_launch.sh`.
+- **The live test** (196, 202, 207, 208): `code/dreamer/s4_plain.sh` serves QAT E2B with or without a LoRA and runs one attempt of the 80
+  tasks in the competition's harness (not included); `x196_live.sh`, `x202_live.sh`, `x207b_live.sh` and `x208_live.sh` order the attempts.
 - **The local RTX 4090** (24 GB) ran `code/dreamer/online_4090.sh` and `online_bkr_4090.sh` (the online test), `resdec_4090.sh`,
   `rsi4090_prep.sh` and `rsi4090_run.sh` (the loop pilot), and `x184_prep_4090.sh` and `x184_4090.sh` (addendum 184).
 - **Inputs.** Sessions downloaded their inputs from the Hugging Face dataset `SkyPanther/g4agent-job`. That dataset is **private**: it holds

@@ -40,6 +40,7 @@ def log(*a):
     print(time.strftime("%H:%M"), *a, flush=True)
 
 
+IMIT = float(os.environ.get("ON_IMIT_BETA", "0"))   # addendum 200: > 0 penalises the part of the gall corrector's writes that a ridge from E2B's own states cannot predict
 TRMIX = os.environ.get("ON_TRMIX") == "1"   # addendum 165: translator training on every kind of row (agent, prose, code, story, question)
 SEEDOFF = 1000 * int(os.environ.get("ON_SEED", "0"))   # 11-07 replication seeds (0 = every earlier run; addendum 173)
 TR_W = os.environ.get("ON_TR_W", "agent:0.4,onpolicy:0.2,prose:0.15,code:0.1,question:0.1,story:0.05")   # draw weights per kind (onpolicy: E2B's own sample at an agent point)
@@ -110,7 +111,7 @@ def write(P, T, src, s0, c, L, h12=None, noise=0.0, drop=None):
     m = torch.zeros(1, L, dtype=torch.bool, device=DEV); m[0, s0:c] = True; P.slot["mask"] = m; one = torch.ones(1, c - s0, dtype=torch.bool, device=DEV)
     if T.arch == "gall":
         if h12 is not None:
-            new, dl, d, g, aw = T.gapply(src[None], h12[None], noise, drop); P.slot["p"] = pad(new, s0, c, L); P.slot["d"] = [pad(d_, s0, c, L) for d_ in dl]; return d, g, aw
+            new, dl, d, g, aw = T.gapply(src[None], h12[None], noise, drop); P.slot["p"] = pad(new, s0, c, L); P.slot["d"] = [pad(d_.to(torch.bfloat16), s0, c, L) for d_ in dl]; P.slot["dl"] = dl; return d, g, aw   # 200c: dl unpadded for the penalty (popped at once); the padded copies in bf16, which the hook casts to anyway (half the memory, the same values)
         def fn(h):                                                       # review 11-07: the span only (no padding through the translator)
             new, dl, _, _, _ = T.gapply(src[None], h[:, s0:c]); P.slot["d"] = [pad(d_, s0, c, L) for d_ in dl]; return pad(new, s0, c, L)
         P.slot["fn"] = fn; return None, None, None
@@ -122,7 +123,9 @@ def write(P, T, src, s0, c, L, h12=None, noise=0.0, drop=None):
 
 def train(name):
     arch, source = name.split("_"); ids, tr, _ = data(); mT, mS, gT, gS = load_models(); rng = np.random.default_rng(7); t0 = time.time()
-    cal = [tr[i] for i in rng.permutation(len(tr))[:NCAL]]; Xs, Ys, Sd = [], [], {l: [] for l in X.ALL_SITES["all"]}
+    CPOOL = int(os.environ.get("ON_CAL_POOL", "0"))                     # addendum 199: > 0 takes the calibration rows from the first CPOOL training rows
+    assert 0 <= CPOOL <= len(tr), (CPOOL, len(tr)); ctr = tr[:CPOOL] if CPOOL else tr   # (the 1x pool; extra rows come after it), so a larger mix keeps the 1x calibration
+    cal = [ctr[i] for i in rng.permutation(len(ctr))[:NCAL]]; Xs, Ys, Sd = [], [], {l: [] for l in X.ALL_SITES["all"]}
     longest = max(tr, key=lambda q: (min(q["ctx_len"] + min(q["reply_len"], RMAX), CAP), min(q["reply_len"], RMAX)))   # review 11-07: the longest reply among the longest rows
     if SMALL:
         cal[0] = longest                                                 # the small test reaches peak memory (review 11-06)
@@ -159,9 +162,36 @@ def train(name):
     widths = [X.WIDTH[TT if source == TT else ST]] * len(X.SRC[TT if source == TT else ST]); assert sum(widths) == din, (widths, din)
     log("translator", name, "| kinds", {k_: round(float(w_), 3) for k_, w_ in zip(kinds, pw)}, "rows", {k_: len(v_) for k_, v_ in bykind.items()}, *(("| gall: size", TR_SIZE, "harm", TR_HARM, "noise", TR_NOISE, "depth drop", TR_DROP) if GALL else ()))
 
+    assert IMIT == 0 or (GALL and source == TT), "ON_IMIT_BETA is for the cross-model gall corrector"
+    IM = {"s": None, "ss": None, "n": 0, "mu": None, "sd": None, "G": {}, "R": {}, "W": {}}; IMWARM, IMEVERY, IMDECAY = (1, 1, 0.9) if SMALL else (50, 10, 0.99)   # addendum 200
+
+    def imit_pen(step, phi, ys):
+        """addendum 200: phi (span x 3*DS) E2B's own raw states at layers 12, 17, 22 from the pass without the corrector; ys {part: (span x DS) whitened
+        write, with grad}: 'w12' is predicted from layer 12 only, 'add' (the additions averaged over sites) from layers 12, 17 and 22. Exponentially
+        decayed ridge statistics (standardised features plus a bias), refitted every IMEVERY steps after IMWARM; returns the mean squared
+        unpredicted part (grad through the writes only) and its share of the write energy"""
+        with torch.no_grad():
+            f = phi.float()
+            if step < IMWARM:                                            # review 200: exact mean and sd over the warm-up rows, then frozen; no ridge statistics before
+                IM["s"] = f.sum(0) + (IM["s"] if IM["s"] is not None else 0); IM["ss"] = (f ** 2).sum(0) + (IM["ss"] if IM["ss"] is not None else 0); IM["n"] += len(f)
+                return ys["w12"].new_zeros(()), float("nan")
+            if IM["mu"] is None:
+                IM["mu"] = IM["s"] / IM["n"]; IM["sd"] = (IM["ss"] / IM["n"] - IM["mu"] ** 2).clamp_min(0).sqrt() + 1e-3
+            fs = (f - IM["mu"]) / IM["sd"]; one = fs.new_ones(len(fs), 1)
+            feats = {"w12": torch.cat([fs[:, :X.DS], one], 1), "add": torch.cat([fs, one], 1)}
+            for k_, y_ in ys.items():
+                F_ = feats[k_]; yd = y_.detach().float()
+                IM["G"][k_] = IMDECAY * IM["G"].get(k_, 0) + F_.T @ F_; IM["R"][k_] = IMDECAY * IM["R"].get(k_, 0) + F_.T @ yd
+                if step % IMEVERY == 0 or k_ not in IM["W"]:
+                    Gk = IM["G"][k_]; lam = 0.05 * float(Gk.diagonal().mean()); IM["W"][k_] = torch.linalg.solve(Gk + lam * torch.eye(len(Gk), device=Gk.device), IM["R"][k_])
+        if not IM["W"]:
+            return ys["w12"].new_zeros(()), float("nan")
+        res = [(y_.float() - feats[k_] @ IM["W"][k_]) for k_, y_ in ys.items()]; pen = sum((r_ ** 2).mean() for r_ in res) / len(res)
+        en = sum(float((y_.detach().float() ** 2).mean()) for y_ in ys.values()) / len(ys); return pen, float(pen.detach()) / max(en, 1e-12)
+
     def draw(step):
         """a sequence to train on: (x, c, n, s0, kind)"""
-        if SMALL and step == 0:
+        if SMALL and (step == 0 or (IMIT > 0 and step == IMWARM)):     # 200c: the longest row again once the penalty is on (and Adam's state exists)
             return (*seq(ids, longest), "agent")
         k_ = kinds[0] if len(kinds) == 1 else kinds[int(rng.choice(len(kinds), p=pw))]
         if k_ != "onpolicy":
@@ -178,7 +208,7 @@ def train(name):
     for step in range(STEPS):
         for g in opt.param_groups:
             g["lr"] = LR * sched(step)
-        opt.zero_grad(set_to_none=True); kds, ans, hms, gms = [], [], [], []
+        opt.zero_grad(set_to_none=True); kds, ans, hms, gms, ims, hkl = [], [], [], [], [], []
         for _ in range(ACC):
             x, c, n, s0, kind = draw(step); seen[kind] += 1
             o = look(mT, mS, gT, gS, x, c, n, s0, stop=GALL and TR_HARM > 0); src = o["T"] if source == TT else o["S"]
@@ -190,33 +220,41 @@ def train(name):
                     if not kb.any():
                         kb[int(torch.randint(len(widths), (1,)))] = True
                     drop = torch.cat([torch.full((w_,), float(k_)) for w_, k_ in zip(widths, kb.tolist())]).to(DEV)
-                d_, g_, aw = write(P, T, src, s0, s0 + src.shape[0], x.shape[1], h12=o["E"], noise=TR_NOISE, drop=drop)
+                d_, g_, aw = write(P, T, src, s0, s0 + src.shape[0], x.shape[1], h12=o["E"], noise=TR_NOISE, drop=drop); dls = P.slot.pop("dl")   # review 200c: not kept through backward
+                if TR_SIZE == 0:                                         # review 200c: its gradient is multiplied by 0; frees the 22 saved additions
+                    aw = aw.detach()
             else:
                 wt = write(P, T, src, s0, s0 + src.shape[0], x.shape[1])
             lsm = Fn.log_softmax(mS(input_ids=x, logits_to_keep=n + 1, use_cache=False).logits[0, :-1].float(), -1)
             kd = -(o["tv"].softmax(-1) * lsm.gather(-1, o["ti"])).sum(-1).mean()
             if GALL:
                 anc = (d_ ** 2).mean() + aw; loss = kd + TR_SIZE * anc
+                if IMIT > 0:                                             # addendum 200: the imitable corrector
+                    assert o["S"].shape[-1] == 2 * X.DS, "ON_IMIT_BETA needs TR_SRC_DEPTHS with two E2B source layers (17, 22)"
+                    aws = sum(d_k[0] / T.dsy[k_] for k_, d_k in enumerate(dls)) / len(T.sites)   # 200c: the same values from the unpadded writes (memory)
+                    ip, ish = imit_pen(step, torch.cat([o["E"], o["S"]], -1).detach(), {"w12": d_[0], "add": aws}); loss = loss + IMIT * ip; ims.append(ish)
                 if TR_HARM > 0:
                     ag = o["ti"][:, 0] == o["si"][:, 0]                  # E4B and E2B alone pick the same token: keep E2B's own distribution there
                     if ag.any():                                         # review 11-07: tail cross-entropy (top 32 + the rest), no pull when nothing changes
                         qk = lsm.gather(-1, o["si"])[ag]; pk = o["sv"][ag].exp(); pt = (1 - pk.sum(-1)).clamp_min(0)
                         hm = -((pk * qk).sum(-1) + pt * torch.log1p(-qk.exp().sum(-1).clamp(max=1 - 1e-6))).mean()
+                        hp = -((pk * o["sv"][ag]).sum(-1) + pt * pt.clamp_min(1e-12).log()).mean(); hkl.append(float((hm - hp).detach()))   # 200b: E2B's own entropy there; hm - hp is the drift (KL)
                     else:
                         hm = lsm.new_zeros(())
                     loss = loss + TR_HARM * hm; hms.append(float(hm.detach()))
                 gms.append(float(g_.detach().mean()))
             else:
                 anc = ((wt[0] - (o["E"] - T.my) / T.sy) ** 2).mean(); loss = kd + BETA * anc
+            dls = None                                                   # review 200c: free the unpadded writes before backward
             (loss / ACC).backward(); P.slot.clear(); kds.append(float(kd.detach())); ans.append(float(anc.detach())); del lsm, o
-        torch.nn.utils.clip_grad_norm_(T.parameters(), 1.0); opt.step(); hist.append((np.mean(kds), np.mean(ans), np.mean(hms) if hms else 0.0, np.mean(gms) if gms else 0.0))
+        torch.nn.utils.clip_grad_norm_(T.parameters(), 1.0); opt.step(); hist.append((np.mean(kds), np.mean(ans), np.mean(hms) if hms else 0.0, np.mean(gms) if gms else 0.0, np.nanmean(ims) if ims and not np.isnan(ims).all() else 0.0, np.mean(hkl) if hkl else 0.0))
         if step % 25 == 0 or step == STEPS - 1:
             h = np.mean(hist[-25:], 0); log(name, "step", step, "cross-entropy to the 31B", round(float(h[0]), 4), "pull" if not GALL else "change size", round(float(h[1]), 4),
-                                            *(("harm", round(float(h[2]), 4), "gate", round(float(h[3]), 4)) if GALL else ()), "| seen", seen, round(time.time() - t0), "s")
+                                            *(("harm", round(float(h[2]), 4), "harm KL", round(float(h[5]), 4), "gate", round(float(h[3]), 4)) if GALL else ()), *(("unpredicted share", round(float(h[4]), 4)) if IMIT > 0 else ()), "| seen", seen, round(time.time() - t0), "s")
     assert np.isfinite(np.array(hist[-25:])).all(), "training loss is not finite"
-    torch.save({"arch": T.arch, "din": din, "state": T.state_dict(), "ridge R2": best[0], "last": [float(v) for v in np.mean(hist[-25:], 0)], "steps": STEPS, "reply": REPLY, "span": SPAN,
+    torch.save({"arch": T.arch, "din": din, "state": T.state_dict(), "ridge R2": best[0], "last": [float(v) for v in np.mean(hist[-25:], 0)], "steps": STEPS, "cal pool": CPOOL, "reply": REPLY, "span": SPAN,
                 "all_kv": os.environ.get("TR_ALL_KV"), "src depths": os.environ.get("TR_SRC_DEPTHS"), "mix": W_ if TRMIX else None, "seen": seen,
-                "gall": {"size": TR_SIZE, "harm": TR_HARM, "noise": TR_NOISE, "depth drop": TR_DROP} if GALL else None}, OD / f"{name}.pt"); print("TRAIN_DONE", name, flush=True)
+                "gall": {"size": TR_SIZE, "harm": TR_HARM, "noise": TR_NOISE, "depth drop": TR_DROP} if GALL else None, "imit beta": IMIT}, OD / f"{name}.pt"); log("peak memory", round(torch.cuda.max_memory_allocated() / 2 ** 30, 2), "GiB allocated", round(torch.cuda.max_memory_reserved() / 2 ** 30, 2), "GiB reserved") if SMALL else None; print("TRAIN_DONE", name, flush=True)
 
 
 @torch.no_grad()
@@ -277,10 +315,13 @@ def tail_ce(lg, ti, tv):
 def train_lora():
     """S3-style LoRA on E4B's logged replies. ON_LORA_LOSS: kd (default, E4B's top 32 with a tail bin) or ce (addendum 192: plain SFT, hard
     labels on E4B's reply). ON_LORA_POOL: train (default, every training point) or stream (192: the online test's 600 stream items, seed 1).
-    ON_LORA_OUT names the adapter (default lora_31b)."""
+    ON_LORA_OUT names the adapter (default lora_31b). Addendum 203: ON_LORA_LOSS=dense, a forward KL (top 32 + tail bin) to ON_LORA_TEACH (e4b,
+    bridge = E2B corrected by ON_BRIDGE_TR, control = E2B corrected by TR_CONTROL) over the reply and up to ON_DENSE_CTX context positions before
+    it (inside the corrector's written span), along E4B's logged replies; ON_LORA_LAYERS "A-B" puts the LoRA on layers A..B (MLP projections)."""
     from peft import LoraConfig, get_peft_model
     LLOSS, LPOOL, LOUT = os.environ.get("ON_LORA_LOSS", "kd"), os.environ.get("ON_LORA_POOL", "train"), os.environ.get("ON_LORA_OUT", "lora_31b")
-    assert LLOSS in ("kd", "ce") and LPOOL in ("train", "stream")
+    LTEACH, DCTX = os.environ.get("ON_LORA_TEACH", "e4b"), int(os.environ.get("ON_DENSE_CTX", "512"))   # addendum 203
+    assert LLOSS in ("kd", "ce", "dense") and LPOOL in ("train", "stream") and LTEACH in ("e4b", "bridge", "control")
     ids, tr, _ = data(); rng = np.random.default_rng(7); t0 = time.time()
     if LLOSS == "ce":                                                    # review 192: plain SFT needs no teacher; E4B not loaded (about 9 GB free)
         mT = gT = gS = None; mS = X.load(ST)
@@ -292,8 +333,18 @@ def train_lora():
         if SMALL:                                                        # review 192: the small pass trains first on the longest reply (the memory peak)
             tr[0] = max((r for r in data()[1]), key=lambda q: (min(q["ctx_len"] + min(q["reply_len"], RMAX), CAP), min(q["reply_len"], RMAX)))
         torch.manual_seed(161)                                           # review 192: the online arms' LoRA start (seed 1)
-    log("LoRA loss", LLOSS, "| pool", LPOOL, len(tr), "items | out", LOUT)
+    br = ctl = None
+    if LLOSS == "dense" and LTEACH == "bridge":                          # addendum 203: the teachers' hooks on the base layers, before the LoRA
+        br = bridge_setup(mS)
+    if LLOSS == "dense" and LTEACH == "control":
+        Tc_ = control_setup(); ctl = (Tc_, X.Patch(mS, Tc_.sites), Grab(mS, X.SRC[ST]))
+    log("LoRA loss", LLOSS, *(("| teacher", LTEACH, "| context positions", DCTX) if LLOSS == "dense" else ()), "| pool", LPOOL, len(tr), "items | out", LOUT)
     tm, lay = lora_targets(mS); rk = int(os.environ.get("ON_RANK", "16")); llr = float(os.environ.get("ON_LORA_LR", "3e-4"))
+    if LLOSS == "dense":                                                # review 203: the same LoRA start for every teacher
+        torch.manual_seed(203)
+    if os.environ.get("ON_LORA_LAYERS"):                                 # addendum 203: e.g. 12-34, the corrector's write zone
+        a_, b_ = (int(v) for v in os.environ["ON_LORA_LAYERS"].split("-")); lay = list(range(a_, b_ + 1))
+        tm = [f"model.language_model.layers.{l}.mlp.{q}_proj" for l in lay for q in ("gate", "up", "down")]
     pm = get_peft_model(mS, LoraConfig(r=rk, lora_alpha=2 * rk, lora_dropout=0.0, target_modules=tm, bias="none")); params = [p_ for n_, p_ in mS.named_parameters() if "lora_" in n_]
     log("LoRA layers", lay, "rank", rk, "lr", llr, "trainable", sum(p_.numel() for p_ in params))
     mS.gradient_checkpointing_enable(gradient_checkpointing_kwargs={"use_reentrant": False}); mS.train()
@@ -307,6 +358,17 @@ def train_lora():
             r = tr[0] if SMALL and LPOOL == "stream" and step == 0 else tr[int(rng.integers(len(tr)))]; x, c, n, s0 = seq(ids, r)
             if LLOSS == "ce":                                            # 192: plain SFT on E4B's logged reply
                 lg = mS(input_ids=x, logits_to_keep=n + 1, use_cache=False).logits[0, :-1].float(); kd = Fn.cross_entropy(lg, x[0, -n:])
+            elif LLOSS == "dense":                                       # addendum 203: dense forward KL to the (corrected) teacher
+                kp = max(1, min(x.shape[1] - s0 - 1, n + DCTX))
+                with pm.disable_adapter(), torch.no_grad():
+                    if LTEACH == "bridge":                                   # review 203: E4B's own logits are never built (memory)
+                        tgt = teacher_lp(mT, mS, gT, x, c, kp, br)
+                    elif LTEACH == "control":
+                        tgt = control_lp(mS, ctl, x, c, kp)
+                    else:
+                        tgt = Fn.log_softmax(mT(input_ids=x, logits_to_keep=kp + 1, use_cache=False).logits[0, :-1].float(), -1)
+                    tv, ti = tgt.topk(X.TOPK, -1); del tgt
+                lg = mS(input_ids=x, logits_to_keep=kp + 1, use_cache=False).logits[0, :-1].float(); kd = tail_ce(lg, ti, tv); lg = None   # review 203: freed before backward
             else:
                 with torch.no_grad():
                     tv, ti = Fn.log_softmax(mT(input_ids=x, logits_to_keep=n + 1, use_cache=False).logits[0, :-1].float(), -1).topk(X.TOPK, -1)
@@ -316,7 +378,7 @@ def train_lora():
         if step % 25 == 0 or step == STEPS - 1:
             log("lora step", step, "cross-entropy to the 31B (with tail bin)", round(float(np.mean(hist[-25:])), 4), round(time.time() - t0), "s")
     assert np.isfinite(np.array(hist[-25:])).all(), "training loss is not finite"
-    pm.save_pretrained(str(OD / LOUT)); json.dump({"layers": lay, "rank": rk, "lr": llr, "steps": STEPS, "loss": LLOSS, "pool": LPOOL, "items": len(tr), "last": float(np.mean(hist[-25:]))}, open(OD / LOUT / "train.json", "w"))
+    pm.save_pretrained(str(OD / LOUT)); json.dump({"layers": lay, "rank": rk, "lr": llr, "steps": STEPS, "loss": LLOSS, "pool": LPOOL, "items": len(tr), "last": float(np.mean(hist[-25:])), **({"teacher": LTEACH, "dense context": DCTX, "corrector": os.environ.get("ON_BRIDGE_TR") if LTEACH == "bridge" else os.environ.get("TR_CONTROL") if LTEACH == "control" else None} if LLOSS == "dense" else {})}, open(OD / LOUT / "train.json", "w"))
     if torch.cuda.is_available():
         log("peak GPU memory", round(torch.cuda.max_memory_allocated() / 2 ** 30, 2), "GB")   # review 192
     print("TRAIN_DONE lora", flush=True)

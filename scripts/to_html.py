@@ -139,7 +139,7 @@ page = f"""<title>Copy, Correct, or Rewrite?</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=Literata:ital,opsz,wght@0,7..72,400;0,7..72,600;1,7..72,400&display=swap">
 <style>{css}</style>
 <main>
-<div class="status"><span>Kaggle Gemma 4 paper track</span><span>Draft, not submitted</span><span>2026-11-08</span></div>
+<div class="status"><span>Kaggle Gemma 4 paper track</span><span>Draft, not submitted</span><span>2026-11-10</span></div>
 <h1>{inline(title)}</h1>
 {f'<p class="byline">{inline(byline)}</p>' if byline else ""}
 <p class="sub">{inline(sub)}</p>

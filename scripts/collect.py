@@ -214,6 +214,64 @@ if PTS:
                 X_ = v["LoRA"]; w = sum(1 for i in range(len(D2)) if D2[i][0] and not X_[i][0]); l = sum(1 for i in range(len(D2)) if X_[i][0] and not D2[i][0])
                 G[a]["D seed 2 vs this"] = {"all: D only, this only, p": [w, l, round(_sign(w, l), 4)]}
     res["online gate points"] = G
+# 206 / 206c: the online teachers on one GPU type (G4), every seed present: the table, the paired row-level and per-decision tests of the
+# cross corrector against the self-corrector, and the speed measure (first checkpoint at or below the plain teacher's final held CE)
+G4A = {"C": ("g4_", "direct_keep_replay"), "S": ("g4_", "control_keep_replay"), "D": ("g4_", "bridge_keep_replay"), "DI": ("g4_imit1_", "bridge_keep_replay"),
+       "S4": ("g4_4x_", "control_keep_replay"), "D4": ("g4_4x_", "bridge_keep_replay")}
+if (ONL / "gate_rows_groups.json").exists() and (ONL / "gate_lora_onl_bridge_keep_replay_points.json").exists():
+    import random
+    from math import comb
+    def _sg(w, l):
+        n = w + l
+        return 1.0 if n == 0 else min(1.0, 2 * sum(comb(n, k) for k in range(min(w, l) + 1)) / 2 ** n)
+    GRP = json.load(open(ONL / "gate_rows_groups.json"))["repo"]; al4 = json.load(open(ONL / "gate_lora_onl_bridge_keep_replay_points.json"))[PK]["E4B alone"]   # the 4090 partition
+    dif4 = [i for i, x in enumerate(al4) if x[2]]; same4 = [i for i, x in enumerate(al4) if not x[2]]; T = {}; ROWS = {}; DEC = {}
+    for k, (pre, a) in G4A.items():
+        for sd in (1, 2, 3):
+            sx = "" if sd == 1 else f"_s{sd}"; fp, fo, fg = (ONL / f"{pre}gate_lora_onl_{a}{sx}_points.json", ONL / f"{pre}online_{a}{sx}.json", ONL / f"{pre}gate_lora_onl_{a}{sx}.json")
+            if not (fp.exists() and fo.exists() and fg.exists()):
+                continue
+            P = json.load(open(fp)); on = json.load(open(fo)); c = on.get("held curve (bridge down)") or on.get("held curve"); X = P[PK]["LoRA"]
+            g = [w["gain over base"] for w in on["prequential windows (before learning each item)"]]; f = sum(X[i][0] for i in dif4); b = sum(1 - X[i][0] for i in same4)
+            ROWS[(k, sd)] = P["cross-entropy per row"]["LoRA"]; DEC[(k, sd)] = [x[0] for x in X]
+            T.setdefault(k, {})[str(sd)] = {"held ce": c[-1]["held ce (on)"], "gain": round(sum(g) / len(g), 4), "windows": g, "fixed": f, "broken": b, "net": f - b,
+                                             "drift": c[-1]["KL from base on untaught prose / code / story"], "drift, mean of last six": round(sum(e["KL from base on untaught prose / code / story"] for e in c[-6:]) / 6, 4),
+                                             "gate ce": round(sum(ROWS[(k, sd)]) / len(ROWS[(k, sd)]), 4), "curve": [[e["item"], e["held ce (on)"]] for e in c],
+                                             "hardware flips": sum(1 for i in range(len(al4)) if P[PK]["E4B alone"][i][0] != al4[i][0])}
+    for sd in ("1", "2", "3"):   # speed: the first checkpoint at or below C's held CE at item 600, same seed
+        if sd in T.get("C", {}):
+            for k in T:
+                if k != "C" and sd in T[k]:
+                    T[k][sd]["item reaching C's final"] = next((i for i, v in T[k][sd]["curve"] if v <= T["C"][sd]["held ce"]), None)
+    def _boot(d, B=4000, seed=0):
+        rnd = random.Random(seed); by = {}
+        for v, gk in zip(d, GRP):
+            by.setdefault(gk, []).append(v)
+        ks = sorted(by); out = []
+        for _ in range(B):
+            s_ = n_ = 0
+            for gk in (rnd.choice(ks) for _ in ks):
+                s_ += sum(by[gk]); n_ += len(by[gk])
+            out.append(s_ / n_)
+        out.sort(); return [round(sum(d) / len(d), 4), round(out[int(.025 * B)], 4), round(out[int(.975 * B) - 1], 4), sum(1 for gk in by if sum(by[gk]) < 0), len(by)]
+    def _avg(keys):
+        return [sum(v) / len(v) for v in zip(*(ROWS[k] for k in keys))]
+    PR = {}
+    for a, b in (("D", "S"), ("D4", "S4"), ("D", "C"), ("S", "C"), ("D4", "C"), ("S4", "C"), ("DI", "C"), ("D4", "D"), ("S4", "S"), ("DI", "D")):
+        sds = [sd for sd in (1, 2, 3) if (a, sd) in ROWS and (b, sd) in ROWS]
+        for sd in sds:
+            A_, B_ = DEC[(a, sd)], DEC[(b, sd)]; w = sum(1 for i in range(len(A_)) if A_[i] and not B_[i]); l = sum(1 for i in range(len(A_)) if B_[i] and not A_[i])
+            PR.setdefault(f"{a} vs {b}", {})[str(sd)] = {"rows: mean, lo, hi, repos closer, repos": _boot([x - y for x, y in zip(ROWS[(a, sd)], ROWS[(b, sd)])]), "decisions: first only, second only, p": [w, l, round(_sg(w, l), 4)]}
+        if sds:
+            PR[f"{a} vs {b}"]["all seeds"] = {"seeds": sds, "rows: mean, lo, hi, repos closer, repos": _boot([x - y for x, y in zip(_avg([(a, sd) for sd in sds]), _avg([(b, sd) for sd in sds]))])}
+    cs = [(a, b, sd) for a, b in (("D", "S"), ("D4", "S4")) for sd in (1, 2, 3) if (a, sd) in ROWS and (b, sd) in ROWS]
+    if cs:   # 206c: the cross corrector against the self-corrector over every pair present
+        d = [sum(DEC[(a, sd)][i] for a, b, sd in cs) - sum(DEC[(b, sd)][i] for a, b, sd in cs) for i in range(len(al4))]; w = sum(v > 0 for v in d); l = sum(v < 0 for v in d)
+        means = [PR[f"{a} vs {b}"][str(sd)]["rows: mean, lo, hi, repos closer, repos"][0] for a, b, sd in cs]
+        PR["cross vs self"] = {"pairs": len(cs), "pairs with the cross student closer": sum(m < 0 for m in means), "pair means": means,
+                               "rows: mean, lo, hi, repos closer, repos": _boot([x - y for x, y in zip(_avg([(a, sd) for a, b, sd in cs]), _avg([(b, sd) for a, b, sd in cs]))]),
+                               "decisions: more cross students match, more self students match, p": [w, l, round(_sg(w, l), 4)], "net differences": [T[a][str(sd)]["net"] - T[b][str(sd)]["net"] for a, b, sd in cs]}
+    res["online g4"] = {"table": T, "pairs": PR, "partition": {"differing": len(dif4), "agreeing": len(same4)}}
 for f in sorted(OUT.parent.glob("drift*.json")):   # review D1: drift from the original student (scripts/drift.py); every drift file of the paper
     if f.exists():
         res.setdefault("drift", {}).update(json.load(open(f))["summary"])

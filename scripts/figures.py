@@ -45,60 +45,69 @@ def legend_groups(ax, loc="upper right", extra=None):
 
 # Figure 1: the corrector (schematic)
 def fig_method():
-    """Figure 1: how the corrector connects the teacher and the student (xbridge.py: source states at 50% and 65% depth, from the teacher for the
-    cross-model variant, aligned to the student's tokens, or from the student's own first pass for the self variant; a gated correction written
-    at 35% depth and every layer above in a second pass; the corrected student's predictions used as a training target)"""
+    """Figure 1: how the corrector connects the teacher and the student (xbridge.py XTr / translator.py gall): it reads source states at 50% and
+    65% depth (the teacher's for the cross-model corrector, aligned to the student's tokens; the student's own for the self-corrector) and, in
+    both variants, the student's own state at the write layer (35% depth); in a second pass it adds a gated correction at the write layer and
+    every layer above; the corrected student's predictions are then the training target (depths are nominal, rounded down to a layer)"""
     from matplotlib.patches import Circle, Rectangle
-    fig, ax = plt.subplots(figsize=(11.8, 5.9)); ax.set_xlim(0, 12.4); ax.set_ylim(0, 6.2); ax.axis("off")
+    fig, ax = plt.subplots(figsize=(11.8, 6.45)); ax.set_xlim(0, 12.4); ax.set_ylim(0, 6.78); ax.axis("off")
     def box(x, y, w, h, text, fc, ec=None, color=INK, size=9, weight="normal"):
         ax.add_patch(FancyBboxPatch((x, y), w, h, boxstyle="round,pad=0.02,rounding_size=0.08", fc=fc, ec=ec or fc, lw=1.0))
         if text:
             ax.text(x + w / 2, y + h / 2, text, ha="center", va="center", fontsize=size, color=color, weight=weight)
     def arrow(a, b, color=INK2, rad=0.0, lw=1.4):
-        ax.add_patch(FancyArrowPatch(a, b, arrowstyle="-|>", mutation_scale=11, lw=lw, color=color, connectionstyle=f"arc3,rad={rad}"))
+        ax.add_patch(FancyArrowPatch(a, b, arrowstyle="-|>", mutation_scale=11, lw=lw, color=color, connectionstyle=f"arc3,rad={rad}", zorder=3))
     def badge(x, y, n, color):
         ax.add_patch(Circle((x, y), 0.15, fc=color, ec=SURF, lw=1.2, zorder=5)); ax.text(x, y, str(n), ha="center", va="center", fontsize=8.5, color="white", weight="bold", zorder=6)
-    Y = lambda k: 1.3 + k * 0.47; H = 0.37; yc = lambda k: Y(k) + H / 2
-    TX, TW, CX, CW, SX, SW, UX, UW = 0.2, 2.2, 3.15, 2.35, 6.3, 2.3, 9.3, 2.95
+    Y = lambda k: 1.42 + k * 0.47; H = 0.37; yc = lambda k: Y(k) + H / 2
+    TX, TW, CX, CW, SX, SW, UX, UW = 0.2, 2.2, 3.15, 2.35, 6.3, 2.3, 9.3, 2.95; CY, CH = 3.07, 1.2
+    # the two phases
+    for x0, x1, h, sub in ((TX, SX + SW, "A   Fit the corrector", "teacher and student stay frozen"), (UX, UX + UW, "B   Train the student", "")):
+        ax.text(x0, 6.56, h, fontsize=11, weight="bold", color=INK); ax.text(x0 + 2.42, 6.56, sub, fontsize=8.6, color=INK2, va="baseline")
+        ax.plot([x0, x1], [6.38, 6.38], color=GRID, lw=1.2, solid_capstyle="round")
     teacher = ["embeddings", "layers", "layers", "layers", "50% depth", "layers", "65% depth", "layers", "next-token head"]
     student = ["embeddings", "layers", "35% depth", "layers", "50% depth", "layers", "65% depth", "layers", "next-token head"]
-    for x, h, sub in ((TX, "Teacher", "Gemma 4 E4B, frozen"), (SX, "Student", "Qwen3-1.7B or Gemma 4 E2B, frozen"), (UX, "Use in training", "only a LoRA on the student is kept")):
-        ax.text(x, 5.95, h, fontsize=10.5, weight="bold", color=INK); ax.text(x, 5.7, sub, fontsize=8.3, color=INK2)
+    for x, h, sub in ((TX, "Teacher", "Gemma 4 E4B"), (SX, "Student", "Qwen3-1.7B or Gemma 4 E2B")):
+        ax.text(x, 6.08, h, fontsize=10.5, weight="bold", color=INK); ax.text(x, 5.84, sub, fontsize=8.3, color=INK2)
     for k, t in enumerate(teacher):
         hl = "%" in t; box(TX, Y(k), TW, H, t, "#fdeee7" if hl else "#f0efec", color=INK if hl else INK2, size=8.3)
     for k, t in enumerate(student):
-        box(SX, Y(k), SW, H, t, "#eef4fc" if t[:2] in ("50", "65") else "#f0efec", color=INK if "%" in t else INK2, size=8.3)
+        box(SX, Y(k), SW, H, t, "#eef4fc" if t[:2] in ("50", "65") else "#e8f6f0" if t[:2] == "35" else "#f0efec", color=INK if "%" in t else INK2, size=8.3)
         if 2 <= k <= 7:                                                  # the layers that receive the correction
             ax.add_patch(Rectangle((SX - 0.02, Y(k) + 0.03), 0.09, H - 0.06, fc=S3, ec="none", zorder=4))
-    box(CX, 2.95, CW, 1.2, "", "#e8f6f0", ec=S3); ax.text(CX + CW / 2, 3.78, "Corrector", ha="center", fontsize=10, weight="bold")
-    ax.text(CX + CW / 2, 3.33, "a small gated MLP\none source per variant", ha="center", va="center", fontsize=8.2, color=INK2)
-    for k, yy in ((4, 3.62), (6, 3.85)):
-        arrow((TX + TW, yc(k)), (CX, yy), S2, rad=-0.1)                  # cross-model variant: the teacher's states
-        arrow((SX, yc(k)), (CX + CW, yy), S1, rad=0.1)                    # self variant: the student's own states, first pass
-    ax.text(CX + CW / 2, 4.95, "from the teacher (cross-model variant)", ha="center", fontsize=8.3, color=S2, weight="bold")
-    ax.text(CX + CW / 2, 4.62, "or from the student itself (self variant)", ha="center", fontsize=8.3, color=S1, weight="bold")
-    badge(CX + CW / 2, 5.32, 1, INK2)
-    arrow((CX + CW, 3.05), (SX - 0.04, yc(2)), S3, rad=-0.15, lw=2.0)    # second pass: the gated correction
-    ax.text(CX + CW / 2, 2.45, "adds a gated correction\nat 35% depth and every\nlayer above (second pass)", ha="center", va="center", fontsize=8.3, color=S3, weight="bold")
-    badge(CX + 0.12, 2.45, 2, S3)
-    ax.text(UX, 5.25, "The corrected student's predictions are", fontsize=8.6, color=INK2)
-    uses = [("Anchor", "a KL pull toward them during SFT"), ("On-policy or online teacher", "they score the student's own samples"),
-            ("Rewriter", "solutions rewritten through them"), ("Distilled LoRA", "the LoRA learns to match them")]
+    box(CX, CY, CW, CH, "", "#e8f6f0", ec=S3); ax.text(CX + CW / 2, CY + 0.83, "Corrector", ha="center", fontsize=10, weight="bold")
+    ax.text(CX + CW / 2, CY + 0.38, "a small gated MLP\nstarts as “no change”", ha="center", va="center", fontsize=8.2, color=INK2)
+    # 1: what it reads
+    for k, yy in ((4, CY + 0.67), (6, CY + 0.90)):
+        arrow((TX + TW, yc(k)), (CX, yy), S2, rad=-0.1)                  # cross-model corrector: the teacher's states
+        arrow((SX, yc(k)), (CX + CW, yy), S1, rad=0.1)                    # self-corrector: the student's own states, first pass
+    arrow((SX, yc(2) + 0.10), (CX + CW, CY + 0.36), INK2, rad=0.22, lw=1.2)   # both: the student's own state at the write layer
+    badge(CX + 0.30, 5.52, 1, INK2); ax.text(CX + 0.55, 5.52, "reads hidden states", fontsize=8.8, color=INK, weight="bold", va="center")
+    ax.text(CX + CW / 2, 5.20, "cross-model corrector: the teacher's", ha="center", fontsize=8.2, color=S2, weight="bold")
+    ax.text(CX + CW / 2, 4.94, "self-corrector: the student's own", ha="center", fontsize=8.2, color=S1, weight="bold")
+    ax.text(CX + CW / 2, 4.68, "both: the student's state at 35% depth", ha="center", fontsize=8.2, color=INK2, weight="bold")
+    # 2: what it writes
+    arrow((CX + CW - 0.30, CY), (SX - 0.04, yc(2) - 0.09), S3, rad=0.32, lw=2.0)   # second pass: the gated correction
+    badge(CX - 0.08, 2.66, 2, S3); ax.text(CX + 0.17, 2.66, "adds a gated correction", fontsize=8.8, color=S3, weight="bold", va="center")
+    ax.text(CX + 0.17, 2.28, "at 35% depth and every layer\nabove, in a second pass", ha="left", va="center", fontsize=8.2, color=S3, weight="bold")
+    # 3: how it is used
+    ax.text(UX, 5.96, "The corrected student's predictions\nare the target; only a LoRA is kept.", fontsize=8.6, color=INK2, va="center", linespacing=1.35)
+    uses = [("Telepathy-like teaching", "online, item by item (Sections 4.2-4.4)"), ("Distilled LoRA", "a LoRA learns to match them (4.5)"),
+            ("On-policy teacher", "they score the student's samples (4.5)"), ("Anchor", "SFT plus a KL pull toward them (4.6)")]
     for k, (h, t) in enumerate(uses):
-        y = 4.3 - k * 0.92; box(UX, y, UW, 0.78, "", "#f7f7f5", ec=GRID)
-        ax.text(UX + 0.14, y + 0.53, h, fontsize=9, weight="bold", va="center"); ax.text(UX + 0.14, y + 0.24, t, fontsize=7.9, color=INK2, va="center")
-    ax.plot([UX - 0.14] * 2, [1.62, 4.92], color=MUTED, lw=1.4, solid_capstyle="round")   # the uses, as one group
-    arrow((SX + SW, yc(8)), (UX - 0.16, 4.5), INK2, rad=-0.2); badge(SX + SW + 0.42, yc(8) - 0.02, 3, INK2)
-    notes = ["1  The corrector reads hidden states at 50% and 65% depth: the teacher's for the cross-model variant (both models read the same text; each student",
-             "    token takes the state of the last teacher token that ends at or before it; Gemma students share E4B's tokens), or the student's own for the self variant.",
-             "2  The frozen student runs again, and the corrector adds a gated change to its hidden states at 35% depth and every layer above (green edges).",
-             "3  The corrected student's predictions become a training target; after training only a LoRA on the student remains, so the corrector is not needed to run it."]
+        y = 4.66 - k * 0.92; box(UX, y, UW, 0.78, "", "#f7f7f5", ec=GRID)
+        ax.text(UX + 0.14, y + 0.53, h, fontsize=9, weight="bold", va="center"); ax.text(UX + 0.14, y + 0.24, t, fontsize=7.7, color=INK2, va="center")
+    ax.plot([UX - 0.14] * 2, [1.98, 5.38], color=MUTED, lw=1.4, solid_capstyle="round")   # the uses, as one group
+    arrow((SX + SW, yc(8)), (UX - 0.16, 5.0), INK2, rad=-0.2); badge(SX + SW + 0.42, yc(8) + 0.02, 3, INK2)
+    notes = ["1  Both models read the same text. The cross-model corrector reads the teacher's hidden states (across tokenizers, each student token takes the state of the",
+             "    last teacher token ending at or before it). The self-corrector, the control, reads only the student's own. Both also read the student's state where they write.",
+             "2  The student runs again with the correction added from 35% depth up (green edges). The corrector is fitted so that this corrected student predicts the teacher's replies.",
+             "3  The corrected student's predictions then train a LoRA on the student. Afterwards only the LoRA is kept: the student runs without the teacher or the corrector."]
     for k, t in enumerate(notes):
-        ax.text(0.2, 0.92 - k * 0.24, t, fontsize=8.2, color=INK2, va="center")
+        ax.text(0.2, 0.98 - k * 0.25, t, fontsize=8.2, color=INK2, va="center")
     save(fig, "fig1_corrector.png")
 
 
-# Figure 2: wide coding (178)
 def fig_wide():
     """Figure 2: the agent-turn LoRAs on all easy and medium LiveCodeBench problems (178), as problems gained and lost against the untrained
     student (the paired counts: form only / student only), three seeds pooled"""
@@ -237,40 +246,58 @@ def fig_losses():
 
 # Figure 7: online learning (E4B -> E2B)
 def fig_online():
-    """Figure 7: the four online setups as a 2x2: hue = who teaches (teacher's own distribution, or the corrector), line style = plain or
-    keep + replay; the letters match Table 6 and label each line's end"""
-    O = D["online"]; lab = {"direct": "A  Teacher", "bridge": "B  Corrector as teacher", "direct_keep_replay": "C  Teacher + keep + replay", "bridge_keep_replay": "D  Corrector + keep + replay"}
-    col = {"direct": S2, "bridge": S3, "direct_keep_replay": S2, "bridge_keep_replay": S3}   # as figures 1 and 4: the teacher orange, the corrector green
-    dash = {"direct": "-", "bridge": "-", "direct_keep_replay": (0, (4, 2.2)), "bridge_keep_replay": (0, (4, 2.2))}
-    fig, axs = plt.subplots(1, 2, figsize=(10.2, 3.9)); fig.subplots_adjust(top=0.80, bottom=0.27, left=0.08, right=0.98, wspace=0.3)
-    for ax, k, yl, t in ((axs[0], "held ce (on)", "Cross-entropy to the teacher, held repos\n(lower is better)", "Learning: every corrector teacher (B, D, control) gets closer"),
-                         (axs[1], "KL from base on untaught prose / code / story", "KL from the original student, untaught text\n(lower is better)", "Drift: keep + replay (C, D) cuts it and ends lowest")):
-        style(ax, "y")
-        ends = []
-        for a in [a for a in ("direct", "bridge", "direct_keep_replay", "bridge_keep_replay") if a in O]:
-            c = O[a]["run"]["held curve (bridge down)"]; x = [e["item"] for e in c]; y = [e[k] for e in c]
-            ax.plot(x, y, color=col[a], lw=2, ls=dash[a], label=lab[a], solid_capstyle="round", dash_capstyle="round"); ends.append([y[-1], y[-1], x[-1], lab[a][0]])
-        if "control_keep_replay" in O:   # 189: the self-corrector teacher (reads E2B's own states) + keep + replay, gray dashed
-            c = O["control_keep_replay"]["run"]["held curve (bridge down)"]; x = [e["item"] for e in c]; y = [e[k] for e in c]
-            ax.plot(x, y, color="#8a8a86", lw=1.6, ls=(0, (4, 2.2)), label="Control: self-corrector + keep + replay", dash_capstyle="round"); ends.append([y[-1], y[-1], x[-1], "Ctl"])
-        if "bridge_keep_replay_s2" in O:   # 189: D's second seed, same hue, thin dotted, so the replication is visible without a fifth colour
-            c = O["bridge_keep_replay_s2"]["run"]["held curve (bridge down)"]; x = [e["item"] for e in c]; y = [e[k] for e in c]
-            ax.plot(x, y, color=S3, lw=1.3, ls=(0, (1, 1.6)), label="D, seed 2", dash_capstyle="round"); ends.append([y[-1], y[-1], x[-1], "D2"])
-        if "blend_keep_replay" in O:   # 189: the teacher blended with the original E2B to the corrector's pull (w 0.433) + keep + replay; teacher hue, thin dotted
-            c = O["blend_keep_replay"]["run"]["held curve (bridge down)"]; x = [e["item"] for e in c]; y = [e[k] for e in c]
-            ax.plot(x, y, color=S2, lw=1.3, ls=(0, (1, 1.6)), label="Control: pull-matched blend + keep + replay", dash_capstyle="round"); ends.append([y[-1], y[-1], x[-1], "Bl"])
-        lo, hi = ax.get_ylim(); gap = 0.05 * (hi - lo); ends.sort()   # end labels pushed apart so close values stay readable
-        for i in range(1, len(ends)):
-            ends[i][1] = max(ends[i][1], ends[i - 1][1] + gap)
-        for v, yl_, x_, letter in ends:
-            ax.text(x_ + 8, yl_, f"{letter}  {v:.3f}" if len(letter) == 1 else f"{letter} {v:.3f}", fontsize=8.2, va="center", color=INK2)
-        ax.set_xlabel("Stream items learned (each seen once)"); ax.set_ylabel(yl, fontsize=8.5); ax.set_title(t, fontsize=10); ax.set_xlim(0, 700)
-    axs[0].set_xticks(range(0, 601, 100)); axs[1].set_xticks(range(0, 601, 100))
-    hs, ls_ = axs[0].get_legend_handles_labels()
-    if len(hs) > 5:   # 189: seven lines need two legend rows
-        fig.subplots_adjust(bottom=0.31)
-    fig.legend(hs, ls_, loc="lower center", ncol=len(hs) if len(hs) <= 5 else 4, bbox_to_anchor=(0.5, 0.0), fontsize=8.4 if len(hs) < 5 else 7.9, labelcolor=INK2, columnspacing=1.8 if len(hs) < 5 else 1.2, handlelength=2.4)
-    fig.suptitle("Online learning on agent decisions, E4B teaching E2B (one seed each, D two): corrector teachers get closest; keep + replay cuts the drift", x=0.04, y=0.985, ha="left", fontsize=10.5, weight="bold")
+    """Figure 4 (file fig7_online.png): telepathy-like teaching online, every teacher on one GPU type (206). Left: held cross-entropy to E4B over the
+    stream, mean of the seeds run; hue = what teaches (E4B's distribution orange; the corrector fed E4B's states green; fed E2B's own states blue),
+    dashes = the corrector fitted 4x longer; the hairline marks the plain teacher's final level. Right: paired differences on the gate's 240 held
+    rows with repository-bootstrap intervals (206c): what each ingredient adds."""
+    G = D["online g4"]; T, P = G["table"], G["pairs"]
+    lab = {"C": "E4B's distribution (plain teacher)", "S": "Corrector fed E2B's own states", "D": "Corrector fed E4B's states (telepathy-like)", "S4": "E2B's own states, fitted 4× longer", "D4": "E4B's states, fitted 4× longer"}
+    col = {"C": S2, "S": S1, "D": S3, "S4": S1, "D4": S3}; dash = {"C": "-", "S": "-", "D": "-", "S4": (0, (4, 2.2)), "D4": (0, (4, 2.2))}
+    fig, axs = plt.subplots(1, 2, figsize=(10.4, 4.1), gridspec_kw={"width_ratios": [1.25, 1]}); fig.subplots_adjust(top=0.80, bottom=0.25, left=0.075, right=0.985, wspace=0.42)
+    ax = axs[0]; style(ax, "y"); ends = []; nseed = {}
+    for k in ("C", "S", "D", "S4", "D4"):
+        runs = [v["curve"] for v in T.get(k, {}).values()]
+        if not runs:
+            continue
+        x = [e[0] for e in runs[0]]; y = [float(np.mean([r[i][1] for r in runs])) for i in range(len(x))]; nseed[k] = len(runs)
+        ax.plot(x, y, color=col[k], lw=2, ls=dash[k], label=lab[k], solid_capstyle="round", dash_capstyle="round"); ends.append([y[-1], y[-1], k])
+        if k == "C":
+            cf = y[-1]
+    ax.axhline(cf, color=MUTED, lw=0.8, ls=(0, (1, 2)), zorder=1)
+    reach = [v.get("item reaching C's final") for k in ("S", "D", "S4", "D4") for v in T.get(k, {}).values() if v.get("item reaching C's final") is not None]
+    ax.annotate(f"the plain teacher's final level ({cf:.3f}):\nthe corrector students are there by item {max(reach)}", xy=(max(reach), cf), xytext=(215, cf + 0.021), fontsize=8.2, color=INK2,
+                arrowprops=dict(arrowstyle="-", color=MUTED, lw=0.8, shrinkA=0, shrinkB=2), va="bottom")
+    lo, hi = ax.get_ylim(); gap = 0.052 * (hi - lo); ends.sort()
+    for i in range(1, len(ends)):
+        ends[i][1] = max(ends[i][1], ends[i - 1][1] + gap)
+    for v, yl_, k in ends:
+        ax.text(608, yl_, f"{v:.3f}", fontsize=8.2, va="center", color=INK2, bbox=dict(facecolor=SURF, edgecolor="none", pad=1.2))
+    ax.set_xlim(0, 660); ax.set_xticks(range(0, 601, 100)); ax.set_xlabel("Stream items learned (each seen once)")
+    ax.set_ylabel("Cross-entropy to E4B, held repositories\n(lower is closer)", fontsize=8.5); ax.set_title("Speed: taught through the corrector, E2B gets close early", fontsize=10)
+    hs, ls_ = ax.get_legend_handles_labels(); fig.legend(hs, ls_, loc="lower left", ncol=3, bbox_to_anchor=(0.03, 0.0), fontsize=8.1, labelcolor=INK2, columnspacing=1.4, handlelength=2.4)
+    ax = axs[1]; style(ax, "x"); K = "rows: mean, lo, hi, repos closer, repos"; rows = []
+    def allseeds(name):
+        return P[name]["all seeds"][K] if name in P else None
+    for name, text, c in (("D vs C", "Through the corrector,\nnot E4B's distribution", S2), ("D4 vs D", "Corrector fitted 4× longer", INK2), ("cross vs self", "Fed E4B's states,\nnot E2B's own", S3)):
+        v = P[name][K] if name == "cross vs self" else allseeds(name)
+        if v:
+            rows.append((text, v, c, True))
+    for name, tag in (("D vs S", "1× fit"), ("D4 vs S4", "4× fit")):
+        for sd in ("1", "2", "3"):
+            if sd in P.get(name, {}):
+                rows.append((f"   {tag}, seed {sd}", P[name][sd][K], S3, False))
+    ys = list(range(len(rows)))[::-1]
+    for y, (text, v, c, big) in zip(ys, rows):
+        ax.plot([v[1], v[2]], [y, y], color=c, lw=2.2 if big else 1.3, solid_capstyle="round", alpha=1 if big else 0.75); ax.plot([v[0]], [y], "o", color=c, ms=7 if big else 4.5, mec=SURF, mew=1.2)
+        ax.text(v[1] - 0.0007, y, f"{-v[0]:.4f}" if big else f"{-v[0]:.4f}", ha="right", va="center", fontsize=8.2 if big else 7.6, color=INK2)
+    ax.axvline(0, color=MUTED, lw=0.9); ax.set_yticks(ys); ax.set_yticklabels([r[0] for r in rows], fontsize=8.2); ax.set_ylim(-0.6, len(rows) - 0.4)
+    for t, (text, v, c, big) in zip(ax.get_yticklabels(), rows):
+        t.set_color(INK if big else INK2)
+    xmin = min(r[1][1] for r in rows) - 0.006; ax.set_xlim(xmin, 0.0015); ax.set_xlabel("Nats per token closer to E4B on 240 held rows (paired; bar: 95% interval over repositories)", fontsize=8.2)
+    ax.set_xticks([-0.02, -0.015, -0.01, -0.005, 0]); ax.set_xticklabels(["0.020", "0.015", "0.010", "0.005", "0"])
+    ax.set_title("What gives the gain", fontsize=10)
+    ns = sorted(set(nseed.values())); fig.suptitle("Telepathy-like teaching online, E4B teaching E2B: the corrector's students reach the plain teacher's final closeness in a sixth of the stream;\nmost of the gain comes with the corrector's form, a small part from E4B's states"
+                 + (f"  (mean of {ns[0]} seeds)" if len(ns) == 1 else f"  (mean of the seeds run: {', '.join(f'{k} {v}' for k, v in nseed.items())})"), x=0.03, y=0.985, ha="left", fontsize=10.2, weight="bold")
     save(fig, "fig7_online.png")
 
 
@@ -357,5 +384,7 @@ def fig_e2b():
     save(fig, "fig9_e2b.png")
 
 
+ONLY = sys.argv[3:]                                                      # optional: the figure functions to draw (all by default)
 for f in (fig_method, fig_wide, fig_map, fig_prose, fig_teacher, fig_losses, fig_online, fig_agent, fig_e2b):
-    f()
+    if not ONLY or f.__name__ in ONLY:
+        f()
