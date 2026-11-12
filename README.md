@@ -22,19 +22,22 @@ student writes itself from the teacher's plan ("runbook rows"). Students there: 
 
 ## Key findings
 
-As of 2026-11-10. Two more seeds of the main comparison and one more live test were running (addendum 208 in `PREREGISTRATION.md`).
+As of 2026-11-11 (the paper's final numbers; `paper.md` has the tests and their limits).
 
-- **Faster than copying.** Students taught through the corrector were, after 100 of the 600 stream items, as close to E4B on held
-  repositories as students copying E4B's output distribution were at the end, and they finished closer (held cross-entropy 0.741-0.756
-  against 0.767; untrained 0.825). On decisions the two tie.
-- **It wins live.** On 80 held-out agent tasks in the competition's harness, the LoRA solved 19 of 320 attempts; untrained E2B served the
-  same way (a null adapter) solved 2 of 160. By task: higher solve rate on 12 tasks, lower on none (p = 0.0005); against plain E2B 9 vs 1
-  (p = 0.021); against the LoRA taught by E4B's distribution 9 vs 3 (p = 0.15, not significant).
+- **Faster and closer than copying, on agent decisions.** Students taught through the corrector were as close to E4B after a sixth of the
+  stream as students copying E4B's output distribution were at its end, and finished closer in every seed. On decisions the two tie.
 - **Most of the gain is the corrector's form.** A corrector fed only the student's own states taught almost as well. E4B's states added a
-  small, consistent remainder: 0.0019 nats closer on 240 held rows (95% interval 0.0012-0.0026), in 4 of 4 pairs, about a ninth of the
-  lead over copying. This paired analysis was added after two seeds; the bar set in advance (0.005 in every seed) was not met.
-- **In coding, copying the teacher's verified answers taught as much as anything tested,** best with the shortest correct version, and
-  the corrector stored nothing more.
+  small, consistent remainder: closer in 6 of 6 seed pairs (p = 0.031), by 0.0017 nats (95% interval 0.0009-0.0025). This paired analysis
+  was added after two seeds; the bar set in advance (0.005 in every seed) was not met.
+- **Live, it beats the untrained model but not copying.** On 80 held-out agent tasks in the competition's harness, the five LoRAs taught
+  by copying or by the cross-model corrector solved 65 of 960 attempts; plain E2B 7 of 320 and a null adapter 2 of 160. The corrector's
+  first LoRA beat the null adapter on 12 tasks and lost on none (p = 0.0005). The teachers are level (6.7% and 6.9% of attempts).
+- **In coding online, the corrector matches copying.** With correctors fitted on verified, reviewed solutions and teaching only on answers
+  that pass the tests, the corrector's students solved 76 and 75 of 188 held problems, students of E4B's distribution 79 and 67, of its
+  verified text 76 and 69 (untrained 57). A hybrid (the corrector on the student's passing answers, the verified text where none passes)
+  solved 80, 69 and 77 and is level with copying (by problem 43 vs 37, p = 0.58).
+- **In coding offline, copying the teacher's verified answers taught as much as anything tested,** best with the shortest correct version,
+  and the corrector stored nothing more.
 - **Within the Gemma family, copying also forgot.** Training on E4B's text sharpened E2B and raised its loss on untaught text. A KL pull
   toward the original student removed that damage without costing held-out solves (prose KL 0.016; held 207 vs 204 for SFT).
 - **On-policy distillation reached its teacher's level and stopped there;** self-written solutions moved the student least yet sharpened it.
@@ -51,6 +54,13 @@ python scripts/g4_table.py     # Table 1: held CE, prequential gain, fixed / bro
 python scripts/g4_rows.py      # the paired row-level analysis (bootstrap over repositories) and the speed measure
 python scripts/live_table.py   # the live test: solves per arm, by-task sign tests
 python scripts/figures.py data/results.json figures fig_online   # Figure 2 (needs matplotlib and numpy)
+```
+
+The online coding table (Section 4.5, Table D9; addenda 209-209r) from `data/lcb` and `data/generations`:
+
+```bash
+python scripts/lcb_table.py 1 2 3                                          # held solved, fixed, lost per arm and seed; paired sign tests
+python scripts/lcb_failkinds.py alone=xqzN1/qwen hybrid=xqzN1/onl_d4w      # how a session's answers fail: unfinished, placeholder, wrong
 ```
 
 ## Repository layout
@@ -151,6 +161,11 @@ The code also holds paths that the paper does not report, among them arms `sft_k
 | `xqlE2B1`-`xqlE2B3` | Gemma 4 E2B as the student: SFT, shortest rows, runbook rows (E2B re-solves with the plans from `xqlRB0`), drift (186) |
 | `xqw1`-`xqw3` | LoRAs trained on agent turns, tested on all easy and medium LiveCodeBench problems (178) |
 | `xqd1`-`xqd3` | Corrector forms against dose-matched SFT on agent replies (169d) |
+| `xqcC1`, `xqcC2`, `xqcD1`, `xqcDf2`, `xqcF1`, `xqcF2`, `xqzF3` | Online coding, first form (209, 209a): E4B's distribution, the cross-model corrector as fitted for the agent stream and with the contest rows, E4B's verified text (three seeds) |
+| `xqxC1`, `xqxC2`, `xqzC3`, `xqxD1`, `xqxS1`, `xqxS2` | Online coding on passing answers only, correctors fitted on reviewed solutions (209e-209g) |
+| `xqzD1`, `xqzD2`, `xqzS1`, `xqzS2` | Online coding, both correctors fitted on the rewritten solutions with token targets (209i) |
+| `xqzN1`-`xqzN3`, `xqzR1`, `xqzP1` | The hybrid (209n), the hybrid copying the reviewed solution (209r), the placeholder penalty (209p) |
+| `xqyTgen`, `xqyTgenA` | E4B answering 77 held problems with its own corrector on and off (209q) |
 
 Arm keys in the data and their names in the figures (`scripts/figures.py`):
 

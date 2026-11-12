@@ -20,7 +20,7 @@ on-policy distillation of the 31B on E4B's own contexts): a graft-shaped LoRA on
 depth, rank ON_RANK 16, lr ON_LORA_LR 3e-4: R143) trained to the 31B's top 32 plus a tail bin (R145) along E4B's own replies, same data and
 steps; saved as a PEFT folder (vLLM-servable); gated on the same 240 held-out points against E4B alone.
   TR_STUDENT=e4b TR_TEACHERS=31b python transfer/online.py lora train | lora gate"""
-import json, math, os, sys, time
+import hashlib, json, math, os, sys, time
 from contextlib import nullcontext
 from pathlib import Path
 import numpy as np, torch, torch.nn.functional as Fn
@@ -44,6 +44,7 @@ IMIT = float(os.environ.get("ON_IMIT_BETA", "0"))   # addendum 200: > 0 penalise
 TRMIX = os.environ.get("ON_TRMIX") == "1"   # addendum 165: translator training on every kind of row (agent, prose, code, story, question)
 SEEDOFF = 1000 * int(os.environ.get("ON_SEED", "0"))   # 11-07 replication seeds (0 = every earlier run; addendum 173)
 TR_W = os.environ.get("ON_TR_W", "agent:0.4,onpolicy:0.2,prose:0.15,code:0.1,question:0.1,story:0.05")   # draw weights per kind (onpolicy: E2B's own sample at an agent point)
+FIT_HARD = float(os.environ.get("ON_FIT_HARD", "0")); FIT_HARD_KINDS = set(k_ for k_ in os.environ.get("ON_FIT_HARD_KINDS", "fit_lcb").split(",") if k_)   # amendment 209h: on rows of these kinds (verified solutions), where E4B's own top token is not the token the verified text has next, the target is that token (weight FIT_HARD; the rest E4B's distribution): what E4B did when it succeeded, not what it would say there
 TR_SIZE = float(os.environ.get("ON_TR_SIZE", "0.1")); TR_HARM = float(os.environ.get("ON_TR_HARM", "0.5")); TR_NOISE = float(os.environ.get("ON_TR_NOISE", "0.1")); TR_DROP = float(os.environ.get("ON_TR_DROP", "0.15"))
 
 
@@ -139,6 +140,8 @@ def train(name):
         del o, src_; gT.out, gS.out = {}, {}
     grp = torch.cat([torch.full((len(x_),), k_) for k_, x_ in enumerate(Xs)]); Xa, Ya = torch.cat(Xs), torch.cat(Ys); st = {"mx": Xa.mean(0).numpy(), "sx": (Xa.std(0) + 1e-3).numpy(), "my": Ya.mean(0).numpy(), "sy": (Ya.std(0) + 1e-3).numpy()}
     T = X.Tr(Xa.shape[1], arch, st).to(DEV); din = Xa.shape[1]; log("calibration:", len(cal), "decision points,", len(Xa), "span tokens, source width", din)
+    if ERASE:                                                            # 209l: the corrector is fitted on the erased states it will teach from
+        assert arch == "gall" and source == TT, "ON_ERASE is for the cross-model gall corrector"; log("erased from the corrector's input:", T.set_erase(ERASE, check=not SMALL), "| file sha256", ERASE_SHA[:16])
     hg = set(torch.randperm(len(Xs), generator=torch.Generator().manual_seed(7))[:max(1, len(Xs) // 6)].tolist()); hm = torch.tensor([int(g_) in hg for g_ in grp]); ho, fi = hm.nonzero()[:, 0], (~hm).nonzero()[:, 0]   # whole decision points held out
     Yw = ((Ya - torch.tensor(st["my"])) / torch.tensor(st["sy"])).to(DEV); Z1 = torch.ones(len(Xa), Xa.shape[1] + 1, device=DEV); mx_, sx_ = torch.tensor(st["mx"]), torch.tensor(st["sx"])
     for i_ in range(0, len(Xa), 8192):                                   # filled in place: half the peak of building Z then concatenating (review 11-06)
@@ -157,8 +160,10 @@ def train(name):
     opt = torch.optim.AdamW(T.parameters(), lr=LR, weight_decay=0.0); sched = lambda s_: min(1.0, (s_ + 1) / 30) * (0.1 + 0.9 * 0.5 * (1 + math.cos(math.pi * s_ / STEPS)))  # noqa: E731
     GALL = T.arch == "gall"; eos = eos_of(mS); tok = X.tok_(); torch.manual_seed(7)   # review 11-07: bridge and control draw alike
     W_ = dict((k_, float(v_)) for k_, v_ in (kv.split(":") for kv in TR_W.split(","))) if TRMIX else {"agent": 1.0}
-    bykind = {k_: [r_ for r_ in tr if r_.get("kind", "agent") == k_] for k_ in W_ if k_ != "onpolicy"}; agent_tr = [r_ for r_ in tr if r_.get("kind", "agent") == "agent"]
-    W_ = {k_: v_ for k_, v_ in W_.items() if k_ == "onpolicy" or bykind.get(k_)}; kinds = list(W_); pw = np.array([W_[k_] for k_ in kinds]); pw = pw / pw.sum()
+    ONP = {"onpolicy": "agent", "onpolicy_lcb": "lcb"}                 # amendment 209a: on-policy kinds and the kind whose contexts E2B samples at (onpolicy_lcb: a contest problem's prompt)
+    bykind = {k_: [r_ for r_ in tr if r_.get("kind", "agent") == k_] for k_ in W_ if k_ not in ONP}; agent_tr = [r_ for r_ in tr if r_.get("kind", "agent") == "agent"]
+    onp_pool = {"onpolicy": agent_tr, **{k_: [r_ for r_ in tr if r_.get("kind", "agent") == ONP[k_]] for k_ in W_ if k_ in ONP and k_ != "onpolicy"}}
+    W_ = {k_: v_ for k_, v_ in W_.items() if k_ == "onpolicy" or (onp_pool.get(k_) if k_ in ONP else bykind.get(k_))}; kinds = list(W_); pw = np.array([W_[k_] for k_ in kinds]); pw = pw / pw.sum()
     widths = [X.WIDTH[TT if source == TT else ST]] * len(X.SRC[TT if source == TT else ST]); assert sum(widths) == din, (widths, din)
     log("translator", name, "| kinds", {k_: round(float(w_), 3) for k_, w_ in zip(kinds, pw)}, "rows", {k_: len(v_) for k_, v_ in bykind.items()}, *(("| gall: size", TR_SIZE, "harm", TR_HARM, "noise", TR_NOISE, "depth drop", TR_DROP) if GALL else ()))
 
@@ -194,23 +199,24 @@ def train(name):
         if SMALL and (step == 0 or (IMIT > 0 and step == IMWARM)):     # 200c: the longest row again once the penalty is on (and Adam's state exists)
             return (*seq(ids, longest), "agent")
         k_ = kinds[0] if len(kinds) == 1 else kinds[int(rng.choice(len(kinds), p=pw))]
-        if k_ != "onpolicy":
+        if k_ not in ONP:
             return (*seq(ids, bykind[k_][int(rng.integers(len(bykind[k_])))]), k_)
-        r_ = agent_tr[int(rng.integers(len(agent_tr)))]; x_, c_, _, _ = seq(ids, r_); ctx = x_[:, :c_]   # E2B's own sample at an agent decision point (no bridge)
+        pool_ = onp_pool[k_]; r_ = pool_[int(rng.integers(len(pool_)))]; x_, c_, _, _ = seq(ids, r_); ctx = x_[:, :c_]   # E2B's own sample at an agent decision point (no bridge); 209a: or at a contest problem's prompt
+        skw = {"stop_strings": ["```"], "tokenizer": tok} if k_ == "onpolicy_lcb" else {}   # 209a: a coding sample ends at its own closing fence (one sequence: nothing is padded)
         if c_ > CAP - OPD_GEN:
             ctx = torch.cat([ctx[:, :HEAD], ctx[:, -(CAP - OPD_GEN - HEAD):]], 1)
         mS.eval(); torch.manual_seed(100003 * step + len(seen_draws)); seen_draws.append(step)   # review 11-07: the same sample for bridge and control
         with torch.no_grad():
-            y = mS.generate(input_ids=ctx, attention_mask=torch.ones_like(ctx), do_sample=True, temperature=1.0, top_k=0, top_p=1.0, max_new_tokens=OPD_GEN, eos_token_id=eos, pad_token_id=tok.pad_token_id, use_cache=True)[:, ctx.shape[1]:]
+            y = mS.generate(input_ids=ctx, attention_mask=torch.ones_like(ctx), do_sample=True, temperature=1.0, top_k=0, top_p=1.0, max_new_tokens=OPD_GEN, eos_token_id=eos, pad_token_id=tok.pad_token_id, use_cache=True, **skw)[:, ctx.shape[1]:]
         mS.train(); mm, _ = ends_of(y, eos); Ls = max(1, int(mm[0].sum())); cc = ctx.shape[1]
-        return torch.cat([ctx, y[:, :Ls]], 1), cc, Ls, max(1, cc - SPAN), "onpolicy"
-    hist = []; seen = {k_: 0 for k_ in kinds}; seen_draws = []
+        return torch.cat([ctx, y[:, :Ls]], 1), cc, Ls, max(1, cc - SPAN), k_
+    hist = []; seen = {k_: 0 for k_ in kinds}; seen_draws = []; hard_n = [0, 0]
     for step in range(STEPS):
         for g in opt.param_groups:
             g["lr"] = LR * sched(step)
         opt.zero_grad(set_to_none=True); kds, ans, hms, gms, ims, hkl = [], [], [], [], [], []
         for _ in range(ACC):
-            x, c, n, s0, kind = draw(step); seen[kind] += 1
+            x, c, n, s0, kind = draw(step); seen[kind] = seen.get(kind, 0) + 1   # 209e: the small pass's longest row may be of a kind the weights do not name
             o = look(mT, mS, gT, gS, x, c, n, s0, stop=GALL and TR_HARM > 0); src = o["T"] if source == TT else o["S"]
             o.pop("sites", None); gT.out, gS.out = {}, {}                  # free the captured site layers (calibration only)
             if GALL:                                                     # addendum 165: identity by default, do no harm, regularised
@@ -226,7 +232,11 @@ def train(name):
             else:
                 wt = write(P, T, src, s0, s0 + src.shape[0], x.shape[1])
             lsm = Fn.log_softmax(mS(input_ids=x, logits_to_keep=n + 1, use_cache=False).logits[0, :-1].float(), -1)
-            kd = -(o["tv"].softmax(-1) * lsm.gather(-1, o["ti"])).sum(-1).mean()
+            kdp = -(o["tv"].softmax(-1) * lsm.gather(-1, o["ti"])).sum(-1); dis = None
+            if FIT_HARD > 0 and kind in FIT_HARD_KINDS:                    # 209h: the verified text's own next token where E4B's top token differs from it
+                true = x[0, -n:]; dis = o["ti"][:, 0] != true; hard_n[0] += int(dis.sum()); hard_n[1] += int(dis.numel())
+                kdp = torch.where(dis, FIT_HARD * (-lsm.gather(-1, true[:, None])[:, 0]) + (1 - FIT_HARD) * kdp, kdp)
+            kd = kdp.mean()
             if GALL:
                 anc = (d_ ** 2).mean() + aw; loss = kd + TR_SIZE * anc
                 if IMIT > 0:                                             # addendum 200: the imitable corrector
@@ -235,6 +245,8 @@ def train(name):
                     ip, ish = imit_pen(step, torch.cat([o["E"], o["S"]], -1).detach(), {"w12": d_[0], "add": aws}); loss = loss + IMIT * ip; ims.append(ish)
                 if TR_HARM > 0:
                     ag = o["ti"][:, 0] == o["si"][:, 0]                  # E4B and E2B alone pick the same token: keep E2B's own distribution there
+                    if dis is not None:                                  # review 209h: not where both pick a token the verified text does not have next (the target there is the text's token)
+                        ag = ag & ~dis
                     if ag.any():                                         # review 11-07: tail cross-entropy (top 32 + the rest), no pull when nothing changes
                         qk = lsm.gather(-1, o["si"])[ag]; pk = o["sv"][ag].exp(); pt = (1 - pk.sum(-1)).clamp_min(0)
                         hm = -((pk * qk).sum(-1) + pt * torch.log1p(-qk.exp().sum(-1).clamp(max=1 - 1e-6))).mean()
@@ -249,12 +261,14 @@ def train(name):
             (loss / ACC).backward(); P.slot.clear(); kds.append(float(kd.detach())); ans.append(float(anc.detach())); del lsm, o
         torch.nn.utils.clip_grad_norm_(T.parameters(), 1.0); opt.step(); hist.append((np.mean(kds), np.mean(ans), np.mean(hms) if hms else 0.0, np.mean(gms) if gms else 0.0, np.nanmean(ims) if ims and not np.isnan(ims).all() else 0.0, np.mean(hkl) if hkl else 0.0))
         if step % 25 == 0 or step == STEPS - 1:
+            if FIT_HARD > 0 and (step % 200 == 0 or step == STEPS - 1):
+                log(name, "step", step, "verified-token targets so far:", hard_n[0], "of", hard_n[1], "positions of the hard kinds (E4B's top token is not the text's next token)")
             h = np.mean(hist[-25:], 0); log(name, "step", step, "cross-entropy to the 31B", round(float(h[0]), 4), "pull" if not GALL else "change size", round(float(h[1]), 4),
                                             *(("harm", round(float(h[2]), 4), "harm KL", round(float(h[5]), 4), "gate", round(float(h[3]), 4)) if GALL else ()), *(("unpredicted share", round(float(h[4]), 4)) if IMIT > 0 else ()), "| seen", seen, round(time.time() - t0), "s")
     assert np.isfinite(np.array(hist[-25:])).all(), "training loss is not finite"
     torch.save({"arch": T.arch, "din": din, "state": T.state_dict(), "ridge R2": best[0], "last": [float(v) for v in np.mean(hist[-25:], 0)], "steps": STEPS, "cal pool": CPOOL, "reply": REPLY, "span": SPAN,
                 "all_kv": os.environ.get("TR_ALL_KV"), "src depths": os.environ.get("TR_SRC_DEPTHS"), "mix": W_ if TRMIX else None, "seen": seen,
-                "gall": {"size": TR_SIZE, "harm": TR_HARM, "noise": TR_NOISE, "depth drop": TR_DROP} if GALL else None, "imit beta": IMIT}, OD / f"{name}.pt"); log("peak memory", round(torch.cuda.max_memory_allocated() / 2 ** 30, 2), "GiB allocated", round(torch.cuda.max_memory_reserved() / 2 ** 30, 2), "GiB reserved") if SMALL else None; print("TRAIN_DONE", name, flush=True)
+                "gall": {"size": TR_SIZE, "harm": TR_HARM, "noise": TR_NOISE, "depth drop": TR_DROP} if GALL else None, "imit beta": IMIT, "fit hard": [FIT_HARD, sorted(FIT_HARD_KINDS), hard_n], "erase": ERASE_SHA}, OD / f"{name}.pt"); log("peak memory", round(torch.cuda.max_memory_allocated() / 2 ** 30, 2), "GiB allocated", round(torch.cuda.max_memory_reserved() / 2 ** 30, 2), "GiB reserved") if SMALL else None; print("TRAIN_DONE", name, flush=True)
 
 
 @torch.no_grad()
@@ -454,6 +468,7 @@ def eos_of(m):
 
 
 BRIDGE_TR = os.environ.get("ON_BRIDGE_TR"); OTAG = "_bridge" if BRIDGE_TR else ""   # addendum 146: C and D, the bridged teacher
+ERASE = os.environ.get("ON_ERASE"); ERASE_SHA = hashlib.sha256(open(ERASE, "rb").read()).hexdigest() if ERASE else None   # 209l: directions erased from the teacher's states before the cross-model corrector reads them (stub_dir.py; translator.Tr.set_erase), in its fit and wherever it teaches
 B1 = os.environ.get("ON_B1") == "1"; B1_KL = float(os.environ.get("ON_B1_KL", "1.0")); OTAG += "_b1" if B1 else ""   # addendum 148: E and F, the B1 mask
 MIX = os.environ.get("ON_MIX") == "1"; MIX_W = float(os.environ.get("ON_MIX_W", "0.5")); OTAG += "_mix" if MIX else ""   # addendum 159: G, both teachers
 
@@ -461,11 +476,13 @@ MIX = os.environ.get("ON_MIX") == "1"; MIX_W = float(os.environ.get("ON_MIX_W", 
 def bridge_setup(mS):
     """the translator ON_BRIDGE_TR (in OD), trained in the configuration now in the environment (checked against its checkpoint)"""
     ck = torch.load(OD / f"{BRIDGE_TR}.pt", weights_only=False, map_location=DEV)
-    want = {"reply": REPLY, "span": SPAN, "all_kv": os.environ.get("TR_ALL_KV"), "src depths": os.environ.get("TR_SRC_DEPTHS")}
+    want = {"reply": REPLY, "span": SPAN, "all_kv": os.environ.get("TR_ALL_KV"), "src depths": os.environ.get("TR_SRC_DEPTHS"), "erase": ERASE_SHA}   # 209l: a corrector fitted on erased states teaches only with the same erasure, and one fitted without it never with it
     got = {k: ck.get(k) for k in want}; assert got == want, f"translator {BRIDGE_TR} was trained as {got}, the environment says {want}"
     assert ck.get("steps", 0) > 20, f"translator {BRIDGE_TR} has {ck.get('steps')} steps: a small-test translator"
     log("bridged teacher:", BRIDGE_TR, "steps", ck.get("steps"), "ridge R2", round(float(ck.get("ridge R2", float("nan"))), 4), "last", ck.get("last"))
     T = X.Tr(ck["din"], ck["arch"], {k: ck["state"][k].cpu().numpy() for k in ("mx", "sx", "my", "sy")}).to(DEV); T.load_state_dict(ck["state"]); T.eval()
+    if ERASE:
+        log("erased from the corrector's input:", T.set_erase(ERASE), "| file sha256", ERASE_SHA[:16])
     return T, X.Patch(mS, T.sites)
 
 
@@ -806,9 +823,10 @@ OPDG_LR = float(os.environ.get("ON_OPDG_LR", "1e-3")); OPD_G2L_STEPS = 4 if SMAL
 
 
 def opd_sample(model, ctx, tok, eos):
+    kw = {"stop_strings": ["```"], "tokenizer": tok} if ONL_STREAM == "lcb" else {}   # 209: a coding sample ends at its own closing fence (as xcode.gen_hf); the rows after it are padding
     with torch.no_grad():
         return model.generate(input_ids=ctx, attention_mask=torch.ones_like(ctx), do_sample=True, temperature=1.0, top_k=0, top_p=1.0, max_new_tokens=OPD_GEN,
-                              num_return_sequences=OPD_K, eos_token_id=eos, pad_token_id=tok.pad_token_id, use_cache=True)
+                              num_return_sequences=OPD_K, eos_token_id=eos, pad_token_id=tok.pad_token_id, use_cache=True, **kw)
 
 
 def opd_point(ids, keep, rng, step):
@@ -1430,6 +1448,11 @@ ONL_REPLAY = int(os.environ.get("ON_ONL_REPLAY", "0")); ONL_EVAL = 2 if SMALL el
 # the blend's pull at the start, KL(base || blend), equals the corrector teacher's, KL(base || bridged E2B), on base E2B's samples at ONL_NCALB
 # decision points outside the stream (blend_alpha).
 ONL_NCALB = 2 if SMALL else int(os.environ.get("ON_ONL_NCALB", "24"))
+VERIFY = os.environ.get("ON_VERIFY") == "1"   # amendment 209e (user 11-10: "we also need to make sure that we train it on actual good tasks that succeed"): on the lcb stream the student learns only on its own samples that pass the problem's tests (and end with their fence); when none of an item's samples passes, on E4B's verified solution of that problem (the row's own text), the same teacher and loss
+STUB_NEG = float(os.environ.get("ON_STUB_NEG", "0"))   # 209p (user 11-11: "cant we use negative reinforcement to tell the model not to do the stub?"): when a sample of the student is a placeholder answer (finished, its last code line a def with no body), the tokens after that def line are pushed down with a bounded unlikelihood loss, -log(1 - p), times this weight
+FB_ROWS = os.environ.get("ON_FALLBACK_ROWS")   # 209r (user 11-11: "we need to add a judge in the middle of that layer"): on an item where no sample passes, the text learned is the judged, direct solution of that problem from this file (jsonl: id, reply; lcb_fit_rows.py's final rows) where it has one, not the stream row's own text (E4B's solution as first written)
+VERIFY_HARD = os.environ.get("ON_VERIFY_HARD") == "1"   # 209n: on an item where no sample of the student passes, E4B's verified solution is learned as text (cross-entropy on its tokens, as copying does), not toward the teacher's distribution on it, which keeps the student's own habits there (the stub)
+ONL_STREAM = os.environ.get("ON_STREAM", "agent")   # addendum 209: "lcb" = the stream is the contest-coding rows of lcb_rows.py (kind lcb: the problem prompt, then E4B's verified solution), ON_ONL_N items in seeded passes over them; the held curve is read on held lcb rows
 
 
 @torch.no_grad()
@@ -1510,6 +1533,40 @@ def train_online():
     rng = np.random.default_rng(170 + SEEDOFF); torch.manual_seed(170 + SEEDOFF); t0 = time.time()   # 189: ON_SEED (0 = every earlier online run)
     keep = [r for r in tr if not after_submit(ids, r, call, sub)]; perm = rng.permutation(len(keep)); stream = [keep[i] for i in perm[:ONL_N]]
     calib = [keep[i] for i in perm[ONL_N:ONL_N + ONL_NCALB]] if ONL_TEACH == "blend" else []   # 189: outside the stream
+    if ONL_STREAM == "lcb":                                             # 209: contest coding as the stream; the agent rows above only keep the seed's draws in step
+        assert ONL_TEACH in ("direct", "bridge", "control", "sft"), "the lcb stream runs teachers direct, bridge, control and sft"
+        _, ltr, lheld = data(kinds=("lcb",)); assert ltr and lheld, "no lcb rows in ON_DIR (lcb_rows.py)"
+        keep = ltr; held = lheld; stream = [ltr[i] for _ in range(math.ceil(ONL_N / len(ltr))) for i in rng.permutation(len(ltr))][:ONL_N]
+        log("lcb stream:", len(ltr), "row problems,", len(stream), "items (", round(len(stream) / len(ltr), 2), "passes ) | held lcb rows", len(lheld))
+    XL, PROB, vstat, NOFB = None, {}, [], set(); hardn = [0]; assert not VERIFY_HARD or VERIFY, "ON_VERIFY_HARD needs ON_VERIFY"; negn = [0, 0]; assert STUB_NEG == 0 or VERIFY, "ON_STUB_NEG needs ON_VERIFY"; FB = {}; fbn = [0, 0]; assert not FB_ROWS or VERIFY, "ON_FALLBACK_ROWS needs ON_VERIFY"
+
+    def stub_from(t_):
+        """the character from which a placeholder answer is made less likely (the placeholder's words after the comment sign, the line end, the closing
+        fence), or None if t_ is not one: it has its closing fence and the last line of code before it that is not a comment is a def line with
+        nothing under it (dreamer/lcb_failkinds.py's rule)"""
+        if "```" not in t_:
+            return None
+        code = t_.split("```")[0]; lines = code.split("\n"); keep_ = [j for j, l_ in enumerate(lines) if l_.strip() and not l_.strip().startswith("#")]
+        if not keep_ or not (lines[keep_[-1]].strip().startswith("def ") and lines[keep_[-1]].rstrip().endswith(":")):
+            return None
+        ch = len("\n".join(lines[:keep_[-1] + 1])) + 1                  # after the def line; then past the indent and the comment sign, which every real body may start with
+        while ch < len(t_) and t_[ch] in " \t\n":
+            ch += 1
+        return ch + 1 if ch < len(t_) and t_[ch] == "#" else ch
+    if VERIFY:                                                          # 209e: the coding study's problems and tests (xlearn.pools, as its evaluation reads them)
+        assert ONL_STREAM == "lcb" and ONL_TEACH != "sft", "ON_VERIFY is for the on-policy teachers on the lcb stream"
+        import xlearn as XL
+        PROB = {p_["id"]: p_ for p_ in XL.pools()[0]}; assert all(r_["id"] in PROB for r_ in ltr), "a row problem without its tests"
+        import re as _re                                                # review 209e: a stream row with a placeholder comment ("# ...") is never the text learned on
+        NOFB.update(r_["id"] for r_ in ltr if _re.search(r"^\s*#\s*\.\.\.", tok.decode(np.asarray(ids[r_["off"] + r_["ctx_len"]:r_["off"] + r_["ctx_len"] + r_["reply_len"]]).tolist(), skip_special_tokens=True), _re.M))
+        if FB_ROWS:                                                    # 209r: per problem its shortest judged solution (any author); it must end with its fence
+            best = {}
+            for q_ in map(json.loads, open(FB_ROWS)):
+                if q_["reply"].rstrip().endswith("```") and (q_["id"] not in best or len(q_["reply"]) < len(best[q_["id"]])):
+                    best[q_["id"]] = q_["reply"]
+            FB.update({i_: tok(t_, add_special_tokens=False)["input_ids"] for i_, t_ in best.items()})
+            log("judged fallback text:", len(FB), "problems have a judged solution |", sum(1 for r_ in ltr if r_["id"] in FB), "of the stream's", len({r_["id"] for r_ in ltr}), "row problems")
+        XL.XC.selfcheck(); log("verify: tests of", len(PROB), "train-pool problems; a sample is learned on only if it passes and ends with its fence | row problems whose own solution is not used as the text (a placeholder comment):", sorted(NOFB))
     if SMALL:                                                           # review 11-07: the small pass reaches peak memory (the longest row first)
         stream[0] = max(keep, key=(lambda q: (min(q["ctx_len"] + min(q["reply_len"], RMAX), CAP), min(q["reply_len"], RMAX))) if ONL_TEACH == "sft" else (lambda q: min(q["ctx_len"] + min(q["reply_len"], RMAX), CAP)))   # review 192: sft also takes the longest reply
     hpick = [held[i] for i in np.random.default_rng(11).permutation(len(held))[:ONL_HELD]]   # the first ONL_HELD of the gate's own points
@@ -1535,13 +1592,27 @@ def train_online():
     log("online: teacher", ONL_TEACH, "| weight", alpha, "| seed offset", SEEDOFF, "| stream", len(stream), "items | keep", ONL_KEEP, "replay every", ONL_REPLAY, "| LoRA layers", lay, "| eval every", ONL_EVAL, "on", len(hpick), "held points and", len(mpick), "untaught rows")
     preq, curve, seen, runs_seen, repos_seen = [], [], [], set(), set(); gfrac = []   # 197: share of tokens where the gated teacher takes E4B's distribution
 
+    @torch.no_grad()
+    def teacher_ce(r):
+        """209: cross-entropy to E4B's top 32 along E4B's logged reply (point_scores' measure) for base E2B corrected by this run's corrector"""
+        x, c, n, _ = seq(ids, r)
+        with pm.disable_adapter():
+            if ONL_TEACH == "bridge":
+                ld, lb = teacher_both(mT, mS, gT, x, c, n, br)
+            else:
+                ld = Fn.log_softmax(mT(input_ids=x, logits_to_keep=n + 1, use_cache=False).logits[0, :-1].float(), -1); lb = control_lp(mS, ctl, x, c, n)
+        tv, ti = ld.topk(X.TOPK, -1); return float(-(tv.softmax(-1) * lb.gather(-1, ti)).sum(-1).mean())
+
     def evaluate(i):
         pm.eval(); sc = [point_scores(mT, mS, pm, *seq(ids, r)[:3], r, call, ("on", "off") if i == 0 else ("on",)) for r in hpick]
         dm_ = [z["on"][1] for z in sc if z["on"][1] is not None]
         e = {"item": i, "held ce (on)": round(float(np.mean([z["on"][0] for z in sc])), 4), "held decisions match (on)": round(float(np.mean(dm_)), 4) if dm_ else None,
              "KL from base on untaught prose / code / story": round(mix_kl(mS, pm, ids, mpick), 5), "KL from base on held questions (never kept)": round(mix_kl(mS, pm, ids, qpick), 5), "seconds": round(time.time() - t0)}
         if i == 0:
-            e["held ce (base)"] = round(float(np.mean([z["off"][0] for z in sc])), 4); e["held decisions match (base)"] = round(float(np.mean([z["off"][1] for z in sc if z["off"][1] is not None])), 4)
+            db_ = [z["off"][1] for z in sc if z["off"][1] is not None]   # 209: none on coding rows (no tool call)
+            e["held ce (base)"] = round(float(np.mean([z["off"][0] for z in sc])), 4); e["held decisions match (base)"] = round(float(np.mean(db_)), 4) if db_ else None
+            if ONL_STREAM == "lcb" and ONL_TEACH in ("bridge", "control"):   # 209: this run's teacher (base E2B corrected) on the same held rows, the same measure
+                e["held ce (teacher)"] = round(float(np.mean([teacher_ce(r) for r in hpick])), 4)
         curve.append(e); log("online eval", json.dumps(e)); pm.train()
         json.dump({"partial": True, "items": len(preq), "prequential": preq, "held curve (bridge down)": curve}, open(OD / f"online_{tag}_partial.json", "w"))   # review 11-07: nothing lost on a late crash
 
@@ -1549,12 +1620,36 @@ def train_online():
         if ONL_TEACH == "sft":                                           # 192: copy E4B's logged reply (cross-entropy), no sampling
             x, c, n, s0 = seq(ids, r); lg = mS(input_ids=x, logits_to_keep=n + 1, use_cache=False).logits[0, :-1].float()
             ce = Fn.cross_entropy(lg, x[0, -n:]); ce.backward(); v = float(ce.detach()); del lg, ce; return v
-        x, c, n, s0 = seq(ids, r); ctx = x[:, :c]
-        if c > CAP - OPD_GEN:
+        x, c0, n, s0 = seq(ids, r); ctx = x[:, :c0]
+        if c0 > CAP - OPD_GEN:
             ctx = torch.cat([ctx[:, :HEAD], ctx[:, -(CAP - OPD_GEN - HEAD):]], 1)
-        c = ctx.shape[1]; pm.eval(); out = opd_sample(pm, ctx, tok, eos); y = out[:, c:]; m, _ = ends_of(y, eos); pm.train(); Ltot = max(1, int(m.sum())); kls = []
-        for k in range(OPD_K):
-            L = int(m[k].sum()); s_i = torch.cat([ctx, y[k:k + 1, :L]], 1)
+        c = ctx.shape[1]; pm.eval(); out = opd_sample(pm, ctx, tok, eos); y = out[:, c:]; m, _ = ends_of(y, eos)
+        if ONL_STREAM == "lcb":                                          # 209: a sample stopped at its fence is padded to the batch's length; the padding is not text
+            m = m & (y != tok.pad_token_id).int().cumprod(1).bool()
+        pm.train(); segs = [(torch.cat([ctx, y[k:k + 1, :int(m[k].sum())]], 1), c, int(m[k].sum())) for k in range(OPD_K)]   # (sequence, where the scored text starts, its length)
+        if VERIFY:                                                       # 209e: only answers that pass; none passes: E4B's verified solution (the row itself)
+            txt = [tok.decode(y[k, :L_], skip_special_tokens=True) for k, (_, _, L_) in enumerate(segs)]
+            ok = [bool(o_) and "```" in t_ for o_, t_ in zip(XL.score([PROB[r["id"]]] * len(txt), txt), txt)]
+            negs = [(g_, stub_from(t_)) for g_, t_, o_ in zip(segs, txt, ok) if STUB_NEG > 0 and not o_ and stub_from(t_) is not None]   # 209p: the student's own placeholder answers at this item
+            if not any(ok) and r["id"] in FB and c0 + len(FB[r["id"]]) <= CAP:   # 209r: the judged solution of this problem as the fallback text
+                fbseg = [(torch.cat([x[:, :c0], torch.tensor([FB[r["id"]]], device=DEV)], 1), c0, len(FB[r["id"]]))]; fbn[0] += 1
+            else:
+                fbseg = [] if r["id"] in NOFB else [(x, c0, n)]; fbn[1] += int(not any(ok) and bool(fbseg))
+            vstat.append((sum(ok), len(ok))); fb = not any(ok); segs = [g_ for g_, o_ in zip(segs, ok) if o_] or fbseg   # nothing to learn on: only the keep term moves the student at this item
+            for (s_n, c_n, L_n), ch in negs:                           # the tokens after the def line (the placeholder comment, the line end, the closing fence) made less likely; bounded, on the student's own sample
+                b_ = next((j_ for j_ in range(1, L_n + 1) if len(tok.decode(s_n[0, c_n:c_n + j_], skip_special_tokens=True)) > ch), None)
+                if b_ is None:
+                    continue
+                lg = mS(input_ids=s_n, logits_to_keep=L_n + 1, use_cache=False).logits[0, :-1].float(); lp = Fn.log_softmax(lg[b_ - 1:], -1); tg = s_n[0, c_n + b_ - 1:, None]
+                nl = -torch.logsumexp(lp.scatter(-1, tg, float("-inf")), -1)   # review 209p: -log(1 - p) exactly, as the log of the other tokens' mass: no clamp, so a token the student is sure of is pushed too; the gradient on its logit is p, at most 1
+                (STUB_NEG * nl.mean()).backward(); negn[0] += 1; negn[1] += int(nl.shape[0]); del lg, lp, nl
+        Ltot = max(1, sum(L_ for _, _, L_ in segs)); kls = []
+        for s_i, c, L in segs:
+            if L == 0:
+                continue
+            if VERIFY and VERIFY_HARD and fb:                           # 209n: the fallback row (the prompt, then E4B's verified solution) as text
+                lg = mS(input_ids=s_i, logits_to_keep=L + 1, use_cache=False).logits[0, :-1].float(); ce = Fn.cross_entropy(lg, s_i[0, -L:], reduction="sum")
+                (ce / Ltot).backward(); kls.append(float(ce.detach())); hardn[0] += 1; del lg, ce; continue
             with pm.disable_adapter(), torch.no_grad():
                 if ONL_TEACH == "bridge":
                     _, tgt = teacher_both(mT, mS, gT, s_i, c, L, br)
@@ -1592,6 +1687,8 @@ def train_online():
         torch.nn.utils.clip_grad_norm_(params, 1.0); opt.step()
         if i % 25 == 0:
             w = np.array([p_[:2] for p_ in preq[-50:]]); log("online item", i, "learn KL", round(lv, 4), "| last 50 items, before learning: ce on", round(float(w[:, 0].mean()), 4), "base", round(float(w[:, 1].mean()), 4), round(time.time() - t0), "s")
+        if VERIFY and i % 25 == 0:
+            v_ = vstat[-60:]; log("verify: last", len(v_), "learned items: samples passing", sum(a_ for a_, _ in v_), "of", sum(b_ for _, b_ in v_), "| items learned on E4B's solution (no sample passed)", sum(a_ == 0 for a_, _ in v_), *((f"| as text (cross-entropy) so far: {hardn[0]}",) if VERIFY_HARD else ()), *((f"| placeholder samples made less likely so far: {negn[0]} ({negn[1]} tokens)",) if STUB_NEG > 0 else ()), *((f"| judged fallback text so far: {fbn[0]} items (the row's own text: {fbn[1]})",) if FB_ROWS else ()))
         if (i + 1) % ONL_EVAL == 0 or i == len(stream) - 1:
             evaluate(i + 1)
     pq = np.array([(a, b) for a, b, *_ in preq]); fv = np.array([not rs for *_, rs, _ in preq]); dlist = [(a, b) for _, _, a, b, *_ in preq if a is not None]; wins = []
@@ -1600,15 +1697,43 @@ def train_online():
         wins.append({"items": [a, a + len(seg)], "ce student": round(float(seg[:, 0].mean()), 4), "ce base": round(float(seg[:, 1].mean()), 4), "gain over base": round(float((seg[:, 1] - seg[:, 0]).mean()), 4),
                      "first-visit-run items": int(len(fseg)), "gain over base, first-visit-run items": round(float((fseg[:, 1] - fseg[:, 0]).mean()), 4) if len(fseg) else None})
     dd = np.array(dlist) if dlist else np.zeros((0, 2))
-    out = {"teacher": ONL_TEACH, "blend weight": alpha, "blend calibration": binfo, "gated: mean per-sample share of positions from E4B (incl. replay)": round(float(np.mean(gfrac)), 4) if gfrac else None, "seed offset": SEEDOFF, "keep": ONL_KEEP, "replay every": ONL_REPLAY, "items": len(preq), "LoRA layers": lay, "prequential windows (before learning each item)": wins,
+    out = {"teacher": ONL_TEACH, "stream": ONL_STREAM, "blend weight": alpha, "blend calibration": binfo, "gated: mean per-sample share of positions from E4B (incl. replay)": round(float(np.mean(gfrac)), 4) if gfrac else None, "seed offset": SEEDOFF, "keep": ONL_KEEP, "replay every": ONL_REPLAY, "items": len(preq), "LoRA layers": lay, "prequential windows (before learning each item)": wins,
            "prequential decisions match, first / last half (student, base)": [[round(float(h[:, 0].mean()), 4), round(float(h[:, 1].mean()), 4)] for h in (dd[:len(dd) // 2], dd[len(dd) // 2:]) if len(h)],
            "held curve (bridge down)": curve}
-    name = f"lora_onl_{tag}"; pm.save_pretrained(str(OD / name)); json.dump({"arm": f"online {tag}", "teacher": ONL_TEACH, "blend weight": alpha, "seed offset": SEEDOFF, "layers": lay, "rank": 16, "lr": 3e-4, "steps": len(preq), "samples": OPD_K, "max_new": OPD_GEN}, open(OD / name / "train.json", "w"))
+    if VERIFY:                                                          # 209e (replayed items included)
+        out["verify"] = {**({"fallback items on the judged solution (209r)": fbn[0], "fallback items on the row's own text": fbn[1], "problems with a judged solution": len(FB)} if FB_ROWS else {}), **({"fallback items learned as text (209n)": hardn[0]} if VERIFY_HARD else {}), **({"placeholder samples made less likely (209p)": negn[0], "their tokens": negn[1], "weight": STUB_NEG} if STUB_NEG > 0 else {}), "learned items (with replays)": len(vstat), "samples": sum(b_ for _, b_ in vstat), "samples passing": sum(a_ for a_, _ in vstat), "items learned on E4B's solution (no sample passed)": sum(a_ == 0 for a_, _ in vstat), "row problems whose own solution is never the text (a placeholder comment)": sorted(NOFB)}
+    name = f"lora_onl_{tag}"; pm.save_pretrained(str(OD / name)); json.dump({"arm": f"online {tag}", "teacher": ONL_TEACH, "verify hard": VERIFY_HARD, "fallback rows": bool(FB_ROWS), "stub neg": STUB_NEG, "erase": ERASE_SHA, "blend weight": alpha, "seed offset": SEEDOFF, "layers": lay, "rank": 16, "lr": 3e-4, "steps": len(preq), "samples": OPD_K, "max_new": OPD_GEN, "verify": VERIFY}, open(OD / name / "train.json", "w"))
     json.dump(out, open(OD / f"online_{tag}.json", "w"), indent=1); log(json.dumps(out)); print("ONLINE_DONE", tag, flush=True)
 
 
+@torch.no_grad()
+def lcb_teacher():
+    """amendment 209a: a corrector as a teacher on contest coding, before any teaching: on the 60 held lcb rows train_online reads (the same draw),
+    cross-entropy to E4B's top 32 along E4B's passing solution for E2B alone and for base E2B corrected by ON_BRIDGE_TR (ON_ONL_TEACH=bridge: fed
+    E4B's states) or by TR_CONTROL (control: fed E2B's own). Forward passes only. Writes lcb_teacher_<teacher>.json in ON_DIR/out."""
+    assert ONL_TEACH in ("bridge", "control"); ids, _, _ = data(); _, _, lheld = data(kinds=("lcb",)); assert lheld, "no held lcb rows"; mT, mS, gT, gS = load_models(); mS.eval()
+    hpick = [lheld[i] for i in np.random.default_rng(11).permutation(len(lheld))[:(3 if SMALL else 60)]]; br, ctl = None, None
+    if ONL_TEACH == "bridge":
+        br = bridge_setup(mS)
+    else:
+        Tc = control_setup(); ctl = (Tc, X.Patch(mS, Tc.sites), Grab(mS, X.SRC[ST]))
+    base, teach = [], []
+    for r in hpick:
+        x, c, n, _ = seq(ids, r); l0 = Fn.log_softmax(mS(input_ids=x, logits_to_keep=n + 1, use_cache=False).logits[0, :-1].float(), -1)
+        if br is not None:
+            ld, lb = teacher_both(mT, mS, gT, x, c, n, br)
+        else:
+            ld = Fn.log_softmax(mT(input_ids=x, logits_to_keep=n + 1, use_cache=False).logits[0, :-1].float(), -1); lb = control_lp(mS, ctl, x, c, n)
+        tv, ti = ld.topk(X.TOPK, -1); tp = tv.softmax(-1); base.append(float(-(tp * l0.gather(-1, ti)).sum(-1).mean())); teach.append(float(-(tp * lb.gather(-1, ti)).sum(-1).mean())); del l0, ld, lb
+    out = {"teacher": ONL_TEACH, "corrector": BRIDGE_TR if br is not None else os.environ.get("TR_CONTROL"), "held lcb rows": len(hpick), "held ce (base)": round(float(np.mean(base)), 4), "held ce (teacher)": round(float(np.mean(teach)), 4),
+           "rows where the teacher is closer": int(sum(t_ < b_ for t_, b_ in zip(teach, base))), "per row (base, teacher)": [[round(b_, 4), round(t_, 4)] for b_, t_ in zip(base, teach)]}
+    json.dump(out, open(OD / f"lcb_teacher_{ONL_TEACH}.json", "w")); log("lcb teacher", json.dumps({k_: v_ for k_, v_ in out.items() if k_ != "per row (base, teacher)"})); print("LCB_TEACHER_DONE", flush=True)
+
+
 if __name__ == "__main__":
-    if sys.argv[1] == "lora":
+    if sys.argv[1] == "lcbteacher":
+        lcb_teacher()
+    elif sys.argv[1] == "lora":
         {"train": train_lora, "gate": gate_lora}[sys.argv[2]]()
     elif sys.argv[1] == "rung":
         gate_rung(sys.argv[2])

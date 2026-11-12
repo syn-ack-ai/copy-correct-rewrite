@@ -21,10 +21,14 @@ def pool(name, arms):
         att = [d for a in arms for d in D[a].values()]; rate[name] = {t: sum(d[t]["resolved"] for d in att) / len(att) for t in ids}
 pool("D + D4", ["D LoRA (4090 seed 1)", "D4 LoRA (A100 seed 1)"]); pool("S + S4", ["S LoRA (4090 seed 1)", "S4 LoRA (G4 seed 1)"])
 pool("D, both adapters", ["D LoRA (4090 seed 1)", "D LoRA (A100 seed 1)"]); pool("C, both adapters", ["C LoRA (4090 seed 1)", "C LoRA (A100 seed 1)"])
+pool("corrector-taught adapters (D, D, D4)", ["D LoRA (4090 seed 1)", "D LoRA (A100 seed 1)", "D4 LoRA (A100 seed 1)"])
+pool("all taught adapters (D, D, D4, C, C)", ["D LoRA (4090 seed 1)", "D LoRA (A100 seed 1)", "D4 LoRA (A100 seed 1)", "C LoRA (4090 seed 1)", "C LoRA (A100 seed 1)"])
 print("\nby task: higher solve rate on / lower on (exact sign test)")
 for x, y in (("D LoRA (4090 seed 1)", "null adapter"), ("D LoRA (4090 seed 1)", "plain E2B"), ("D LoRA (4090 seed 1)", "C LoRA (4090 seed 1)"), ("D4 LoRA (A100 seed 1)", "null adapter"),
              ("D4 LoRA (A100 seed 1)", "D LoRA (4090 seed 1)"), ("C LoRA (4090 seed 1)", "null adapter"), ("null adapter", "plain E2B"), ("D LoRA (A100 seed 1)", "C LoRA (A100 seed 1)"),
              ("D, both adapters", "C, both adapters"), ("S LoRA (4090 seed 1)", "null adapter"), ("S4 LoRA (G4 seed 1)", "null adapter"), ("S + S4", "null adapter"),
-             ("D LoRA (4090 seed 1)", "S LoRA (4090 seed 1)"), ("D4 LoRA (A100 seed 1)", "S4 LoRA (G4 seed 1)"), ("D + D4", "S + S4")):
+             ("D LoRA (4090 seed 1)", "S LoRA (4090 seed 1)"), ("D4 LoRA (A100 seed 1)", "S4 LoRA (G4 seed 1)"), ("D + D4", "S + S4"),
+             ("D LoRA (A100 seed 1)", "null adapter"), ("corrector-taught adapters (D, D, D4)", "C, both adapters"),
+             ("all taught adapters (D, D, D4, C, C)", "null adapter"), ("all taught adapters (D, D, D4, C, C)", "plain E2B")):
     if x in rate and y in rate:
         w = sum(rate[x][t] > rate[y][t] for t in ids); l = sum(rate[y][t] > rate[x][t] for t in ids); print(f"  {x} vs {y}: {w} vs {l}, p = {sign(w, l):.4f}")

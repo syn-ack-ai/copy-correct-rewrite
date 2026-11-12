@@ -1,0 +1,58 @@
+{
+ "arch": "lora",
+ "decision points": 240,
+ "cross-entropy to the 31B along E4B's reply (lower is closer)": {
+  "E4B alone": 0.8261,
+  "LoRA": 0.8213
+ },
+ "tool choice: top token matches the 31B's (share)": {
+  "E4B alone": 0.935,
+  "LoRA": 0.935
+ },
+ "tool tokens found": 200,
+ "at E4B's own submits: probability of submit_patch": {
+  "E4B alone": 0.9931,
+  "LoRA": 0.9968,
+  "31B": 0.9986
+ },
+ "E4B submits in the sample": 21,
+ "decision without thinking (context, then the tool-call opening), at E4B's tool calls": {
+  "points": 220,
+  "where E4B alone's choice differs from the 31B's": 49,
+  "top token matches the 31B's (share)": {
+   "E4B alone": 0.7773,
+   "LoRA": 0.7591
+  },
+  "probability of the 31B's choice": {
+   "E4B alone": 0.6622,
+   "LoRA": 0.6684
+  },
+  "where E4B alone differs: share now on the 31B's choice": {
+   "E4B alone": 0.0,
+   "LoRA": 0.0408
+  }
+ },
+ "lora": {
+  "arm": "online direct_keep_replay_lcb_s2",
+  "teacher": "direct",
+  "blend weight": null,
+  "seed offset": 2000,
+  "layers": [
+   4,
+   6,
+   8,
+   10,
+   12,
+   16,
+   20,
+   24,
+   28
+  ],
+  "rank": 16,
+  "lr": 0.0003,
+  "steps": 598,
+  "samples": 2,
+  "max_new": 512
+ },
+ "adapter": "lora_onl_direct_keep_replay_lcb_s2"
+}

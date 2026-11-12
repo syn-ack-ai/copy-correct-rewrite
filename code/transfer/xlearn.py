@@ -72,6 +72,7 @@ NTRAIN, NHELD = (6, 4) if SMALL else (10 ** 6, 10 ** 6); NSAMP = 2 if SMALL else
 EPOCHS = float(os.environ.get("XL_EPOCHS", "2")); LAM = float(os.environ.get("XL_LAMBDA", "1.0")); RANK = 64; LR = 3e-4
 SD_EMA, SD_MASK, SD_MAXNEW = 0.02, 3, 32 if SMALL else int(os.environ.get("XL_SD_MAXNEW", "512"))
 ARMS = ("sft", "sft_b", "sft_c", "kl_b", "sft_self", "sdft", "opd_b", "opd_c", "sft_s", "sft_c_s", "mix_c", "opd_cf", "rw_cf", "mix_cf", "rb", "sft_k", "sft_ck", "xk", "rb_c", "sft_self_s", "sft_b_s", "sft_es", "sft_lr", "sft_mt_s", "sft_self_mt_s", "sft_self_s_l03", "sft_self_s_l3"); ROWS = OD.parent / "xl_rows.jsonl"; BASE = OD.parent / "xl_base.json"
+ARMS = ARMS + tuple(a_ for a_ in os.environ.get("XL_EXTRA_ARMS", "").split(",") if a_)   # addendum 209: adapters trained elsewhere (online.py's lcb stream), copied to out/xl_NAME and evaluated here like any arm
 ROWS_SHORT = OD.parent / "xl_rows_short.jsonl"; SHORT = OD.parent / "xl_short.json"   # 179a: shortest-correct rows (sft_s, sft_c_s = sft, sft_c on them)
 NSHORT = 2 if SMALL else int(os.environ.get("XL_NSHORT", "4"))   # shared by every seed's folder
 MT_N = 4 if not SMALL else 1; MT_W = float(os.environ.get("XL_MT_W", "1.0"))   # 190a: mix rows per step: 4 x 299 = about 1,200 rows, the corrector's own exposure (600 steps x 2); weight of their mean

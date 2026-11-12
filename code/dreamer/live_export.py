@@ -5,7 +5,8 @@ import glob, json
 ARMS = {"plain E2B": ["x196_plain_a", "x196_plain_b", "x207_plain_c", "x207_plain_d"], "null adapter": ["x207_N_a", "x207_N_b"],
         "C LoRA (4090 seed 1)": ["x196_C_a", "x196_C_b"], "D LoRA (4090 seed 1)": ["x196_D_a", "x196_D_b", "x207_D_c", "x207_D_d"],
         "D4 LoRA (A100 seed 1)": ["x202_D4x_a", "x202_D4x_b"], "C LoRA (A100 seed 1)": ["x207_CA_a", "x207_CA_b"], "D LoRA (A100 seed 1)": ["x207_DA_a", "x207_DA_b"],
-        "S LoRA (4090 seed 1)": ["x208_S_a", "x208_S_b"], "S4 LoRA (G4 seed 1)": ["x208_S4_a", "x208_S4_b"]}
+        "S LoRA (4090 seed 1)": ["x208_S_a", "x208_S_c"], "S4 LoRA (G4 seed 1)": ["x208_S4_a", "x208_S4_c"],   # 208c: x208_S_b and x208_S4_b lost their link to box (rollouts exited 255) and are not attempts; run again as _c
+        "D LoRA (4090 seed 1), new driver": ["x208_D_e"], "null adapter, new driver": ["x208_N_c"]}   # 208b: control attempts after the 4090's kernel and driver upgrade
 out = {"note": "80 held-out-repository agent tasks per attempt (E4B solved none of them); resolved = the hidden tests pass; error = how the episode ended if not by a submit (timeout or other); calls = model calls",
        "arms": {}}
 for arm, names in ARMS.items():

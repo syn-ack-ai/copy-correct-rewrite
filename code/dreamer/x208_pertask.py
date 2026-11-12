@@ -5,8 +5,8 @@ import json, glob
 from math import comb
 ARMS = {"plain": ["x196_plain_a", "x196_plain_b", "x207_plain_c", "x207_plain_d"], "null": ["x207_N_a", "x207_N_b"],
         "D": ["x196_D_a", "x196_D_b", "x207_D_c", "x207_D_d"], "C": ["x196_C_a", "x196_C_b"], "D4x": ["x202_D4x_a", "x202_D4x_b"],
-        "S": ["x208_S_a", "x208_S_b"], "S4x": ["x208_S4_a", "x208_S4_b"],
-        "D + D4x": ["x196_D_a", "x196_D_b", "x207_D_c", "x207_D_d", "x202_D4x_a", "x202_D4x_b"], "S + S4x": ["x208_S_a", "x208_S_b", "x208_S4_a", "x208_S4_b"]}
+        "S": ["x208_S_a", "x208_S_c"], "S4x": ["x208_S4_a", "x208_S4_c"],
+        "D + D4x": ["x196_D_a", "x196_D_b", "x207_D_c", "x207_D_d", "x202_D4x_a", "x202_D4x_b"], "S + S4x": ["x208_S_a", "x208_S_c", "x208_S4_a", "x208_S4_c"]}
 def load(n):
     d = {}
     for f in glob.glob(n + "/res_*/task_results.jsonl"):

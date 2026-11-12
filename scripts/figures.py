@@ -283,7 +283,7 @@ def fig_online():
         if v:
             rows.append((text, v, c, True))
     for name, tag in (("D vs S", "1× fit"), ("D4 vs S4", "4× fit")):
-        for sd in ("1", "2", "3"):
+        for sd in ("1", "2", "3", "4", "5"):
             if sd in P.get(name, {}):
                 rows.append((f"   {tag}, seed {sd}", P[name][sd][K], S3, False))
     ys = list(range(len(rows)))[::-1]

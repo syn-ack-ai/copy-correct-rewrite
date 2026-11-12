@@ -227,7 +227,7 @@ if (ONL / "gate_rows_groups.json").exists() and (ONL / "gate_lora_onl_bridge_kee
     GRP = json.load(open(ONL / "gate_rows_groups.json"))["repo"]; al4 = json.load(open(ONL / "gate_lora_onl_bridge_keep_replay_points.json"))[PK]["E4B alone"]   # the 4090 partition
     dif4 = [i for i, x in enumerate(al4) if x[2]]; same4 = [i for i, x in enumerate(al4) if not x[2]]; T = {}; ROWS = {}; DEC = {}
     for k, (pre, a) in G4A.items():
-        for sd in (1, 2, 3):
+        for sd in (1, 2, 3, 4, 5):
             sx = "" if sd == 1 else f"_s{sd}"; fp, fo, fg = (ONL / f"{pre}gate_lora_onl_{a}{sx}_points.json", ONL / f"{pre}online_{a}{sx}.json", ONL / f"{pre}gate_lora_onl_{a}{sx}.json")
             if not (fp.exists() and fo.exists() and fg.exists()):
                 continue
@@ -238,7 +238,7 @@ if (ONL / "gate_rows_groups.json").exists() and (ONL / "gate_lora_onl_bridge_kee
                                              "drift": c[-1]["KL from base on untaught prose / code / story"], "drift, mean of last six": round(sum(e["KL from base on untaught prose / code / story"] for e in c[-6:]) / 6, 4),
                                              "gate ce": round(sum(ROWS[(k, sd)]) / len(ROWS[(k, sd)]), 4), "curve": [[e["item"], e["held ce (on)"]] for e in c],
                                              "hardware flips": sum(1 for i in range(len(al4)) if P[PK]["E4B alone"][i][0] != al4[i][0])}
-    for sd in ("1", "2", "3"):   # speed: the first checkpoint at or below C's held CE at item 600, same seed
+    for sd in ("1", "2", "3", "4", "5"):   # speed: the first checkpoint at or below C's held CE at item 600, same seed
         if sd in T.get("C", {}):
             for k in T:
                 if k != "C" and sd in T[k]:
@@ -258,13 +258,13 @@ if (ONL / "gate_rows_groups.json").exists() and (ONL / "gate_lora_onl_bridge_kee
         return [sum(v) / len(v) for v in zip(*(ROWS[k] for k in keys))]
     PR = {}
     for a, b in (("D", "S"), ("D4", "S4"), ("D", "C"), ("S", "C"), ("D4", "C"), ("S4", "C"), ("DI", "C"), ("D4", "D"), ("S4", "S"), ("DI", "D")):
-        sds = [sd for sd in (1, 2, 3) if (a, sd) in ROWS and (b, sd) in ROWS]
+        sds = [sd for sd in (1, 2, 3, 4, 5) if (a, sd) in ROWS and (b, sd) in ROWS]
         for sd in sds:
             A_, B_ = DEC[(a, sd)], DEC[(b, sd)]; w = sum(1 for i in range(len(A_)) if A_[i] and not B_[i]); l = sum(1 for i in range(len(A_)) if B_[i] and not A_[i])
             PR.setdefault(f"{a} vs {b}", {})[str(sd)] = {"rows: mean, lo, hi, repos closer, repos": _boot([x - y for x, y in zip(ROWS[(a, sd)], ROWS[(b, sd)])]), "decisions: first only, second only, p": [w, l, round(_sg(w, l), 4)]}
         if sds:
             PR[f"{a} vs {b}"]["all seeds"] = {"seeds": sds, "rows: mean, lo, hi, repos closer, repos": _boot([x - y for x, y in zip(_avg([(a, sd) for sd in sds]), _avg([(b, sd) for sd in sds]))])}
-    cs = [(a, b, sd) for a, b in (("D", "S"), ("D4", "S4")) for sd in (1, 2, 3) if (a, sd) in ROWS and (b, sd) in ROWS]
+    cs = [(a, b, sd) for a, b in (("D", "S"), ("D4", "S4")) for sd in (1, 2, 3, 4, 5) if (a, sd) in ROWS and (b, sd) in ROWS]
     if cs:   # 206c: the cross corrector against the self-corrector over every pair present
         d = [sum(DEC[(a, sd)][i] for a, b, sd in cs) - sum(DEC[(b, sd)][i] for a, b, sd in cs) for i in range(len(al4))]; w = sum(v > 0 for v in d); l = sum(v < 0 for v in d)
         means = [PR[f"{a} vs {b}"][str(sd)]["rows: mean, lo, hi, repos closer, repos"][0] for a, b, sd in cs]
