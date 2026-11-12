@@ -35,7 +35,8 @@ As of 2026-11-11 (the paper's final numbers; `paper.md` has the tests and their 
 - **In coding online, the corrector matches copying.** With correctors fitted on verified, reviewed solutions and teaching only on answers
   that pass the tests, the corrector's students solved 76 and 75 of 188 held problems, students of E4B's distribution 79 and 67, of its
   verified text 76 and 69 (untrained 57). A hybrid (the corrector on the student's passing answers, the verified text where none passes)
-  solved 80, 69 and 77 and is level with copying (by problem 43 vs 37, p = 0.58).
+  solved 80, 69 and 77 and is level with copying (by problem 43 vs 37, p = 0.58). Copying a shorter, reviewer-picked solution
+  instead left fewer answers unfinished (71, 72, 59 of 487 against 116, 113, 75) without solving more (75, 70, 71 held problems).
 - **In coding offline, copying the teacher's verified answers taught as much as anything tested,** best with the shortest correct version,
   and the corrector stored nothing more.
 - **Within the Gemma family, copying also forgot.** Training on E4B's text sharpened E2B and raised its loss on untaught text. A KL pull
@@ -85,7 +86,7 @@ code/
   transfer/              experiment code (Python)
   colab/                 session scripts for Colab G4 runs
   dreamer/               launchers and runners for the local RTX 4090
-PREREGISTRATION.md       the pre-registration log, addenda 165-208
+PREREGISTRATION.md       the pre-registration log, addenda 165-209
 SCORECARD.md             which pre-registered predictions held, per addendum (designs and predictions written before each run)
 MANIFEST.md              every file, its size and its purpose
 LICENSE                  Apache License 2.0
@@ -164,7 +165,7 @@ The code also holds paths that the paper does not report, among them arms `sft_k
 | `xqcC1`, `xqcC2`, `xqcD1`, `xqcDf2`, `xqcF1`, `xqcF2`, `xqzF3` | Online coding, first form (209, 209a): E4B's distribution, the cross-model corrector as fitted for the agent stream and with the contest rows, E4B's verified text (three seeds) |
 | `xqxC1`, `xqxC2`, `xqzC3`, `xqxD1`, `xqxS1`, `xqxS2` | Online coding on passing answers only, correctors fitted on reviewed solutions (209e-209g) |
 | `xqzD1`, `xqzD2`, `xqzS1`, `xqzS2` | Online coding, both correctors fitted on the rewritten solutions with token targets (209i) |
-| `xqzN1`-`xqzN3`, `xqzR1`, `xqzP1` | The hybrid (209n), the hybrid copying the reviewed solution (209r), the placeholder penalty (209p) |
+| `xqzN1`-`xqzN3`, `xqzR1`-`xqzR3`, `xqzP1` | The hybrid (209n), the hybrid copying the reviewed solution (209r), the placeholder penalty (209p) |
 | `xqyTgen`, `xqyTgenA` | E4B answering 77 held problems with its own corrector on and off (209q) |
 
 Arm keys in the data and their names in the figures (`scripts/figures.py`):

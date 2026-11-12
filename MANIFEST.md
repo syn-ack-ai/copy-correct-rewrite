@@ -1,15 +1,15 @@
 # Manifest
 
-623 files, 49.3 MB in total (MANIFEST.md not counted). Sizes are on-disk sizes; `.gz` files are gzip-compressed JSON Lines.
+635 files, 50.1 MB in total (MANIFEST.md not counted). Sizes are on-disk sizes; `.gz` files are gzip-compressed JSON Lines.
 Run labels give the addendum and seed (see README.md, "Run folders").
 
 | File | Size | Purpose |
 |---|---|---|
 | `LICENSE` | 11.1 KB | Apache License 2.0 |
 | `MANIFEST.md` | (this file) | This file: every file with its size and purpose |
-| `PREREGISTRATION.md` | 534.3 KB | Pre-registration log, addenda 165-209 and their amendments, verbatim (one phrase and one bullet redacted) |
-| `README.md` | 17.7 KB | Overview: the study, findings, layout, how the runs worked, what is excluded, rebuild steps, licence |
-| `SCORECARD.md` | 9.2 KB | Which pre-registered predictions held, per addendum (the table of the paper's Appendix C) |
+| `PREREGISTRATION.md` | 553.5 KB | Pre-registration log, addenda 165-209 and their amendments, verbatim (one phrase and one bullet redacted) |
+| `README.md` | 17.9 KB | Overview: the study, findings, layout, how the runs worked, what is excluded, rebuild steps, licence |
+| `SCORECARD.md` | 12.2 KB | Which pre-registered predictions held, per addendum (the table of the paper's Appendix C) |
 | `code/colab/xq_bridge.sh` | 3.0 KB | Colab session: fit the bridge and control correctors and run the suite (166) |
 | `code/colab/xq_curve.sh` | 5.2 KB | Colab session: corrector training-length curve (176) |
 | `code/colab/xq_dosebase.sh` | 3.2 KB | Colab session: dose-matched SFT baselines and their evaluation (169d) |
@@ -34,7 +34,7 @@ Run labels give the addendum and seed (see README.md, "Run folders").
 | `code/dreamer/lcb_fit_rows.py` | 25.6 KB | Fit rows of the coding correctors: pool, rules of form, final file (209g-209i) |
 | `code/dreamer/lcb_regen_judge.sh` | 4.8 KB | Judging a resampling batch of fit rows (209i) |
 | `code/dreamer/lcb_style.py` | 4.0 KB | Style score: does a student write like E4B (209k) |
-| `code/dreamer/live_export.py` | 2.0 KB | Exports the live test's per-task outcomes to data/live/live80_attempts.json |
+| `code/dreamer/live_export.py` | 2.1 KB | Exports the live test's per-task outcomes to data/live/live80_attempts.json |
 | `code/dreamer/live_loops.py` | 1.5 KB | Live test loop gate: error endings and repeated submits per attempt |
 | `code/dreamer/online_4090.sh` | 3.0 KB | 4090 runner: the online test, three setups and their gates (170) |
 | `code/dreamer/online_bkr_4090.sh` | 2.5 KB | 4090 runner: online test arm D, corrector teacher + keep + replay (183) |
@@ -299,6 +299,10 @@ Run labels give the addendum and seed (see README.md, "Run folders").
 | `data/generations/xqzP1/xl_gens_qwen.jsonl.gz` | 211.2 KB | Greedy answers per problem with pass flag (209p, placeholder penalty, seed 1): the untrained student |
 | `data/generations/xqzR1/xl_gens_onl_d4w.jsonl.gz` | 152.1 KB | Greedy answers per problem with pass flag (209r, the hybrid copying the reviewed solution, seed 1): student of the cross-model corrector fitted with token targets (209i; the hybrids 209n, 209r; the penalty 209p) |
 | `data/generations/xqzR1/xl_gens_qwen.jsonl.gz` | 211.2 KB | Greedy answers per problem with pass flag (209r, the hybrid copying the reviewed solution, seed 1): the untrained student |
+| `data/generations/xqzR2/xl_gens_onl_d4w.jsonl.gz` | 142.8 KB | Greedy answers per problem with pass flag (209r, the hybrid copying the reviewed solution, seed 2): student of the cross-model corrector fitted with token targets (209i; the hybrids 209n, 209r; the penalty 209p) |
+| `data/generations/xqzR2/xl_gens_qwen.jsonl.gz` | 211.2 KB | Greedy answers per problem with pass flag (209r, the hybrid copying the reviewed solution, seed 2): the untrained student |
+| `data/generations/xqzR3/xl_gens_onl_d4w.jsonl.gz` | 138.1 KB | Greedy answers per problem with pass flag (209r, the hybrid copying the reviewed solution, seed 3): student of the cross-model corrector fitted with token targets (209i; the hybrids 209n, 209r; the penalty 209p) |
+| `data/generations/xqzR3/xl_gens_qwen.jsonl.gz` | 211.2 KB | Greedy answers per problem with pass flag (209r, the hybrid copying the reviewed solution, seed 3): the untrained student |
 | `data/generations/xqzS1/xl_gens_onl_s4w.jsonl.gz` | 164.1 KB | Greedy answers per problem with pass flag (209i, self-corrector, seed 1): student of the self-corrector fitted with token targets (209i) |
 | `data/generations/xqzS1/xl_gens_qwen.jsonl.gz` | 211.2 KB | Greedy answers per problem with pass flag (209i, self-corrector, seed 1): the untrained student |
 | `data/generations/xqzS2/xl_gens_onl_s4w.jsonl.gz` | 153.3 KB | Greedy answers per problem with pass flag (209i, self-corrector, seed 2): student of the self-corrector fitted with token targets (209i) |
@@ -376,8 +380,16 @@ Run labels give the addendum and seed (see README.md, "Run folders").
 | `data/lcb/p/xl_eval_lcb_onl_d4w_s1.json` | 33.9 KB | Online coding evaluation [209p]: per-problem pass for untrained E2B and the arm (onl_d4w_s1), held CE, off-task CE |
 | `data/lcb/r/gate_lora_onl_bridge_keep_replay_lcbv.json` | 1.3 KB | Agent gate of the coding-taught LoRA [209r] (onl_bridge_keep_replay_lcbv) |
 | `data/lcb/r/gate_lora_onl_bridge_keep_replay_lcbv_points.json` | 23.2 KB | Agent gate of the coding-taught LoRA [209r] (onl_bridge_keep_replay_lcbv_points) |
+| `data/lcb/r/gate_lora_onl_bridge_keep_replay_lcbv_s2.json` | 1.3 KB | Agent gate of the coding-taught LoRA [209r] (onl_bridge_keep_replay_lcbv_s2) |
+| `data/lcb/r/gate_lora_onl_bridge_keep_replay_lcbv_s2_points.json` | 23.3 KB | Agent gate of the coding-taught LoRA [209r] (onl_bridge_keep_replay_lcbv_s2_points) |
+| `data/lcb/r/gate_lora_onl_bridge_keep_replay_lcbv_s3.json` | 1.3 KB | Agent gate of the coding-taught LoRA [209r] (onl_bridge_keep_replay_lcbv_s3) |
+| `data/lcb/r/gate_lora_onl_bridge_keep_replay_lcbv_s3_points.json` | 23.3 KB | Agent gate of the coding-taught LoRA [209r] (onl_bridge_keep_replay_lcbv_s3_points) |
 | `data/lcb/r/online_bridge_keep_replay_lcbv.json` | 5.1 KB | Online coding run [209r]: stream curve and counts of passing samples (bridge_keep_replay_lcbv) |
+| `data/lcb/r/online_bridge_keep_replay_lcbv_s2.json` | 5.1 KB | Online coding run [209r]: stream curve and counts of passing samples (bridge_keep_replay_lcbv_s2) |
+| `data/lcb/r/online_bridge_keep_replay_lcbv_s3.json` | 5.1 KB | Online coding run [209r]: stream curve and counts of passing samples (bridge_keep_replay_lcbv_s3) |
 | `data/lcb/r/xl_eval_lcb_onl_d4w_s1.json` | 33.9 KB | Online coding evaluation [209r]: per-problem pass for untrained E2B and the arm (onl_d4w_s1), held CE, off-task CE |
+| `data/lcb/r/xl_eval_lcb_onl_d4w_s2.json` | 33.9 KB | Online coding evaluation [209r]: per-problem pass for untrained E2B and the arm (onl_d4w_s2), held CE, off-task CE |
+| `data/lcb/r/xl_eval_lcb_onl_d4w_s3.json` | 33.9 KB | Online coding evaluation [209r]: per-problem pass for untrained E2B and the arm (onl_d4w_s3), held CE, off-task CE |
 | `data/lcb/xl_base_ids.json` | 4.9 KB | Online coding: ids of the 299 training and 188 held problems |
 | `data/lcb/xl_eval_lcb_onl_c_s1.json` | 33.9 KB | Online coding evaluation: per-problem pass for untrained E2B and the arm (onl_c_s1), held CE, off-task CE |
 | `data/lcb/xl_eval_lcb_onl_c_s2.json` | 33.9 KB | Online coding evaluation: per-problem pass for untrained E2B and the arm (onl_c_s2), held CE, off-task CE |
@@ -392,7 +404,7 @@ Run labels give the addendum and seed (see README.md, "Run folders").
 | `data/lcb/xl_eval_lcb_onl_sft_s1.json` | 50.8 KB | Online coding evaluation: per-problem pass for untrained E2B and the arm (onl_sft_s1), held CE, off-task CE |
 | `data/lcb/xl_eval_lcb_onl_sft_s2.json` | 50.8 KB | Online coding evaluation: per-problem pass for untrained E2B and the arm (onl_sft_s2), held CE, off-task CE |
 | `data/lcb/xl_eval_lcb_onl_sft_s3.json` | 50.8 KB | Online coding evaluation: per-problem pass for untrained E2B and the arm (onl_sft_s3), held CE, off-task CE |
-| `data/live/live80_attempts.json` | 180.1 KB | The live test (196, 202, 207, 208): per attempt and task, whether the hidden tests pass, how the episode ended, and the number of model calls |
+| `data/live/live80_attempts.json` | 180.2 KB | The live test (196, 202, 207, 208): per attempt and task, whether the hidden tests pass, how the episode ended, and the number of model calls |
 | `data/online/a100_4x_gate_lora_onl_bridge_keep_replay.json` | 1.2 KB | Online test gate on 240 held decision points: cross-model corrector + keep + replay (D), corrector fitted 4x longer, seed 1, Colab A100 |
 | `data/online/a100_4x_gate_lora_onl_bridge_keep_replay_points.json` | 23.2 KB | Online test gate, per decision and per row: cross-model corrector + keep + replay (D), corrector fitted 4x longer, seed 1, Colab A100 |
 | `data/online/a100_4x_online_bridge_keep_replay.json` | 4.6 KB | Online test run: prequential windows and held curve: cross-model corrector + keep + replay (D), corrector fitted 4x longer, seed 1, Colab A100 |
@@ -618,7 +630,7 @@ Run labels give the addendum and seed (see README.md, "Run folders").
 | `figures/fig9_e2b.png` | 160.0 KB | Figure 3: Gemma 4 E2B as the coding student against Qwen3-1.7B, with the anchors and the fitting-text control (186, 187, 190) |
 | `notebooks/kaggle_telepathy_like_teaching.ipynb` | 9.1 KB | Source of the Kaggle companion notebook: clones this repository at a pinned commit and runs the same rebuild |
 | `notebooks/telepathy_like_teaching.ipynb` | 332.1 KB | Notebook: rebuilds Table 1, the cross-against-self analysis, Figure 2 and the live table from the files in data/ (no GPU) |
-| `paper.md` | 61.3 KB | The paper: Copy, Correct, or Rewrite? Telepathy-Like Teaching of a Small Agent Model and What Keeps It From Forgetting |
+| `paper.md` | 65.6 KB | The paper: Copy, Correct, or Rewrite? Telepathy-Like Teaching of a Small Agent Model and What Keeps It From Forgetting |
 | `scripts/collect.py` | 19.4 KB | Collects every number the paper uses from the run folders into data/results.json (standard library) |
 | `scripts/drift.py` | 3.7 KB | Measures drift from the original student on untaught text (needs adapters and text rows not included) |
 | `scripts/figures.py` | 33.6 KB | Draws the nine figures from data/results.json (matplotlib) |
@@ -626,5 +638,5 @@ Run labels give the addendum and seed (see README.md, "Run folders").
 | `scripts/g4_table.py` | 3.6 KB | The one-GPU online table (206): fixed / broken / net, held CE, prequential gain per run, paired sign tests on the 220 decisions (standard library) |
 | `scripts/lcb_failkinds.py` | 4.3 KB | How the online coding answers fail (unfinished, placeholder, wrong), from data/generations |
 | `scripts/lcb_table.py` | 9.1 KB | Online coding table (Table D9): held solved, fixed, lost and paired sign tests per arm and seed, from data/lcb |
-| `scripts/live_table.py` | 3.4 KB | The live test's table and by-task sign tests from data/live/live80_attempts.json (standard library) |
+| `scripts/live_table.py` | 3.7 KB | The live test's table and by-task sign tests from data/live/live80_attempts.json (standard library) |
 | `scripts/to_html.py` | 9.8 KB | Renders paper.md into one self-contained HTML page |

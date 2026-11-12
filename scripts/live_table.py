@@ -29,6 +29,8 @@ for x, y in (("D LoRA (4090 seed 1)", "null adapter"), ("D LoRA (4090 seed 1)", 
              ("D, both adapters", "C, both adapters"), ("S LoRA (4090 seed 1)", "null adapter"), ("S4 LoRA (G4 seed 1)", "null adapter"), ("S + S4", "null adapter"),
              ("D LoRA (4090 seed 1)", "S LoRA (4090 seed 1)"), ("D4 LoRA (A100 seed 1)", "S4 LoRA (G4 seed 1)"), ("D + D4", "S + S4"),
              ("D LoRA (A100 seed 1)", "null adapter"), ("corrector-taught adapters (D, D, D4)", "C, both adapters"),
-             ("all taught adapters (D, D, D4, C, C)", "null adapter"), ("all taught adapters (D, D, D4, C, C)", "plain E2B")):
+             ("all taught adapters (D, D, D4, C, C)", "null adapter"), ("all taught adapters (D, D, D4, C, C)", "plain E2B"),
+             ("C, both adapters", "null adapter"), ("C, both adapters", "plain E2B"),      # by teacher, not registered (the paper's conclusion: either teacher's LoRAs beat untrained E2B)
+             ("corrector-taught adapters (D, D, D4)", "null adapter"), ("corrector-taught adapters (D, D, D4)", "plain E2B")):
     if x in rate and y in rate:
         w = sum(rate[x][t] > rate[y][t] for t in ids); l = sum(rate[y][t] > rate[x][t] for t in ids); print(f"  {x} vs {y}: {w} vs {l}, p = {sign(w, l):.4f}")
