@@ -58,7 +58,7 @@ with CE_corrected the corrected student's cross-entropy on the teacher's replies
 
 **Models.** The teacher is Gemma 4 E4B (4-bit QAT, dequantised to bf16). The online student is Gemma 4 E2B; the coding students are E2B and Qwen3-1.7B (Yang et al., 2025), which has a different tokenizer.
 
-**Online stream.** E2B with a rank-16 LoRA meets 600 unseen decision points from the competition's harness (the context before one of E4B's tool calls). Correctors are fitted on the stream's training repositories; held measures use 17 repositories neither saw. The teachers: E4B's distribution (C); the cross-model corrector (D, telepathy-like); the self-corrector (S); D4 and S4, with correctors fitted four times longer; and DI, a cross-model corrector penalised for writes E2B's own states cannot predict. All use keep + replay.
+**Online stream.** E2B with a rank-16 LoRA meets 600 unseen decision points from the competition's harness (the context before a tool call in E4B's failed runs). Correctors are fitted on the stream's training repositories; held measures use 17 repositories neither saw. The teachers: E4B's distribution (C); the cross-model corrector (D, telepathy-like); the self-corrector (S); D4 and S4, with correctors fitted four times longer; and DI, a cross-model corrector penalised for writes E2B's own states cannot predict. All use keep + replay.
 
 **Online measures.** *Held CE*: cross-entropy to E4B on held repositories (untrained E2B: 0.825). *Prequential gain*: nats per token gained over the original E2B on each item before learning it. *Gate*: 240 held rows, 220 with a tool decision; *fixed* counts the 52 decisions where E2B alone differs from E4B, *broken* the other 168, and *net* is their difference. One teacher and seed on two GPU types differed by 8 net decisions, so every teacher ran on one GPU type (Appendix D).
 
@@ -87,11 +87,13 @@ Figure 2. Left: closeness to E4B over the stream. Right: what each ingredient ad
 
 ### 4.3 What the teacher's states add
 
-Is this telepathy, or would any corrector do? Mostly the latter. The self-corrector never sees E4B's states, yet its student has most of the gain: on the gate's 240 held rows it is 0.019 nats closer to E4B than the copying student, and the cross-model corrector's 0.020 (Figure 2, right). It is as fast, too: speed comes with the corrector's form.
+Is this telepathy, or would any corrector do? Mostly the latter, though E4B's states appear to add a slight edge.
 
-The states add a small, consistent remainder. Paired on those rows, the cross-model student was closer than its self-corrector twin in all six pairs (three seeds, two fits; p = 0.031) by 0.0017 nats (95% interval over repositories 0.0009-0.0025), under a tenth of the lead over copying, and matched E4B on more decisions (22 vs 6, p = 0.004). We registered this six-pair test after two seeds; our first bar, 0.005 nats in every seed, was not met.
+The self-corrector never sees E4B's states, yet its student is as fast and has most of the gain: on the gate's 240 held rows it is 0.019 nats closer to E4B than the copying student, against the cross-model student's 0.020 (Figure 2, right).
 
-As teachers, with the corrector connected, the cross-model corrected E2B is 0.03 nats closer to E4B than the self-corrected E2B, and 0.05 when fitted longer; of that their students keep 0.002 either way.
+The edge is under a tenth of that lead, but consistent. Paired on those rows, the cross-model student was closer than its self-corrector twin in all six pairs (three seeds, two fits; p = 0.031) by 0.0017 nats (95% interval over repositories 0.0009-0.0025), and matched E4B on more decisions (22 vs 6, p = 0.004). We registered this six-pair test after two seeds; our first bar, 0.005 nats in every seed, was not met.
+
+The teachers differ more: with the corrector connected, the cross-model corrected E2B is 0.03 nats closer to E4B than the self-corrected E2B (0.05 when fitted longer), yet their students keep 0.002 either way. Whether a student can keep more of this edge needs further investigation.
 
 ### 4.4 Live agent tasks
 
@@ -136,9 +138,9 @@ Figure 3. Qwen3-1.7B (gray) and Gemma 4 E2B (colour) per recipe.
 
 **For training small agents.** Teach online through a corrector fitted longer on verified, direct answers, with keep + replay; where the student's own answer fails its tests, copy the verified text. For stored coding skill, copying the teacher's shortest verified answers with a light KL pull toward the original student does as well; measure forgetting on held-out human text with entropy, since loss on teacher text rewards imitation.
 
-**Limitations.** One online pair with a shared tokenizer; on the single GPU type, three seeds per teacher. Closeness to E4B is a proxy: decisions tie with the plain teacher. Live tasks are ones E4B first failed, with 2-19 solves per arm; adapters of one teacher differed as much as the teachers. In coding, two students; online, 2-3 seeds; pooled p-values are descriptive; differences under about 13 held solves are noise; 9% of losses passed with the 768-token cap doubled (Appendix D). The online correctors, unlike the coding ones, were fitted without eq. (3)'s size term and saw E2B's own samples. Online teaching across tokenizers (as for Qwen) is untested.
+**Limitations.** One online pair with a shared tokenizer; on one GPU type, three seeds per teacher. Closeness to E4B is a proxy: decisions tie with the plain teacher. Live tasks are ones E4B first failed, with 2-19 solves per arm. In coding, two students; online, 2-3 seeds; pooled p-values are descriptive; differences under about 13 held solves are noise; 9% of losses passed with the 768-token cap doubled (Appendix D). The online correctors, unlike the coding ones, were fitted without eq. (3)'s size term and saw E2B's own samples. Online teaching across tokenizers (as for Qwen) is untested.
 
-**Ethical considerations.** Prose and stories for fitting and drift come from locally held books, not released. Model-written code ran only in sandboxes. AI use: under the author's direction, Claude Opus 5.5 and Claude Fable 5.2 (Anthropic) designed and ran the experiments, wrote the code and drafted the text (Appendix B).
+**Ethical considerations.** Prose and stories for fitting and drift come from locally held books, not released. Model-written code ran only in sandboxes. AI use: under the author's direction, Claude Opus 5.5 and Fable 5.2 (Anthropic) designed and ran the experiments, wrote the code and drafted the text (Appendix B).
 
 ## 6 Related Work
 

@@ -1,13 +1,13 @@
 # Manifest
 
-635 files, 50.1 MB in total (MANIFEST.md not counted). Sizes are on-disk sizes; `.gz` files are gzip-compressed JSON Lines.
+635 files, 50.2 MB in total (MANIFEST.md not counted). Sizes are on-disk sizes; `.gz` files are gzip-compressed JSON Lines.
 Run labels give the addendum and seed (see README.md, "Run folders").
 
 | File | Size | Purpose |
 |---|---|---|
 | `LICENSE` | 11.1 KB | Apache License 2.0 |
 | `MANIFEST.md` | (this file) | This file: every file with its size and purpose |
-| `PREREGISTRATION.md` | 553.5 KB | Pre-registration log, addenda 165-209 and their amendments, verbatim (one phrase and one bullet redacted) |
+| `PREREGISTRATION.md` | 559.4 KB | Pre-registration log, addenda 165-209 and their amendments, verbatim (one phrase and one bullet redacted) |
 | `README.md` | 17.9 KB | Overview: the study, findings, layout, how the runs worked, what is excluded, rebuild steps, licence |
 | `SCORECARD.md` | 12.2 KB | Which pre-registered predictions held, per addendum (the table of the paper's Appendix C) |
 | `code/colab/xq_bridge.sh` | 3.0 KB | Colab session: fit the bridge and control correctors and run the suite (166) |
@@ -629,7 +629,7 @@ Run labels give the addendum and seed (see README.md, "Run folders").
 | `figures/fig8_agent_turns.png` | 103.7 KB | Extra figure (cut from the paper): agent replies, E4B to Qwen3-1.7B (169d) |
 | `figures/fig9_e2b.png` | 160.0 KB | Figure 3: Gemma 4 E2B as the coding student against Qwen3-1.7B, with the anchors and the fitting-text control (186, 187, 190) |
 | `notebooks/kaggle_telepathy_like_teaching.ipynb` | 9.1 KB | Source of the Kaggle companion notebook: clones this repository at a pinned commit and runs the same rebuild |
-| `notebooks/telepathy_like_teaching.ipynb` | 332.1 KB | Notebook: rebuilds Table 1, the cross-against-self analysis, Figure 2 and the live table from the files in data/ (no GPU) |
+| `notebooks/telepathy_like_teaching.ipynb` | 345.7 KB | Notebook: rebuilds Table 1, the cross-against-self analysis, Figure 2 and the live table from the files in data/ (no GPU) |
 | `paper.md` | 65.6 KB | The paper: Copy, Correct, or Rewrite? Telepathy-Like Teaching of a Small Agent Model and What Keeps It From Forgetting |
 | `scripts/collect.py` | 19.4 KB | Collects every number the paper uses from the run folders into data/results.json (standard library) |
 | `scripts/drift.py` | 3.7 KB | Measures drift from the original student on untaught text (needs adapters and text rows not included) |
